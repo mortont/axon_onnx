@@ -1,0 +1,6 @@
+%{
+  "axon": {:git, "https://github.com/elixir-nx/axon.git", "d5d1e019352c1aa4435f393bda1f0cd6f89197e8", []},
+  "nx": {:git, "https://github.com/elixir-nx/nx.git", "939167274adf6f9776ca583518e4b1a7966f65ef", [sparse: "nx"]},
+  "protox": {:hex, :protox, "1.4.0", "2fc940fd8b10c07b935cff4a447b0b57b45d0cb747a9c66df3757e0850d53a82", [:mix], [], "hexpm", "871f3038939c947159fc00e3b79127ea57c896204448bb5517fd666a4cca5313"},
+  "table_rex": {:hex, :table_rex, "3.1.1", "0c67164d1714b5e806d5067c1e96ff098ba7ae79413cc075973e17c38a587caa", [:mix], [], "hexpm", "678a23aba4d670419c23c17790f9dcd635a4a89022040df7d5d772cb21012490"},
+}
