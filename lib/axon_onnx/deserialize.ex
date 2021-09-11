@@ -567,7 +567,12 @@ defmodule AxonOnnx.Deserialize do
     {updated_axon, updated_params}
   end
 
-  defp to_axon_pad(%Node{op_type: "Pad", input: inputs, output: [output_name], attribute: attrs}, axon, params, used_params) do
+  defp to_axon_pad(
+         %Node{op_type: "Pad", input: inputs, output: [output_name], attribute: attrs},
+         axon,
+         params,
+         used_params
+       ) do
     pad_options = options!(attrs)
 
     case pad_options["mode"] do
@@ -602,7 +607,8 @@ defmodule AxonOnnx.Deserialize do
           tensor!(value)
       end
 
-    updated_axon = Map.put(axon, output_name, Axon.pad(inp, padding_config, constant_value, name: output_name))
+    updated_axon =
+      Map.put(axon, output_name, Axon.pad(inp, padding_config, constant_value, name: output_name))
 
     {updated_axon, used_params}
   end
@@ -698,16 +704,24 @@ defmodule AxonOnnx.Deserialize do
           Axon.constant(tensor!(constant_options["value"]), namme: output_name)
 
         constant_options["value_float"] ->
-          Axon.constant(Nx.tensor(constant_options["value_float"], type: {:f, 32}), name: output_name)
+          Axon.constant(Nx.tensor(constant_options["value_float"], type: {:f, 32}),
+            name: output_name
+          )
 
         constant_options["value_floats"] ->
-          Axon.constant(Nx.tensor(constant_options["value_floats"], type: {:f, 32}), name: output_name)
+          Axon.constant(Nx.tensor(constant_options["value_floats"], type: {:f, 32}),
+            name: output_name
+          )
 
         constant_options["value_int"] ->
-          Axon.constant(Nx.tensor(constant_options["value_int"], type: {:s, 64}), name: output_name)
+          Axon.constant(Nx.tensor(constant_options["value_int"], type: {:s, 64}),
+            name: output_name
+          )
 
         constant_options["value_ints"] ->
-          Axon.constant(Nx.tensor(constant_options["value_ints"], type: {:s, 64}), name: output_name)
+          Axon.constant(Nx.tensor(constant_options["value_ints"], type: {:s, 64}),
+            name: output_name
+          )
 
         constant_options["value_string"] or constant_options["value_strings"] ->
           raise ArgumentError, "string tensors are not supported"
@@ -763,8 +777,7 @@ defmodule AxonOnnx.Deserialize do
 
     permutation = transpose_options["perm"]
 
-    updated_axon =
-      Map.put(axon, output_name, Axon.transpose(inp, permutation, name: output_name))
+    updated_axon = Map.put(axon, output_name, Axon.transpose(inp, permutation, name: output_name))
 
     {updated_axon, used_params}
   end
@@ -773,7 +786,12 @@ defmodule AxonOnnx.Deserialize do
   # input and axes.
   #
   # TODO(seanmor5): Use Axon.layer
-  defp to_axon_unsqueeze(%Node{op_type: "Unsqueeze", input: [input], attribute: attrs, output: [output_name]}, axon, params, used_params) do
+  defp to_axon_unsqueeze(
+         %Node{op_type: "Unsqueeze", input: [input], attribute: attrs, output: [output_name]},
+         axon,
+         params,
+         used_params
+       ) do
     unsqueeze_options = options!(attrs)
 
     inp = input_or_param!(input, params, axon, used_params)
@@ -858,13 +876,13 @@ defmodule AxonOnnx.Deserialize do
 
   defp to_nx_tensor([], raw, type, shape) do
     raw
-    |> Nx.from_binary(type, backend: Nx.Defn.Expr)
+    |> Nx.from_binary(type)
     |> Nx.reshape(shape)
   end
 
   defp to_nx_tensor(data, _, type, shape) do
     data
-    |> Nx.tensor(type: type, backend: Nx.Defn.Expr)
+    |> Nx.tensor(type: type)
     |> Nx.reshape(shape)
   end
 
