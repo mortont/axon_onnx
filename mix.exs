@@ -22,7 +22,9 @@ defmodule AxonOnnx.MixProject do
   defp deps do
     [
       {:protox, "~> 1.4.0"},
-      {:nx, "~> 0.1.0-dev", path: "../exla/nx", override: true},
+      {:nx, "~> 0.1.0-dev", path: "../nx/nx", override: true},
+      {:exla, "~> 0.1.0-dev", path: "../nx/exla", override: true, only: :test},
+      {:req, "~> 0.1.0", only: :test},
       {:axon, path: "../axon"}
     ]
   end
