@@ -22,8 +22,8 @@ defmodule AxonOnnx.MixProject do
   defp deps do
     [
       {:protox, "~> 1.4.0"},
-      {:nx, "~> 0.1.0-dev", path: "../nx/nx", override: true},
-      {:exla, "~> 0.1.0-dev", path: "../nx/exla", override: true, only: :test},
+      {:nx, "~> 0.1.0-dev", github: "elixir-nx/nx", sparse: "nx", override: true},
+      {:exla, "~> 0.1.0-dev", github: "elixir-nx/nx", sparse: "exla", override: true, only: :test},
       {:req, "~> 0.1.0", only: :test},
       {:axon, path: "../axon"}
     ]

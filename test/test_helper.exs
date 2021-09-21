@@ -39,13 +39,15 @@ defmodule OnnxModel do
     Path.join([cat, sub, name])
   end
 
-  def to_long_path(%M{
-        name: name,
-        long_name: long_name,
-        model_version: model_version,
-        onnx_version: onnx_version,
-        library: library
-      } = model) do
+  def to_long_path(
+        %M{
+          name: name,
+          long_name: long_name,
+          model_version: model_version,
+          onnx_version: onnx_version,
+          library: library
+        } = model
+      ) do
     model_name = name_or_long_name(name, long_name)
     model_version = version_string(model_version, onnx_version)
     model_library = library_name(library)
@@ -54,13 +56,15 @@ defmodule OnnxModel do
     Path.join([to_short_path(model), fname])
   end
 
-  def to_onnx_path(%M{
-        name: name,
-        long_name: long_name,
-        model_version: model_version,
-        onnx_version: onnx_version,
-        library: library
-      } = model) do
+  def to_onnx_path(
+        %M{
+          name: name,
+          long_name: long_name,
+          model_version: model_version,
+          onnx_version: onnx_version,
+          library: library
+        } = model
+      ) do
     model_name = name_or_long_name(name, long_name)
     model_version = version_string(model_version, onnx_version)
     model_library = library_name(library)
@@ -110,6 +114,61 @@ defmodule OnnxTestHelper do
   @cache_dir Path.join([File.cwd!(), ".test-cache"])
 
   @doc """
+  Serializes and tests model against test cases.
+
+  This function will generate N cases and serialize them
+  along with the model, storing them in the test cache. It invokes
+  The script `check_onnx_model.py` to ensure ONNX runtime results
+  are consistent with Axon results.
+  """
+  def serialize_and_test_model!(%Axon{name: name} = axon_model, opts \\ []) do
+    num_cases = opts[:num_tests] || 5
+    model_name = opts[:name] || name
+    cache_dir = Path.join([@cache_dir, model_name])
+    File.mkdir_p!(cache_dir)
+
+    model_path = Path.join([cache_dir, "#{model_name}.onnx"])
+
+    # TODO: Axon API should have a `get_input_shape` utility
+    input_shape = {1, 32}
+    params = Axon.init(axon_model, compiler: EXLA)
+
+    Enum.each(1..num_cases//1, fn n ->
+      test_path = Path.join([cache_dir, "test_data_set_#{n}"])
+      File.mkdir_p!(test_path)
+
+      inp = Nx.random_uniform(input_shape, type: {:f, 32})
+      out = Axon.predict(axon_model, params, inp, compiler: EXLA)
+
+      nx_to_tensor_proto(inp, Path.join([test_path, "input_0.pb"]))
+      nx_to_tensor_proto(out, Path.join([test_path, "output_0.pb"]))
+    end)
+
+    AxonOnnx.Serialize.__export__(axon_model, params, filename: model_path)
+    # Run check script
+    {_, exit_code} =
+      System.cmd("python3", ["scripts/check_onnx_model.py", model_path], into: IO.stream())
+
+    unless exit_code == 0 do
+      raise "Model serialization failed for #{model_name}"
+    end
+  end
+
+  # TODO: Maybe this should be in utils
+  defp nx_to_tensor_proto(tensor, path) do
+    dims = Nx.shape(tensor) |> Tuple.to_list()
+    # TODO: fix
+    data_type = 1
+    raw_data = Nx.to_binary(tensor)
+    tp = %Onnx.TensorProto{dims: dims, data_type: data_type, raw_data: raw_data}
+
+    encoded_tp = Onnx.TensorProto.encode!(tp)
+    {:ok, file} = File.open(path, [:write])
+    IO.binwrite(file, encoded_tp)
+    File.close(file)
+  end
+
+  @doc """
   Tests model against provided test cases.
   """
   def test_deserialized_model!(%OnnxModel{} = onnx_model, cache_dir \\ @cache_dir) do
@@ -147,6 +206,21 @@ defmodule OnnxTestHelper do
     end)
 
     :ok
+  end
+
+  @doc """
+  Returns an OnnxModel struct for a specific ResNet.
+  """
+  def resnet(depth) do
+    %OnnxModel{
+      category: "vision",
+      subcategory: "classification",
+      name: "resnet",
+      long_name: "resnet#{depth}",
+      library: "",
+      model_version: "1",
+      onnx_version: "7"
+    }
   end
 
   # Downloads and extracts the model and test cases at the given
