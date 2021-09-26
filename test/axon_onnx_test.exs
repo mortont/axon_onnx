@@ -67,7 +67,8 @@ defmodule AxonOnnxTest do
 
   describe "deserialize" do
     test "resnets" do
-      for model <- @resnets do
+      resnets = [resnet(18)]
+      for model <- resnets do
         test_deserialized_model!(model)
       end
     end
