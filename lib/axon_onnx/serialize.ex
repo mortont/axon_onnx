@@ -213,20 +213,14 @@ defmodule AxonOnnx.Serialize do
     end
   end
 
-  defp to_attr(name, :INTS, value) do
-    %Attribute{
-      name: name,
-      type: :INTS,
-      ints: value
-    }
-  end
+  defp to_attr(name, type, value) do
+    case type do
+      :INTS ->
+        %Attribute{name: name, type: :INTS, ints: value}
 
-  defp to_attr(name, :STRING, value) do
-    %Attribute{
-      name: name,
-      type: :STRING,
-      s: value
-    }
+      :STRING ->
+        %Attribute{name: name, type: :STRING, s: value}
+    end
   end
 
   defp to_initializers(params_or_initializers, param_names) do
