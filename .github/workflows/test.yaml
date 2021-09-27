@@ -17,9 +17,9 @@ jobs:
       - name: Install Python
         uses: actions/setup-python@v2
         with:
-          - python-version: '3.x'
+          python-version: '3.x'
       - name: Install ONNX
-        run: pip3 install numpy onnx onnxruntime
+        run: pip install numpy onnx onnxruntime
       - name: Install mix dependencies
         run: mix deps.get
       - name: Check formatting
