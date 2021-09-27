@@ -3,6 +3,7 @@ defmodule AxonOnnx.Serialize do
   alias Onnx.GraphProto, as: Graph
   alias Onnx.NodeProto, as: Node
   alias Onnx.ValueInfoProto, as: Value
+  alias Onnx.AttributeProto, as: Attribute
   alias Onnx.OperatorSetIdProto, as: Opset
   alias Onnx.TypeProto, as: Type
   alias Onnx.TypeProto.Tensor, as: Placeholder
@@ -114,6 +115,64 @@ defmodule AxonOnnx.Serialize do
     {inputs, updated_param_names, [node | nodes]}
   end
 
+  ## Convolution
+
+  defp to_onnx(
+         %Axon{
+           op: :conv,
+           name: name,
+           parent: %Axon{name: inp_name} = parent,
+           params: params,
+           opts: opts
+         },
+         inputs,
+         param_names,
+         nodes
+       ) do
+    {inputs, param_names, nodes} = to_onnx(parent, inputs, param_names, nodes)
+
+    use_bias = opts[:use_bias]
+    strides = opts[:strides]
+    padding = opts[:padding]
+
+    strides_attr = to_attr("strides", :INTS, strides)
+
+    padding_attr =
+      case padding do
+        :valid ->
+          to_attr("auto_pad", :STRING, "VALID")
+
+        :same ->
+          to_attr("auto_pad", :STRING, "SAME_UPPER")
+
+        padding when is_list(padding) ->
+          {pad_begins, pad_ends} = Enum.unzip(padding)
+          to_attr("pads", :INTS, pad_begins ++ pad_ends)
+      end
+
+    # TODO: Dilations
+
+    %{name: k_name} = params["kernel"]
+
+    {node_inputs, updated_param_names} =
+      if use_bias do
+        %{name: b_name} = params["bias"]
+        {[inp_name, k_name, b_name], [k_name, b_name | param_names]}
+      else
+        {[inp_name, k_name], [k_name | param_names]}
+      end
+
+    node = %Node{
+      input: node_inputs,
+      output: [name],
+      name: name,
+      attribute: [strides_attr, padding_attr],
+      op_type: "Conv"
+    }
+
+    {inputs, updated_param_names, [node | nodes]}
+  end
+
   ## Activations
 
   @supported_activations [
@@ -152,6 +211,22 @@ defmodule AxonOnnx.Serialize do
 
       {inputs, param_names, [node | nodes]}
     end
+  end
+
+  defp to_attr(name, :INTS, value) do
+    %Attribute{
+      name: name,
+      type: :INTS,
+      ints: value
+    }
+  end
+
+  defp to_attr(name, :STRING, value) do
+    %Attribute{
+      name: name,
+      type: :STRING,
+      s: value
+    }
   end
 
   defp to_initializers(params_or_initializers, param_names) do
