@@ -26,7 +26,15 @@ defmodule AxonOnnx.MixProject do
       {:exla, "~> 0.1.0-dev",
        github: "elixir-nx/nx", sparse: "exla", override: true, only: :test},
       {:req, "~> 0.1.0", only: :test},
-      {:axon, "~> 0.1.0-dev", github: "elixir-nx/axon"}
+      {:axon, "~> 0.1.0-dev", axon_opts()}
     ]
+  end
+
+  defp axon_opts do
+    if branch = System.get_env("AXON_CHECKOUT") do
+      [github: "elixir-nx/axon", branch: branch]
+    else
+      [github: "elixir-nx/axon"]
+    end
   end
 end
