@@ -39,13 +39,15 @@ defmodule OnnxModel do
     Path.join([cat, sub, name])
   end
 
-  def to_long_path(%M{
-        name: name,
-        long_name: long_name,
-        model_version: model_version,
-        onnx_version: onnx_version,
-        library: library
-      } = model) do
+  def to_long_path(
+        %M{
+          name: name,
+          long_name: long_name,
+          model_version: model_version,
+          onnx_version: onnx_version,
+          library: library
+        } = model
+      ) do
     model_name = name_or_long_name(name, long_name)
     model_version = version_string(model_version, onnx_version)
     model_library = library_name(library)
@@ -54,13 +56,15 @@ defmodule OnnxModel do
     Path.join([to_short_path(model), fname])
   end
 
-  def to_onnx_path(%M{
-        name: name,
-        long_name: long_name,
-        model_version: model_version,
-        onnx_version: onnx_version,
-        library: library
-      } = model) do
+  def to_onnx_path(
+        %M{
+          name: name,
+          long_name: long_name,
+          model_version: model_version,
+          onnx_version: onnx_version,
+          library: library
+        } = model
+      ) do
     model_name = name_or_long_name(name, long_name)
     model_version = version_string(model_version, onnx_version)
     model_library = library_name(library)
@@ -109,7 +113,7 @@ defmodule OnnxTestHelper do
 
   @cache_dir Path.join([File.cwd!(), ".test-cache"])
 
- @doc """
+  @doc """
   Serializes and tests model against test cases.
   This function will generate N cases and serialize them
   along with the model, storing them in the test cache. It invokes
