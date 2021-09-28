@@ -31,8 +31,8 @@ defmodule AxonOnnx.MixProject do
   end
 
   defp axon_opts do
-    if branch = System.get_env("AXON_CHECKOUT") do
-      [github: "elixir-nx/axon", branch: branch]
+    if ref = System.get_env("AXON_CHECKOUT") do
+      [github: "elixir-nx/axon", ref: ref]
     else
       [github: "elixir-nx/axon"]
     end
