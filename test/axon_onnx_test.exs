@@ -207,6 +207,103 @@ defmodule AxonOnnxTest do
     end
   end
 
+  describe "serializes global pooling" do
+    test "global_max_pool1d with defaults" do
+      model = Axon.input({1, 3, 7}) |> Axon.global_max_pool()
+      serialize_and_test_model!(model, num_tests: 3, name: "global_max_pool1d_default")
+    end
+
+    test "global_max_pool2d with defaults" do
+      model = Axon.input({1, 3, 7, 7}) |> Axon.global_max_pool()
+      serialize_and_test_model!(model, num_tests: 3, name: "global_max_pool2d_default")
+    end
+
+    test "global_max_pool3d with defaults" do
+      model = Axon.input({1, 3, 7, 7, 7}) |> Axon.global_max_pool()
+      serialize_and_test_model!(model, num_tests: 3, name: "global_max_pool3d_default")
+    end
+
+    test "global_max_pool with conv and dense" do
+      model =
+        Axon.input({1, 3, 7, 7})
+        |> Axon.conv(8, kernel_size: {2, 2})
+        |> Axon.global_max_pool()
+        |> Axon.dense(1, activation: :softmax)
+
+      serialize_and_test_model!(model, num_tests: 3, name: "global_max_pool_conv_dense")
+    end
+
+    test "global_max_pool keep_axes false" do
+      model = Axon.input({1, 3, 7, 7, 7}) |> Axon.global_max_pool(keep_axes: false)
+      serialize_and_test_model!(model, num_tests: 3, name: "global_max_pool_no_axes")
+    end
+
+    test "global_avg_pool1d with defaults" do
+      model = Axon.input({1, 3, 7}) |> Axon.global_avg_pool()
+      serialize_and_test_model!(model, num_tests: 3, name: "global_avg_pool1d_default")
+    end
+
+    test "global_avg_pool2d with defaults" do
+      model = Axon.input({1, 3, 7, 7}) |> Axon.global_avg_pool()
+      serialize_and_test_model!(model, num_tests: 3, name: "global_avg_pool2d_default")
+    end
+
+    test "global_avg_pool3d with defaults" do
+      model = Axon.input({1, 3, 7, 7, 7}) |> Axon.global_avg_pool()
+      serialize_and_test_model!(model, num_tests: 3, name: "global_avg_pool3d_default")
+    end
+
+    test "global_avg_pool with conv and dense" do
+      model =
+        Axon.input({1, 3, 7, 7})
+        |> Axon.conv(8, kernel_size: {2, 2})
+        |> Axon.global_avg_pool()
+        |> Axon.dense(1, activation: :softmax)
+
+      serialize_and_test_model!(model, num_tests: 3, name: "global_avg_pool_conv_dense")
+    end
+
+    test "global_avg_pool keep_axes false" do
+      model = Axon.input({1, 3, 7, 7, 7}) |> Axon.global_avg_pool(keep_axes: false)
+      serialize_and_test_model!(model, num_tests: 3, name: "global_avg_pool_no_axes")
+    end
+
+    test "global_lp_pool1d with defaults" do
+      model = Axon.input({1, 3, 7}) |> Axon.global_lp_pool()
+      serialize_and_test_model!(model, num_tests: 3, name: "global_lp_pool1d_default")
+    end
+
+    test "global_lp_pool2d with defaults" do
+      model = Axon.input({1, 3, 7, 7}) |> Axon.global_lp_pool()
+      serialize_and_test_model!(model, num_tests: 3, name: "global_lp_pool2d_default")
+    end
+
+    test "global_lp_pool3d with defaults" do
+      model = Axon.input({1, 3, 7, 7, 7}) |> Axon.global_lp_pool()
+      serialize_and_test_model!(model, num_tests: 3, name: "global_lp_pool3d_default")
+    end
+
+    test "global_lp_pool with norm" do
+      model = Axon.input({1, 3, 7, 7}) |> Axon.global_lp_pool(norm: 3)
+      serialize_and_test_model!(model, num_tests: 3, name: "global_lp_pool_with_norm")
+    end
+
+    test "global_lp_pool with conv and dense" do
+      model =
+        Axon.input({1, 3, 7, 7})
+        |> Axon.conv(8, kernel_size: {2, 2})
+        |> Axon.global_lp_pool()
+        |> Axon.dense(1, activation: :softmax)
+
+      serialize_and_test_model!(model, num_tests: 3, name: "global_lp_pool_conv_dense")
+    end
+
+    test "global_lp_pool keep_axes false" do
+      model = Axon.input({1, 3, 7, 7, 7}) |> Axon.global_lp_pool(keep_axes: false)
+      serialize_and_test_model!(model, num_tests: 3, name: "global_lp_pool_no_axes")
+    end
+  end
+
   describe "deserialize" do
     test "resnets" do
       resnets = [resnet(18)]

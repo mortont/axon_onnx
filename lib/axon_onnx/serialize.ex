@@ -230,6 +230,86 @@ defmodule AxonOnnx.Serialize do
     {inputs, param_names, [node | nodes]}
   end
 
+  ## Global Pooling
+
+  @supported_global_pooling [:global_avg_pool, :global_lp_pool, :global_max_pool]
+
+  defp to_onnx(
+         %Axon{
+           op: pool,
+           name: name,
+           parent: %Axon{name: inp_name, output_shape: shape} = parent,
+           opts: opts
+         },
+         inputs,
+         param_names,
+         nodes
+       )
+       when pool in @supported_global_pooling do
+    {inputs, param_names, nodes} = to_onnx(parent, inputs, param_names, nodes)
+
+    keep_axes = opts[:keep_axes]
+
+    {op_type, attrs} =
+      case pool do
+        :global_avg_pool ->
+          {"GlobalAveragePool", []}
+
+        :global_lp_pool ->
+          {"GlobalLpPool", [to_attr("p", :INT, opts[:norm])]}
+
+        :global_max_pool ->
+          {"GlobalMaxPool", []}
+      end
+
+    node_inputs = [inp_name]
+
+    nodes =
+      if keep_axes do
+        node = %Node{
+          input: node_inputs,
+          output: [name],
+          name: name,
+          attribute: attrs,
+          op_type: op_type
+        }
+  
+        [node | nodes]
+      else
+        pre_squeeze_name = name <> "_pre_squeeze"
+        pre_squeeze_node = %Node{
+          input: node_inputs,
+          output: [pre_squeeze_name],
+          name: pre_squeeze_name,
+          attribute: attrs,
+          op_type: op_type
+        }
+  
+        constant_name = name <> "_squeeze_axes"
+        axes = Enum.to_list(2..(Nx.rank(shape) - 1)//1)
+        axes_tensor = nx_to_tensor_proto(constant_name, Nx.tensor(axes))
+        value_attr = to_attr("value", :TENSOR, axes_tensor)
+
+        constant_node = %Node{
+          output: [constant_name],
+          name: constant_name,
+          attribute: [value_attr],
+          op_type: "Constant"
+        }
+
+        node = %Node{
+          input: [pre_squeeze_name, constant_name],
+          output: [name],
+          name: name,
+          op_type: "Squeeze"
+        }
+
+        [node, constant_node, pre_squeeze_node | nodes]
+      end
+
+    {inputs, param_names, nodes}
+  end
+
   ## Activations
 
   @supported_activations [
@@ -280,6 +360,9 @@ defmodule AxonOnnx.Serialize do
 
       :STRING ->
         %Attribute{name: name, type: :STRING, s: value}
+
+      :TENSOR ->
+        %Attribute{name: name, type: :TENSOR, t: value}
     end
   end
 
@@ -316,7 +399,15 @@ defmodule AxonOnnx.Serialize do
   defp nx_to_tensor_proto(param_name, tensor) do
     dims = Nx.shape(tensor) |> Tuple.to_list()
     # TODO: fix
-    data_type = 1
+    data_type =
+      case Nx.type(tensor) do
+        {:f, 32} ->
+          1
+
+        {:s, 64} ->
+          7
+      end
+
     raw_data = Nx.to_binary(tensor)
     %Onnx.TensorProto{name: param_name, dims: dims, data_type: data_type, raw_data: raw_data}
   end

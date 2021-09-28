@@ -1,5 +1,5 @@
 %{
-  "axon": {:git, "https://github.com/elixir-nx/axon.git", "34148467c58f576d32aa1d2a0d8a87b0f235487f", []},
+  "axon": {:git, "https://github.com/elixir-nx/axon.git", "a8dc91b4adf2b3ffa6f8ba8b28e3c296b62c1c31", []},
   "castore": {:hex, :castore, "0.1.11", "c0665858e0e1c3e8c27178e73dffea699a5b28eb72239a3b2642d208e8594914", [:mix], [], "hexpm", "91b009ba61973b532b84f7c09ce441cba7aa15cb8b006cf06c6f4bba18220081"},
   "elixir_make": {:hex, :elixir_make, "0.6.2", "7dffacd77dec4c37b39af867cedaabb0b59f6a871f89722c25b28fcd4bd70530", [:mix], [], "hexpm", "03e49eadda22526a7e5279d53321d1cced6552f344ba4e03e619063de75348d9"},
   "exla": {:git, "https://github.com/elixir-nx/nx.git", "acfed6c8cf11881d823d42500e680d473cd44596", [sparse: "exla"]},
