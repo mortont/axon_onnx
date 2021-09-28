@@ -273,10 +273,11 @@ defmodule AxonOnnx.Serialize do
           attribute: attrs,
           op_type: op_type
         }
-  
+
         [node | nodes]
       else
         pre_squeeze_name = name <> "_pre_squeeze"
+
         pre_squeeze_node = %Node{
           input: node_inputs,
           output: [pre_squeeze_name],
@@ -284,7 +285,7 @@ defmodule AxonOnnx.Serialize do
           attribute: attrs,
           op_type: op_type
         }
-  
+
         constant_name = name <> "_squeeze_axes"
         axes = Enum.to_list(2..(Nx.rank(shape) - 1)//1)
         axes_tensor = nx_to_tensor_proto(constant_name, Nx.tensor(axes))
