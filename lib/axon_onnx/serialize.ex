@@ -173,6 +173,63 @@ defmodule AxonOnnx.Serialize do
     {inputs, updated_param_names, [node | nodes]}
   end
 
+  ## Pooling
+
+  @supported_pooling [:max_pool, :avg_pool]
+
+  defp to_onnx(
+         %Axon{op: pool, name: name, parent: %Axon{name: inp_name} = parent, opts: opts},
+         inputs,
+         param_names,
+         nodes
+       )
+       when pool in @supported_pooling do
+    {inputs, param_names, nodes} = to_onnx(parent, inputs, param_names, nodes)
+
+    kernel_size = opts[:kernel_size]
+    strides = opts[:strides]
+    padding = opts[:padding]
+
+    strides_attr = to_attr("strides", :INTS, strides)
+    kernel_shape_attr = to_attr("kernel_shape", :INTS, Tuple.to_list(kernel_size))
+
+    padding_attr =
+      case padding do
+        :valid ->
+          to_attr("auto_pad", :STRING, "VALID")
+
+        :same ->
+          to_attr("auto_pad", :STRING, "SAME_UPPER")
+
+        padding when is_list(padding) ->
+          {pad_begins, pad_ends} = Enum.unzip(padding)
+          to_attr("pads", :INTS, pad_begins ++ pad_ends)
+      end
+
+    # TODO: Dilations
+
+    {op_type, count_include_pad_attr} =
+      case pool do
+        :max_pool ->
+          {"MaxPool", []}
+
+        :avg_pool ->
+          {"AveragePool", [to_attr("count_include_pad", :INT, 1)]}
+      end
+
+    node_inputs = [inp_name]
+
+    node = %Node{
+      input: node_inputs,
+      output: [name],
+      name: name,
+      attribute: [padding_attr, strides_attr, kernel_shape_attr | count_include_pad_attr],
+      op_type: op_type
+    }
+
+    {inputs, param_names, [node | nodes]}
+  end
+
   ## Activations
 
   @supported_activations [
@@ -215,6 +272,9 @@ defmodule AxonOnnx.Serialize do
 
   defp to_attr(name, type, value) do
     case type do
+      :INT ->
+        %Attribute{name: name, type: :INT, i: value}
+
       :INTS ->
         %Attribute{name: name, type: :INTS, ints: value}
 
