@@ -274,6 +274,7 @@ defmodule AxonOnnx.Serialize do
     case type do
       :INT ->
         %Attribute{name: name, type: :INT, i: value}
+
       :INTS ->
         %Attribute{name: name, type: :INTS, ints: value}
 
