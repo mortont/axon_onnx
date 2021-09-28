@@ -205,6 +205,58 @@ defmodule AxonOnnxTest do
 
       serialize_and_test_model!(model, num_tests: 3, name: "avg_pool_with_conv")
     end
+
+    test "lp_pool1d with defaults" do
+      model = Axon.input({1, 3, 7}) |> Axon.lp_pool()
+      serialize_and_test_model!(model, num_tests: 3, name: "lp_pool1d_default")
+    end
+
+    test "lp_pool2d with defaults" do
+      model = Axon.input({1, 3, 7, 7}) |> Axon.lp_pool()
+      serialize_and_test_model!(model, num_tests: 3, name: "lp_pool2d_defaults")
+    end
+
+    test "lp_pool3d with defaults" do
+      model = Axon.input({1, 3, 7, 7, 7}) |> Axon.lp_pool()
+      serialize_and_test_model!(model, num_tests: 3, name: "lp_pool3d_defaults")
+    end
+
+    test "lp_pool with kernel size" do
+      model = Axon.input({1, 3, 7, 7}) |> Axon.lp_pool(kernel_size: {2, 2})
+      serialize_and_test_model!(model, num_tests: 3, name: "lp_pool_kernel")
+    end
+
+    test "lp_pool with strides" do
+      model = Axon.input({1, 3, 7, 7}) |> Axon.lp_pool(kernel_size: {2, 2}, stirdes: [1, 2])
+      serialize_and_test_model!(model, num_tests: 3, name: "lp_pool_strides")
+    end
+
+    test "lp_pool with same padding" do
+      model = Axon.input({1, 3, 7, 7}) |> Axon.lp_pool(kernel_size: {2, 1}, padding: :same)
+      serialize_and_test_model!(model, num_tests: 3, name: "lp_pool_same_padding")
+    end
+
+    test "lp_pool with padding config" do
+      model =
+        Axon.input({1, 3, 7, 7})
+        |> Axon.lp_pool(kernel_size: {2, 2}, padding: [{1, 1}, {0, 1}])
+
+      serialize_and_test_model!(model, num_tests: 3, name: "lp_pool_padding_config")
+    end
+
+    test "lp_pool with norm" do
+      model = Axon.input({1, 3, 7, 7}) |> Axon.lp_pool(kernel_size: {2, 1}, norm: 3)
+      serialize_and_test_model!(model, num_tests: 3, name: "lp_pool_with_norm")
+    end
+
+    test "lp_pool with conv" do
+      model =
+        Axon.input({1, 3, 12, 12})
+        |> Axon.conv(16, kernel_size: {2, 2})
+        |> Axon.lp_pool(kernel_size: {2, 2})
+
+      serialize_and_test_model!(model, num_tests: 3, name: "lp_pool_with_conv")
+    end
   end
 
   describe "serializes global pooling" do

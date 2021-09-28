@@ -175,7 +175,7 @@ defmodule AxonOnnx.Serialize do
 
   ## Pooling
 
-  @supported_pooling [:max_pool, :avg_pool]
+  @supported_pooling [:max_pool, :avg_pool, :lp_pool]
 
   defp to_onnx(
          %Axon{op: pool, name: name, parent: %Axon{name: inp_name} = parent, opts: opts},
@@ -208,13 +208,18 @@ defmodule AxonOnnx.Serialize do
 
     # TODO: Dilations
 
-    {op_type, count_include_pad_attr} =
+    {op_type, extra_attrs} =
       case pool do
+        :lp_pool ->
+          p_attr = to_attr("p", :INT, opts[:norm])
+          {"LpPool", [p_attr]}
+
         :max_pool ->
           {"MaxPool", []}
 
         :avg_pool ->
-          {"AveragePool", [to_attr("count_include_pad", :INT, 1)]}
+          count_include_pad_attr = to_attr("count_include_pad", :INT, 1)
+          {"AveragePool", [count_include_pad_attr]}
       end
 
     node_inputs = [inp_name]
@@ -223,7 +228,7 @@ defmodule AxonOnnx.Serialize do
       input: node_inputs,
       output: [name],
       name: name,
-      attribute: [padding_attr, strides_attr, kernel_shape_attr | count_include_pad_attr],
+      attribute: [padding_attr, strides_attr, kernel_shape_attr | extra_attrs],
       op_type: op_type
     }
 
