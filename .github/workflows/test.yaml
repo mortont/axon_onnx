@@ -25,4 +25,7 @@ jobs:
       - name: Check formatting
         run: mix format --check-formatted
       - name: Run tests
+        uses: arduino/setup-protoc@v1
+        with:
+          version: '3.x'
         run: MIX_ENV=test mix do compile --warnings-as-errors, test
