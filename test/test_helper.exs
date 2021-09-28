@@ -128,8 +128,7 @@ defmodule OnnxTestHelper do
 
     model_path = Path.join([cache_dir, "#{model_name}.onnx"])
 
-    # TODO: Axon API should have a `get_input_shape` utility
-    input_shape = {1, 32}
+    {input_shape, _} = Axon.get_model_signature(axon_model)
     params = Axon.init(axon_model, compiler: EXLA)
 
     Enum.each(1..num_cases//1, fn n ->
