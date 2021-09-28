@@ -510,7 +510,7 @@ defmodule AxonOnnx.Deserialize do
     conv_options = options!(attrs)
 
     auto_pad = conv_options["auto_pad"]
-    dilations = conv_options["dilations"]
+    # dilations = conv_options["dilations"]
     group = conv_options["group"]
     kernel_shape = conv_options["kernel_shape"]
     pads = conv_options["pads"]
@@ -532,7 +532,7 @@ defmodule AxonOnnx.Deserialize do
           {kernel, elem(Nx.shape(kernel), 0)}
 
         Map.has_key?(axon, kernel) ->
-          %{output_shape: shape, opts: [value: kernel]} = axon[kernel]
+          %{opts: [value: kernel]} = axon[kernel]
           {kernel, elem(Nx.shape(kernel), 0)}
 
         true ->
