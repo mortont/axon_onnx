@@ -188,6 +188,9 @@ defmodule AxonOnnx.Deserialize do
         "Identity" ->
           to_axon_nx(op_node, axon, params, used_params, & &1)
 
+        "LeakyRelu" ->
+          to_axon_activation(op_node, axon, params, used_params, :leaky_relu)
+
         "Less" ->
           to_axon_binary_op(op_node, axon, params, used_params, fn {x, y} -> Nx.less(x, y) end)
 
