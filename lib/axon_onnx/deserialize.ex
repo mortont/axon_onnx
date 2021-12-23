@@ -130,6 +130,9 @@ defmodule AxonOnnx.Deserialize do
         "Constant" ->
           to_axon_constant(op_node, axon, params, used_params)
 
+        "Concat" ->
+          to_axon_concat(op_node, axon, params, used_params)
+
         "Conv" ->
           to_axon_conv(op_node, axon, params, used_params)
 
@@ -287,6 +290,9 @@ defmodule AxonOnnx.Deserialize do
         "Softsign" ->
           to_axon_activation(op_node, axon, params, used_params, :softsign)
 
+        "Split" ->
+          to_axon_split(op_node, axon, params, used_params)
+
         "Sqrt" ->
           to_axon_nx(op_node, axon, params, used_params, &Nx.sqrt/1)
 
@@ -304,6 +310,9 @@ defmodule AxonOnnx.Deserialize do
 
         "Unsqueeze" ->
           to_axon_unsqueeze(op_node, axon, params, used_params)
+
+        "Upsample" ->
+          to_axon_upsample(op_node, axon, params, used_params)
 
         "Xor" ->
           to_axon_binary_op(op_node, axon, params, used_params, fn {x, y} ->
@@ -656,6 +665,69 @@ defmodule AxonOnnx.Deserialize do
        ) do
     inp = input_or_param!(inp, params, axon, used_params)
     {Map.put(axon, output_name, Axon.activation(inp, activation, name: output_name)), used_params}
+  end
+
+  # Builds an Axon layer which returns a new layer with input values 
+  # concatenated on the given axis 
+  defp to_axon_concat(
+         %Node{attribute: attrs, input: inputs, output: [output_name]},
+         axon,
+         params,
+         used_params
+       ) when is_list(inputs) do
+    inputs = for inp <- inputs, do: input_or_param!(inp, params, axon, used_params)
+    %{ "axis" => axis } = options!(attrs)
+
+    {Map.put(axon, output_name, Axon.concatenate(inputs, [axis: axis, name: output_name])), used_params}
+  end
+
+  # Builds an Axon layer which returns a new layer upsampling the input
+  # layer. The scale activation layer must contain 1.0 as the first two values
+  # Each dimension value of the output layer is:
+  # output_dimension = floor(input_dimension * scale)
+  defp to_axon_upsample(
+         %Node{attribute: attrs, input: [inp, scale], output: [output_name]},
+         axon,
+         params,
+         used_params
+       ) do
+    inp = input_or_param!(inp, params, axon, used_params)
+    scale = input_or_param!(scale, params, axon, used_params)
+    updated_params = 
+      used_params
+      |> Map.put(output_name <> "_scale", scale)
+    unless [1.0, 1.0 | scale] = scale|>Nx.to_flat_list do
+      raise "Wrong scale format. First two values must be [1, 1]."
+    end
+    [_, _ | inp_output_shape] = Tuple.to_list(inp.output_shape)
+    %{ "mode" => mode } = options!(attrs)
+
+    output_shape = List.to_tuple(
+      for {x, y} <- List.zip([scale, inp_output_shape]), do: floor x*y
+    )
+
+    {Map.put(
+        axon, 
+        output_name, 
+        Axon.resize(inp, output_shape, [method: mode, name: output_name])), 
+     updated_params}
+  end
+
+  defp to_axon_split(
+         %Node{attribute: attrs, input: [inp], output: output_names},
+         axon,
+         params,
+         used_params
+       ) do
+    inp = input_or_param!(inp, params, axon, used_params)
+    %{ "axis" => axis, "split" => split_sizes } = options!(attrs)
+
+    split_layers = Axon.split(inp, split_sizes, [axis: axis, name: output_names])
+    updated_axon = Enum.reduce(Tuple.to_list(split_layers), axon, fn output, new_axon ->
+      Map.put(new_axon, output.name, output)
+    end)
+
+    {updated_axon, used_params}
   end
 
   defp to_axon_global_pool(
