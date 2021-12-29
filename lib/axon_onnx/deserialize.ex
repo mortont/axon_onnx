@@ -691,26 +691,36 @@ defmodule AxonOnnx.Deserialize do
          params,
          used_params
        ) do
-    inp = input_or_param!(inp, params, axon, used_params)
-    scale = input_or_param!(scale, params, axon, used_params)
-    updated_params = 
-      used_params
-      |> Map.put(output_name <> "_scale", scale)
-    unless [1.0, 1.0 | scale] = scale|>Nx.to_flat_list do
-      raise "Wrong scale format. First two values must be [1, 1]."
-    end
-    [_, _ | inp_output_shape] = Tuple.to_list(inp.output_shape)
+    %Axon{output_shape: shape} = inp = input_or_param!(inp, params, axon, used_params)
     %{ "mode" => mode } = options!(attrs)
+    scale = input_or_param!(scale, params, axon, used_params)
+     
+    # Ignoring the first two 1.0 values to obtain the same dimension of scale_values 
+    [_, _ | shape] = Tuple.to_list(shape)
 
-    output_shape = List.to_tuple(
-      for {x, y} <- List.zip([scale, inp_output_shape]), do: floor x*y
-    )
+    # Converting mode from string to atom to ensure Axon init and predict works correctly
+    method = 
+      cond do
+        is_binary(mode) -> String.to_atom(mode) 
+        is_atom(mode) -> mode
+        true -> raise ArgumentError, "unsupported mode type. Must be string or atom, got: #{mode}"
+      end
+
+    output_shape = 
+      case Nx.to_flat_list(scale) do
+        [1.0, 1.0 | scale_values] ->
+          scale_values
+          |> Enum.zip_with(shape, fn x, y -> floor(x * y) end)
+          |> List.to_tuple()
+        [s1, s2 | _ ] ->
+          raise ArgumentError, "unspported scale format, first two scale values must be 1, got #{s1} and #{s2}"
+      end
 
     {Map.put(
         axon, 
         output_name, 
-        Axon.resize(inp, output_shape, [method: mode, name: output_name])), 
-     updated_params}
+        Axon.resize(inp, output_shape, [method: method, name: output_name])), 
+     used_params}
   end
 
   defp to_axon_split(
