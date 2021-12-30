@@ -189,5 +189,30 @@ defmodule OnnxTestHelper do
   end
 end
 
+require Logger
+
+Logger.info("Generating ONNX test cases...")
+
+# Generate cases
+System.cmd("backend-test-tools", ["generate-data"])
+
+# Get cases path
+{path, _} = System.cmd("python3", ["-c", "from onnx.backend import test; import os; print(os.path.dirname(test.__file__), end='', sep='')"])
+path = Path.join([path, "data"])
+
+# Move all to test directory
+cases_path = Path.join([__DIR__], "cases")
+File.mkdir_p!(cases_path)
+
+path
+|> File.ls!()
+|> Enum.each(fn base_path ->
+  src = Path.join([path, base_path])
+  dst = Path.join([cases_path, base_path])
+  File.cp_r!(src, dst)
+end)
+
+Logger.info("Finished generating test cases")
+
 # Set EXLA as default compiler
 Nx.Defn.default_options(compiler: EXLA)
