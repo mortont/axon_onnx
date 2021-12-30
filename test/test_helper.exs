@@ -1,109 +1,5 @@
 ExUnit.start()
 
-defmodule OnnxModel do
-  alias __MODULE__, as: M
-  @hub_url "https://github.com/onnx/models/raw/master"
-
-  defstruct [
-    :category,
-    :subcategory,
-    :name,
-    :long_name,
-    :model_version,
-    :onnx_version,
-    :library
-  ]
-
-  def to_url(%M{
-        category: cat,
-        subcategory: sub,
-        name: name,
-        long_name: long_name,
-        model_version: model_version,
-        onnx_version: onnx_version,
-        library: library
-      }) do
-    model_name = name_or_long_name(name, long_name)
-    model_version = version_string(model_version, onnx_version)
-    model_library = library_name(library)
-
-    fname = "#{model_name}#{model_library}#{model_version}.tar.gz"
-    "#{@hub_url}/#{cat}/#{sub}/#{name}/model/#{fname}"
-  end
-
-  def to_short_path(%M{
-        category: cat,
-        subcategory: sub,
-        name: name
-      }) do
-    Path.join([cat, sub, name])
-  end
-
-  def to_long_path(
-        %M{
-          name: name,
-          long_name: long_name,
-          model_version: model_version,
-          onnx_version: onnx_version,
-          library: library
-        } = model
-      ) do
-    model_name = name_or_long_name(name, long_name)
-    model_version = version_string(model_version, onnx_version)
-    model_library = library_name(library)
-
-    fname = "#{model_name}#{model_library}#{model_version}"
-    Path.join([to_short_path(model), fname])
-  end
-
-  def to_onnx_path(
-        %M{
-          name: name,
-          long_name: long_name,
-          model_version: model_version,
-          onnx_version: onnx_version,
-          library: library
-        } = model
-      ) do
-    model_name = name_or_long_name(name, long_name)
-    model_version = version_string(model_version, onnx_version)
-    model_library = library_name(library)
-
-    fname = "#{model_name}#{model_library}#{model_version}.onnx"
-    Path.join([to_long_path(model), fname])
-  end
-
-  defp name_or_long_name(name, long_name) do
-    case long_name do
-      "" ->
-        name
-
-      long_name ->
-        long_name
-    end
-  end
-
-  defp library_name(library) do
-    case library do
-      "" ->
-        "-"
-
-      lib_name ->
-        "-#{lib_name}-"
-    end
-  end
-
-  defp version_string(model_version, onnx_version) do
-    case model_version do
-      "" ->
-        onnx_version
-
-      version ->
-        "v#{version}-#{onnx_version}"
-    end
-  end
-end
-
 defmodule OnnxTestHelper do
   @moduledoc """
   Helpers for running ONNX's suite of tests on imported models.
@@ -136,7 +32,7 @@ defmodule OnnxTestHelper do
       File.mkdir_p!(test_path)
 
       inp = Nx.random_uniform(input_shape, type: {:f, 32})
-      out = Axon.predict(axon_model, params, inp, compiler: EXLA)
+      out = Axon.predict(axon_model, params, inp)
 
       nx_to_tensor_proto(inp, Path.join([test_path, "input_0.pb"]))
       nx_to_tensor_proto(out, Path.join([test_path, "output_0.pb"]))
@@ -167,80 +63,46 @@ defmodule OnnxTestHelper do
   end
 
   @doc """
-  Returns an OnnxModel struct for a specific ResNet.
+  Tests model agains given ONNX test case.
   """
-  def resnet(depth) do
-    %OnnxModel{
-      category: "vision",
-      subcategory: "classification",
-      name: "resnet",
-      long_name: "resnet#{depth}",
-      library: "",
-      model_version: "1",
-      onnx_version: "7"
-    }
-  end
+  def check_onnx_test_case!(type, test_name) do
+    test_path = Path.join(["test", "cases", type, test_name])
+    model_path = Path.join([test_path, "model.onnx"])
+    data_paths = Path.wildcard(Path.join([test_path, "test_data_set_*"]))
 
-  @doc """
-  Tests model against provided test cases.
-  """
-  def test_deserialized_model!(%OnnxModel{} = onnx_model, cache_dir \\ @cache_dir) do
-    :ok = download_and_extract(onnx_model, cache_dir)
-    model_dir = Path.join([cache_dir, OnnxModel.to_long_path(onnx_model)])
-    model_path = Path.join([cache_dir, OnnxModel.to_onnx_path(onnx_model)])
-
-    Logger.debug("Converting model #{onnx_model.long_name} from ONNX to Axon")
     {model, params} = AxonOnnx.Deserialize.__import__(model_path)
 
-    expected_inputs_and_outputs =
-      model_dir
-      |> File.ls!()
-      |> Enum.filter(&File.dir?(Path.join(model_dir, &1)))
-      |> Enum.map(fn test_dirs ->
-        input_paths = Path.wildcard(Path.join([model_dir, test_dirs, "input_*.pb"]))
-        output_paths = Path.wildcard(Path.join([model_dir, test_dirs, "output_*.pb"]))
+    data_paths
+    |> Enum.map(fn data_path ->
+      input_paths = Path.wildcard(Path.join([data_path, "input_*.pb"]))
+      output_paths = Path.wildcard(Path.join([data_path, "output_*.pb"]))
 
-        input_paths
-        |> Enum.zip_with(output_paths, fn inp, out ->
-          {pb_to_tensor(inp), pb_to_tensor(out)}
-        end)
-      end)
-      |> List.flatten()
+      inp_tensors = Enum.map(input_paths, &pb_to_tensor/1)
+      out_tensors = Enum.map(output_paths, &pb_to_tensor/1)
 
-    expected_inputs_and_outputs
-    |> Enum.with_index(fn {expected_in, expected_out}, i ->
-      Logger.debug("#{onnx_model.name}: Test case #{i + 1}...")
-      pred = Axon.predict(model, params, expected_in, compiler: EXLA)
+      # TODO: Update with better container support
+      actual_outputs =
+        case inp_tensors do
+          [input] ->
+            Axon.predict(model, params, input)
 
-      unless Nx.all_close?(pred, expected_out) do
-        raise "test failed for model #{onnx_model.name}, expected #{inspect(pred)} " <>
-                "to be within tolerance of #{inspect(expected_out)}"
+          [_ | _] = inputs ->
+            Axon.predict(model, params, List.to_tuple(inputs))
+        end
+
+      case out_tensors do
+        [expected_output] ->
+          assert_all_close!(expected_output, actual_outputs)
+
+        [_ | _] = expected_outputs ->
+          Enum.zip_with(expected_outputs, Tuple.to_list(actual_outputs), &assert_all_close!/2)
       end
     end)
-
-    :ok
   end
 
-  # Downloads and extracts the model and test cases at the given
-  # path to the test cache.
-  defp download_and_extract(%OnnxModel{} = model, cache_dir \\ @cache_dir) do
-    dir_path = Path.join([cache_dir, OnnxModel.to_short_path(model)])
-    full_path = Path.join([cache_dir, OnnxModel.to_onnx_path(model)])
-    full_url = OnnxModel.to_url(model)
-
-    if File.exists?(full_path) do
-      Logger.debug("Using cached model #{full_path}")
-    else
-      Logger.debug("Downloading from #{full_url}")
-      %{body: response} = Req.get!(full_url)
-      File.mkdir_p!(dir_path)
-
-      response
-      |> Enum.map(fn {fname, bytes} ->
-        with :ok <- File.mkdir_p(Path.join([dir_path, Path.dirname(fname)])) do
-          File.write!(Path.join([dir_path, fname]), bytes)
-        end
-      end)
+  defp assert_all_close!(x, y) do
+    unless Nx.all_close(x, y) == Nx.tensor(1, type: {:u, 8}) do
+      raise "expected #{inspect(x)} to be within tolerance of #{inspect(y)}"
     end
 
     :ok
@@ -326,3 +188,36 @@ defmodule OnnxTestHelper do
     |> Nx.reshape(shape)
   end
 end
+
+require Logger
+
+Logger.info("Generating ONNX test cases...")
+
+# Generate cases
+System.cmd("backend-test-tools", ["generate-data"])
+
+# Get cases path
+{path, _} =
+  System.cmd("python3", [
+    "-c",
+    "from onnx.backend import test; import os; print(os.path.dirname(test.__file__), end='', sep='')"
+  ])
+
+path = Path.join([path, "data"])
+
+# Move all to test directory
+cases_path = Path.join([__DIR__], "cases")
+File.mkdir_p!(cases_path)
+
+path
+|> File.ls!()
+|> Enum.each(fn base_path ->
+  src = Path.join([path, base_path])
+  dst = Path.join([cases_path, base_path])
+  File.cp_r!(src, dst)
+end)
+
+Logger.info("Finished generating test cases")
+
+# Set EXLA as default compiler
+Nx.Defn.default_options(compiler: EXLA)

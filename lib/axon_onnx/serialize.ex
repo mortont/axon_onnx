@@ -49,6 +49,18 @@ defmodule AxonOnnx.Serialize do
 
   defp to_onnx_graph(%Axon{name: output_name} = axon, params_or_initializers) do
     {inputs, param_names, nodes} = to_onnx(axon, [], [], [])
+
+    # Flatten params_or_initializers so it's no longer nested
+    # TODO: This is going to be expensive, find a better way
+    params_or_initializers =
+      params_or_initializers
+      |> Enum.reduce(%{}, fn {layer_name, params}, acc ->
+        params
+        |> Enum.reduce(acc, fn {param_name, v}, acc ->
+          Map.put(acc, layer_name <> "_" <> param_name, v)
+        end)
+      end)
+
     # Building the initializers with Tensors will result in a bunch of expensive
     # copies, so we instead accumulate names and then use them to build initializers
     # later
@@ -96,13 +108,16 @@ defmodule AxonOnnx.Serialize do
     {inputs, param_names, nodes} = to_onnx(parent, inputs, param_names, nodes)
 
     %{name: k_name} = params["kernel"]
+    full_k_name = name <> "_" <> k_name
 
     {node_inputs, updated_param_names} =
       if use_bias do
         %{name: b_name} = params["bias"]
-        {[inp_name, k_name, b_name], [k_name, b_name | param_names]}
+        full_b_name = name <> "_" <> b_name
+
+        {[inp_name, full_k_name, full_b_name], [full_k_name, full_b_name | param_names]}
       else
-        {[inp_name, k_name], [k_name | param_names]}
+        {[inp_name, full_k_name], [full_k_name | param_names]}
       end
 
     node = %Node{
@@ -153,13 +168,16 @@ defmodule AxonOnnx.Serialize do
     # TODO: Dilations
 
     %{name: k_name} = params["kernel"]
+    full_k_name = name <> "_" <> k_name
 
     {node_inputs, updated_param_names} =
       if use_bias do
         %{name: b_name} = params["bias"]
-        {[inp_name, k_name, b_name], [k_name, b_name | param_names]}
+        full_b_name = name <> "_" <> b_name
+
+        {[inp_name, full_k_name, full_b_name], [full_k_name, full_b_name | param_names]}
       else
-        {[inp_name, k_name], [k_name | param_names]}
+        {[inp_name, full_k_name], [full_k_name | param_names]}
       end
 
     node = %Node{
