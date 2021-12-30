@@ -197,7 +197,12 @@ Logger.info("Generating ONNX test cases...")
 System.cmd("backend-test-tools", ["generate-data"])
 
 # Get cases path
-{path, _} = System.cmd("python3", ["-c", "from onnx.backend import test; import os; print(os.path.dirname(test.__file__), end='', sep='')"])
+{path, _} =
+  System.cmd("python3", [
+    "-c",
+    "from onnx.backend import test; import os; print(os.path.dirname(test.__file__), end='', sep='')"
+  ])
+
 path = Path.join([path, "data"])
 
 # Move all to test directory
