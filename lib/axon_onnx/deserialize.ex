@@ -194,6 +194,7 @@ defmodule AxonOnnx.Deserialize do
           to_axon_nx(op_node, axon, params, used_params, fn x ->
             alpha = Nx.divide(1, 6)
             beta = Nx.tensor(0.5)
+
             alpha
             |> Nx.multiply(x)
             |> Nx.add(beta)
