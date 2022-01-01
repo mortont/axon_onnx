@@ -124,6 +124,31 @@ defmodule DeserializeTest do
       # check_onnx_test_case!("node", "test_logsoftmax_example_1_expanded")
     end
 
+    test "MaxPool" do
+      check_onnx_test_case!("node", "test_maxpool_1d_default")
+      check_onnx_test_case!("node", "test_maxpool_2d_default")
+      # TODO: https://github.com/elixir-nx/axon/issues/185
+      # check_onnx_test_case!("node", "test_maxpool_2d_dilations")
+      check_onnx_test_case!("node", "test_maxpool_2d_pads")
+      # TODO: Adjust pads for same lower behavior
+      # check_onnx_test_case!("node", "test_maxpool_2d_same_lower")
+      check_onnx_test_case!("node", "test_maxpool_2d_same_upper")
+      check_onnx_test_case!("node", "test_maxpool_2d_strides")
+      check_onnx_test_case!("node", "test_maxpool_2d_uint8")
+      check_onnx_test_case!("node", "test_maxpool_2d_precomputed_pads")
+      check_onnx_test_case!("node", "test_maxpool_2d_precomputed_same_upper")
+      check_onnx_test_case!("node", "test_maxpool_2d_precomputed_strides")
+      # TODO: ArgMax
+      # check_onnx_test_case!("node", "test_maxpool_with_argmax_2d_precomputed_pads")
+      # check_onnx_test_case!("node", "test_maxpool_with_argmax_2d_precomputed_strides")
+      check_onnx_test_case!("node", "test_maxpool_3d_default")
+
+      # TODO: Reevaluate this behavior
+      assert_raise ArgumentError, ~r/invalid ceil_mode/, fn ->
+        check_onnx_test_case!("node", "test_maxpool_2d_ceil")
+      end
+    end
+
     test "Neg" do
       check_onnx_test_case!("node", "test_neg")
       # TODO: https://github.com/elixir-nx/axon/issues/184
