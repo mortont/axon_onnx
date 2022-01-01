@@ -674,11 +674,13 @@ defmodule AxonOnnx.Deserialize do
          axon,
          params,
          used_params
-       ) when is_list(inputs) do
+       )
+       when is_list(inputs) do
     inputs = for inp <- inputs, do: input_or_param!(inp, params, axon, used_params)
-    %{ "axis" => axis } = options!(attrs)
+    %{"axis" => axis} = options!(attrs)
 
-    {Map.put(axon, output_name, Axon.concatenate(inputs, [axis: axis, name: output_name])), used_params}
+    {Map.put(axon, output_name, Axon.concatenate(inputs, axis: axis, name: output_name)),
+     used_params}
   end
 
   # Builds an Axon layer which returns a new layer upsampling the input
@@ -692,35 +694,37 @@ defmodule AxonOnnx.Deserialize do
          used_params
        ) do
     %Axon{output_shape: shape} = inp = input_or_param!(inp, params, axon, used_params)
-    %{ "mode" => mode } = options!(attrs)
+    %{"mode" => mode} = options!(attrs)
     scale = input_or_param!(scale, params, axon, used_params)
-     
+
     # Ignoring the first two 1.0 values to obtain the same dimension of scale_values 
     [_, _ | shape] = Tuple.to_list(shape)
 
     # Converting mode from string to atom to ensure Axon init and predict works correctly
-    method = 
+    method =
       cond do
-        is_binary(mode) -> String.to_atom(mode) 
+        is_binary(mode) -> String.to_atom(mode)
         is_atom(mode) -> mode
         true -> raise ArgumentError, "unsupported mode type. Must be string or atom, got: #{mode}"
       end
 
-    output_shape = 
+    output_shape =
       case Nx.to_flat_list(scale) do
         [1.0, 1.0 | scale_values] ->
           scale_values
           |> Enum.zip_with(shape, fn x, y -> floor(x * y) end)
           |> List.to_tuple()
-        [s1, s2 | _ ] ->
-          raise ArgumentError, "unspported scale format, first two scale values must be 1, got #{s1} and #{s2}"
+
+        [s1, s2 | _] ->
+          raise ArgumentError,
+                "unspported scale format, first two scale values must be 1, got #{s1} and #{s2}"
       end
 
     {Map.put(
-        axon, 
-        output_name, 
-        Axon.resize(inp, output_shape, [method: method, name: output_name])), 
-     used_params}
+       axon,
+       output_name,
+       Axon.resize(inp, output_shape, method: method, name: output_name)
+     ), used_params}
   end
 
   defp to_axon_split(
@@ -730,12 +734,14 @@ defmodule AxonOnnx.Deserialize do
          used_params
        ) do
     inp = input_or_param!(inp, params, axon, used_params)
-    %{ "axis" => axis, "split" => split_sizes } = options!(attrs)
+    %{"axis" => axis, "split" => split_sizes} = options!(attrs)
 
-    split_layers = Axon.split(inp, split_sizes, [axis: axis, name: output_names])
-    updated_axon = Enum.reduce(Tuple.to_list(split_layers), axon, fn output, new_axon ->
-      Map.put(new_axon, output.name, output)
-    end)
+    split_layers = Axon.split(inp, split_sizes, axis: axis, name: output_names)
+
+    updated_axon =
+      Enum.reduce(Tuple.to_list(split_layers), axon, fn output, new_axon ->
+        Map.put(new_axon, output.name, output)
+      end)
 
     {updated_axon, used_params}
   end
