@@ -83,6 +83,9 @@ defmodule OnnxTestHelper do
       # TODO: Update with better container support
       actual_outputs =
         case inp_tensors do
+          [] ->
+            Axon.predict(model, params, {})
+
           [input] ->
             Axon.predict(model, params, input)
 

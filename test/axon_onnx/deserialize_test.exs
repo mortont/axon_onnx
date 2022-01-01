@@ -43,6 +43,12 @@ defmodule DeserializeTest do
       # check_onnx_test_case!("node", "test_celu_expanded")
     end
 
+    test "Constant" do
+      check_onnx_test_case!("node", "test_constant")
+      # TODO
+      # check_onnx_test_case!("node", "test_constant_pad")
+    end
+
     test "Cos" do
       check_onnx_test_case!("node", "test_cos")
       # TODO: https://github.com/elixir-nx/axon/issues/184
