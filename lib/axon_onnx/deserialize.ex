@@ -145,7 +145,6 @@ defmodule AxonOnnx.Deserialize do
           to_axon_binary_op(op_node, axon, params, used_params, fn {x, y} -> Nx.divide(x, y) end)
 
         "Elu" ->
-          # TODO(seanmor5): alpha attr
           to_axon_activation(op_node, axon, params, used_params, :elu, alpha: {"alpha", 1.0})
 
         "Equal" ->
@@ -358,7 +357,7 @@ defmodule AxonOnnx.Deserialize do
   #
   # TODO(seanmor5): Replace with Axon.layer when we have better shape
   # inference
-  defp to_axon_nx(%Node{input: [input], output: [output_name]}, axon, params, used_params, fun) do
+  defp to_axon_nx(%Node{input: [input], output: [output_name]}, axon, _params, used_params, fun) do
     axon_input = axon!(input, axon)
     updated_axon = Map.put(axon, output_name, Axon.nx(axon_input, fun, name: output_name))
     {updated_axon, used_params}
@@ -372,7 +371,7 @@ defmodule AxonOnnx.Deserialize do
   defp to_axon_reduction(
          %Node{input: [input], attribute: attrs, output: [output_name]},
          axon,
-         params,
+         _params,
          used_params,
          reduce_fun
        ) do
@@ -484,7 +483,7 @@ defmodule AxonOnnx.Deserialize do
   defp to_axon_binary_op(
          %Node{input: [x, y], output: [output_name]},
          axon,
-         params,
+         _params,
          used_params,
          binary_op
        ) do
@@ -507,7 +506,7 @@ defmodule AxonOnnx.Deserialize do
   defp to_axon_max_pool(
          %Node{op_type: "MaxPool", input: [inp], attribute: attrs, output: [output_name]},
          axon,
-         params,
+         _params,
          used_params
        ) do
     max_pool_options = options!(attrs)
@@ -678,7 +677,7 @@ defmodule AxonOnnx.Deserialize do
   defp to_axon_activation(
          %Node{attribute: attrs, input: [inp], output: [output_name]},
          axon,
-         params,
+         _params,
          used_params,
          activation,
          opts \\ []
@@ -704,7 +703,7 @@ defmodule AxonOnnx.Deserialize do
   defp to_axon_concat(
          %Node{attribute: attrs, input: inputs, output: [output_name]},
          axon,
-         params,
+         _params,
          used_params
        )
        when is_list(inputs) do
@@ -762,7 +761,7 @@ defmodule AxonOnnx.Deserialize do
   defp to_axon_split(
          %Node{attribute: attrs, input: [inp], output: output_names},
          axon,
-         params,
+         _params,
          used_params
        ) do
     inp = axon!(inp, axon)
@@ -781,7 +780,7 @@ defmodule AxonOnnx.Deserialize do
   defp to_axon_global_pool(
          %Node{op_type: op_type, attribute: attrs, input: [inp], output: [output_name]},
          axon,
-         params,
+         _params,
          used_params
        ) do
     inp = axon!(inp, axon)
@@ -861,7 +860,7 @@ defmodule AxonOnnx.Deserialize do
   defp to_axon_reshape(
          %Node{op_type: "Reshape", input: [inp], attribute: attrs, output: [output_name]},
          axon,
-         params,
+         _params,
          used_params
        ) do
     reshape_options = options!(attrs)
@@ -878,7 +877,7 @@ defmodule AxonOnnx.Deserialize do
   defp to_axon_flatten(
          %Node{op_type: "Flatten", input: [inp], output: [output_name]},
          axon,
-         params,
+         _params,
          used_params
        ) do
     inp = axon!(inp, axon)
@@ -891,7 +890,7 @@ defmodule AxonOnnx.Deserialize do
   defp to_axon_transpose(
          %Node{op_type: "Transpose", input: [input], attribute: attrs, output: [output_name]},
          axon,
-         params,
+         _params,
          used_params
        ) do
     inp = axon!(input, axon)
@@ -912,7 +911,7 @@ defmodule AxonOnnx.Deserialize do
   defp to_axon_unsqueeze(
          %Node{op_type: "Unsqueeze", input: [input], attribute: attrs, output: [output_name]},
          axon,
-         params,
+         _params,
          used_params
        ) do
     unsqueeze_options = options!(attrs)
