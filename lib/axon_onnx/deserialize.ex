@@ -822,10 +822,10 @@ defmodule AxonOnnx.Deserialize do
     updated_axon =
       case op_type do
         "GlobalAveragePool" ->
-          Map.put(axon, output_name, Axon.global_avg_pool(inp, name: output_name))
+          Map.put(axon, output_name, Axon.global_avg_pool(inp, name: output_name, keep_axes: true))
 
         "GlobalMaxPool" ->
-          Map.put(axon, output_name, Axon.global_max_pool(inp, name: output_name))
+          Map.put(axon, output_name, Axon.global_max_pool(inp, name: output_name, keep_axes: true))
 
         "GlobalLpPool" ->
           lp_pool_options = options!(attrs)

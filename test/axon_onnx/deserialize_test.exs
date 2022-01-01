@@ -71,6 +71,16 @@ defmodule DeserializeTest do
       # check_onnx_test_case!("node", "test_floor_example")
     end
 
+    test "GlobalAveragePool" do
+      check_onnx_test_case!("node", "test_globalaveragepool")
+      check_onnx_test_case!("node", "test_globalaveragepool_precomputed")
+    end
+
+    test "GlobalMaxPool" do
+      check_onnx_test_case!("node", "test_globalmaxpool")
+      check_onnx_test_case!("node", "test_globalmaxpool_precomputed")
+    end
+
     test "HardSigmoid" do
       check_onnx_test_case!("node", "test_hardsigmoid")
       check_onnx_test_case!("node", "test_hardsigmoid_default")
