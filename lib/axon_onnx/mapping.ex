@@ -8,7 +8,7 @@ defmodule AxonOnnx.Mapping do
     {:UNDEFINED, :UNDEFINED},
     {:FLOAT, 4},
     {:UINT8, 1},
-    {:INT8, 1}, 
+    {:INT8, 1},
     {:UINT16, 2},
     {:INT16, 2},
     {:INT32, 4},
@@ -61,5 +61,4 @@ defmodule AxonOnnx.Mapping do
   def tensor_type_atom_to_storage_type, do: @my_tensor_type_atom_to_storage_type
   def storage_tensor_type_to_field, do: @my_storage_tensor_type_to_field
   def tensor_type_to_nx_size, do: @my_tensor_type_to_nx_size
-
 end

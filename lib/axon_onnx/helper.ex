@@ -21,7 +21,6 @@ defmodule AxonOnnx.Helper do
   alias Onnx.TensorShapeProto, as: Shape
   alias Onnx.TensorShapeProto.Dimension, as: Dimension
 
-  
   # Checks whether a variable is enumerable and not a struct
   defp is_enum?(var) do
     is_list(var) or
@@ -31,7 +30,7 @@ defmodule AxonOnnx.Helper do
 
   defp data_type_id_from_atom(data_type) when is_atom(data_type) do
     # Get the data_type number from atom
-    Enum.find(Placeholder.DataType.constants, fn {n, t} ->
+    Enum.find(Placeholder.DataType.constants(), fn {n, t} ->
       t == data_type && n
     end)
   end
@@ -50,20 +49,27 @@ defmodule AxonOnnx.Helper do
   end
 
   defp parse_data_type(data_type) do
-    parsed_data_type = cond do
-      is_atom(data_type) -> 
-        # Check for an existing type identified by the atom
-        data_type_id_from_atom(data_type)
-      is_number(data_type) -> 
-        # Check for an existing type identified by the number
-        Enum.fetch!(Placeholder.DataType.constants, data_type)
-      true ->
-        nil
-    end
+    parsed_data_type =
+      cond do
+        is_atom(data_type) ->
+          # Check for an existing type identified by the atom
+          data_type_id_from_atom(data_type)
+
+        is_number(data_type) ->
+          # Check for an existing type identified by the number
+          Enum.fetch!(Placeholder.DataType.constants(), data_type)
+
+        true ->
+          nil
+      end
+
     if parsed_data_type == nil or parsed_data_type == :error do
-      max_data_type_id = Enum.count(Placeholder.DataType.constants)-1
-      raise ArgumentError, "Wrong data_type format. Expected atom or number<#{max_data_type_id}, got: #{data_type}"
+      max_data_type_id = Enum.count(Placeholder.DataType.constants()) - 1
+
+      raise ArgumentError,
+            "Wrong data_type format. Expected atom or number<#{max_data_type_id}, got: #{data_type}"
     end
+
     parsed_data_type
   end
 
@@ -77,14 +83,19 @@ defmodule AxonOnnx.Helper do
   def make_tensor(name, data_type, dims, vals, raw \\ false) do
     {data_type_id, data_type_atom} = parse_data_type(data_type)
 
-    if data_type_id == 8 and raw == true, do:
-      raise ArgumentError, "Can not use raw_data to store string type"
+    if data_type_id == 8 and raw == true,
+      do: raise(ArgumentError, "Can not use raw_data to store string type")
 
-    itemsize = Mapping.tensor_type_to_nx_size[data_type_atom]
-    expected_size = raw == false && 1 || itemsize
+    itemsize = Mapping.tensor_type_to_nx_size()[data_type_atom]
+    expected_size = (raw == false) && 1 || itemsize
     expected_size = Enum.reduce(Tuple.to_list(dims), expected_size, fn val, acc -> acc * val end)
-    if Enum.count(vals) != expected_size, do:
-      raise ArgumentError, "Number of values does not match tensor's size. Expected #{expected_size}, but it is #{Enum.count(vals)}. "
+
+    if Enum.count(vals) != expected_size,
+      do:
+        raise(
+          ArgumentError,
+          "Number of values does not match tensor's size. Expected #{expected_size}, but it is #{Enum.count(vals)}. "
+        )
 
     tensor = %Placeholder{
       data_type: data_type_id,
@@ -93,27 +104,33 @@ defmodule AxonOnnx.Helper do
       # float_data: (!raw && vals) || [],
       dims: Tuple.to_list(dims)
     }
-    
+
     # TODO @stefkohub add support for complex values
     if raw == true do
-      %{ tensor | raw_data: vals }
+      %{tensor | raw_data: vals}
     else
-      tvalue = cond do
-        # float16/bfloat16 are stored as uint16
-        data_type_atom == :FLOAT16 or data_type_atom == :BFLOAT16 -> 
-          Nx.tensor(vals, type: {:f, 16})
-          |> Nx.bitcast({:u, 16})
-          |> Nx.to_flat_list
-        data_type_atom != :COMPLEX64 and data_type_atom != :COMPLEX128 ->
-          vals
-        true -> raise ArgumentError, "Unsupported data type: #{data_type_atom}"
-      end
+      tvalue =
+        cond do
+          # float16/bfloat16 are stored as uint16
+          data_type_atom == :FLOAT16 or data_type_atom == :BFLOAT16 ->
+            Nx.tensor(vals, type: {:f, 16})
+            |> Nx.bitcast({:u, 16})
+            |> Nx.to_flat_list()
+
+          data_type_atom != :COMPLEX64 and data_type_atom != :COMPLEX128 ->
+            vals
+
+          true ->
+            raise ArgumentError, "Unsupported data type: #{data_type_atom}"
+        end
+
       Map.replace(
         tensor,
-        Mapping.storage_tensor_type_to_field[
-          Mapping.tensor_type_atom_to_storage_type[data_type_atom]
+        Mapping.storage_tensor_type_to_field()[
+          Mapping.tensor_type_atom_to_storage_type()[data_type_atom]
         ],
-        tvalue) 
+        tvalue
+      )
     end
   end
 
@@ -146,6 +163,7 @@ defmodule AxonOnnx.Helper do
                     Enum.count(shape_denotation) != tuple_size(shape) do
                  raise "Invalid shape_denotation. Must be the same length as shape."
                end
+
                %Shape{dim: create_dimensions(shape, shape_denotation)}
              else
                %Shape{}
@@ -197,7 +215,16 @@ defmodule AxonOnnx.Helper do
   @doc """
     Creates a GraphProto 
   """
-  def make_graph(nodes, name, inputs, outputs, initializer \\ [], doc_string \\ "", value_info \\ [], sparse_initializer \\ []) do
+  def make_graph(
+        nodes,
+        name,
+        inputs,
+        outputs,
+        initializer \\ [],
+        doc_string \\ "",
+        value_info \\ [],
+        sparse_initializer \\ []
+      ) do
     %Graph{
       doc_string: doc_string,
       initializer: initializer,
@@ -222,7 +249,8 @@ defmodule AxonOnnx.Helper do
       ir_version: @onnx_ir_version,
       metadata_props: Keyword.get(kwargs, :metadata_props, []),
       model_version: Keyword.get(kwargs, :model_version, 1),
-      opset_import: Keyword.get(kwargs, :opset_imports, [%Opset{domain: "", version: @onnx_opset_version}]),
+      opset_import:
+        Keyword.get(kwargs, :opset_imports, [%Opset{domain: "", version: @onnx_opset_version}]),
       producer_name: Keyword.get(kwargs, :producer_name, ""),
       producer_version: Keyword.get(kwargs, :producer_version, "0.0.1-sf"),
       training_info: Keyword.get(kwargs, :training_info, [])
@@ -357,7 +385,15 @@ defmodule AxonOnnx.Helper do
         kwargs (dict): the attributes of the node.  The acceptable values
             are documented in :func:`make_attribute`.
   """
-  def make_node(op_type, inputs, outputs, name \\ "", kwargs \\ [], doc_string \\ "", domain \\ "") do
+  def make_node(
+        op_type,
+        inputs,
+        outputs,
+        name \\ "",
+        kwargs \\ [],
+        doc_string \\ "",
+        domain \\ ""
+      ) do
     %Node{
       op_type: op_type,
       input: inputs,
