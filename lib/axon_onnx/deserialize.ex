@@ -10,6 +10,8 @@ defmodule AxonOnnx.Deserialize do
   alias Onnx.TensorShapeProto, as: Shape
   alias Onnx.TensorShapeProto.Dimension, as: Dimension
 
+  require Logger
+
   # TODO(seanmor5): Currently we do a lot of potentially expensive operations
   # eagerly (especially when manipulating parameters), we can potentially make
   # them part of the model or alternatively return an initialization function
@@ -66,8 +68,8 @@ defmodule AxonOnnx.Deserialize do
 
             Map.put(acc, name, Axon.input(input_shape))
 
-          _ ->
-            raise ArgumentError, "unsupported input type"
+          unsupported ->
+            raise ArgumentError, "unsupported input type #{inspect(unsupported)}"
         end
       end
     end)
@@ -124,8 +126,7 @@ defmodule AxonOnnx.Deserialize do
           to_axon_nx(op_node, axon, params, used_params, &Nx.ceil/1)
 
         "Celu" ->
-          # TODO(seanmor5): alpha attr
-          to_axon_activation(op_node, axon, params, used_params, :celu)
+          to_axon_activation(op_node, axon, params, used_params, :celu, alpha: {"alpha", 1.0})
 
         "Constant" ->
           to_axon_constant(op_node, axon, params, used_params)
@@ -146,8 +147,7 @@ defmodule AxonOnnx.Deserialize do
           to_axon_binary_op(op_node, axon, params, used_params, fn {x, y} -> Nx.divide(x, y) end)
 
         "Elu" ->
-          # TODO(seanmor5): alpha attr
-          to_axon_activation(op_node, axon, params, used_params, :elu)
+          to_axon_activation(op_node, axon, params, used_params, :elu, alpha: {"alpha", 1.0})
 
         "Equal" ->
           to_axon_binary_op(op_node, axon, params, used_params, fn {x, y} -> Nx.equal(x, y) end)
@@ -185,14 +185,32 @@ defmodule AxonOnnx.Deserialize do
           end)
 
         "HardSigmoid" ->
-          # TODO(seanmor5): alpha, beta attrs
-          to_axon_activation(op_node, axon, params, used_params, :hard_sigmoid)
+          to_axon_activation(op_node, axon, params, used_params, :hard_sigmoid,
+            alpha: {"alpha", 0.2},
+            beta: {"beta", 0.5}
+          )
+
+        "HardSwish" ->
+          # TODO: Consider adding to Axon
+          to_axon_nx(op_node, axon, params, used_params, fn x ->
+            alpha = Nx.divide(1, 6)
+            beta = Nx.tensor(0.5)
+
+            alpha
+            |> Nx.multiply(x)
+            |> Nx.add(beta)
+            |> Nx.min(1)
+            |> Nx.max(0)
+            |> Nx.multiply(x)
+          end)
 
         "Identity" ->
           to_axon_nx(op_node, axon, params, used_params, & &1)
 
         "LeakyRelu" ->
-          to_axon_activation(op_node, axon, params, used_params, :leaky_relu)
+          to_axon_activation(op_node, axon, params, used_params, :leaky_relu,
+            alpha: {"alpha", 0.01}
+          )
 
         "Less" ->
           to_axon_binary_op(op_node, axon, params, used_params, fn {x, y} -> Nx.less(x, y) end)
@@ -204,6 +222,9 @@ defmodule AxonOnnx.Deserialize do
 
         "Log" ->
           to_axon_nx(op_node, axon, params, used_params, &Nx.log/1)
+
+        "LogSoftmax" ->
+          to_axon_activation(op_node, axon, params, used_params, :log_softmax, axis: {"axis", -1})
 
         "MatMul" ->
           to_axon_dense(op_node, axon, params, used_params)
@@ -250,8 +271,10 @@ defmodule AxonOnnx.Deserialize do
           to_axon_nx(op_node, axon, params, used_params, &Nx.round/1)
 
         "Selu" ->
-          # TODO(seanmor5): alpha, gamma attrs
-          to_axon_activation(op_node, axon, params, used_params, :selu)
+          to_axon_activation(op_node, axon, params, used_params, :selu,
+            alpha: {"alpha", 1.67326319217681884765625},
+            gamma: {"gamma", 1.05070102214813232421875}
+          )
 
         "Shape" ->
           to_axon_nx(op_node, axon, params, used_params, fn x ->
@@ -281,8 +304,7 @@ defmodule AxonOnnx.Deserialize do
           end)
 
         "Softmax" ->
-          # TODO(seanmor5): axis attr
-          to_axon_activation(op_node, axon, params, used_params, :softmax)
+          to_axon_activation(op_node, axon, params, used_params, :softmax, axis: {"axis", -1})
 
         "Softplus" ->
           to_axon_activation(op_node, axon, params, used_params, :softplus)
@@ -337,8 +359,8 @@ defmodule AxonOnnx.Deserialize do
   #
   # TODO(seanmor5): Replace with Axon.layer when we have better shape
   # inference
-  defp to_axon_nx(%Node{input: [input], output: [output_name]}, axon, params, used_params, fun) do
-    axon_input = input_or_param!(input, params, axon, used_params)
+  defp to_axon_nx(%Node{input: [input], output: [output_name]}, axon, _params, used_params, fun) do
+    axon_input = axon!(input, axon)
     updated_axon = Map.put(axon, output_name, Axon.nx(axon_input, fun, name: output_name))
     {updated_axon, used_params}
   end
@@ -351,7 +373,7 @@ defmodule AxonOnnx.Deserialize do
   defp to_axon_reduction(
          %Node{input: [input], attribute: attrs, output: [output_name]},
          axon,
-         params,
+         _params,
          used_params,
          reduce_fun
        ) do
@@ -361,7 +383,7 @@ defmodule AxonOnnx.Deserialize do
     keepdims = reduce_options["keepdims"]
     keep_axes = if keepdims == 1, do: true, else: false
 
-    axon_input = input_or_param!(input, params, axon, used_params)
+    axon_input = axon!(input, axon)
 
     updated_axon =
       Map.put(
@@ -389,8 +411,8 @@ defmodule AxonOnnx.Deserialize do
        ) do
     [input, weight | maybe_bias] = inputs
 
-    input = input_or_param!(input, params, axon, used_params)
-    weight = input_or_param!(weight, params, axon, used_params)
+    input = axon!(input, axon)
+    weight = param!(weight, params)
 
     case op_type do
       "MatMul" ->
@@ -444,7 +466,7 @@ defmodule AxonOnnx.Deserialize do
             Map.put(used_params, output_name <> "_kernel", weight)
           else
             [bias] = maybe_bias
-            bias = input_or_param!(bias, params, axon, used_params)
+            bias = param!(bias, params)
 
             used_params
             |> Map.put(output_name <> "_kernel", weight)
@@ -463,12 +485,12 @@ defmodule AxonOnnx.Deserialize do
   defp to_axon_binary_op(
          %Node{input: [x, y], output: [output_name]},
          axon,
-         params,
+         _params,
          used_params,
          binary_op
        ) do
-    inp1 = input_or_param!(x, params, axon, used_params)
-    inp2 = input_or_param!(y, params, axon, used_params)
+    inp1 = axon!(x, axon)
+    inp2 = axon!(y, axon)
 
     updated_axon =
       case binary_op do
@@ -486,20 +508,51 @@ defmodule AxonOnnx.Deserialize do
   defp to_axon_max_pool(
          %Node{op_type: "MaxPool", input: [inp], attribute: attrs, output: [output_name]},
          axon,
-         params,
+         _params,
          used_params
        ) do
     max_pool_options = options!(attrs)
 
     kernel_shape = max_pool_options["kernel_shape"]
-    strides = max_pool_options["strides"]
+    ceil_mode = max_pool_options["ceil_mode"] || 0
+    auto_pad = max_pool_options["auto_pad"] || "NOTSET"
+    storage_order = max_pool_options["storage_order"]
     pads = max_pool_options["pads"]
-    auto_pad = max_pool_options["auto_pad"]
+    strides = max_pool_options["strides"]
+    dilations = max_pool_options["dilations"]
 
+    # Kernel size is a list of integers
     kernel_size = List.to_tuple(kernel_shape)
+
+    # Axon only supports default ceil_mode right now
+    if ceil_mode != 0 do
+      raise ArgumentError,
+            "invalid ceil_mode #{inspect(ceil_mode)}, Axon only supports" <>
+              " ceil_mode of 0"
+    end
+
+    # Storage Order is not an Axon concern
+    if storage_order do
+      Logger.warning(
+        "Storage order is not supported by Axon and is instead a backend-specific" <>
+          " detail. Your model might behave differently from the imported version if" <>
+          " the storage order differs"
+      )
+    end
+
+    # Axon default strides are equal to the kernel shape (Keras behavior)
+    # where as strides default to 1 in ONNX
+    strides =
+      if strides do
+        strides
+      else
+        List.duplicate(1, tuple_size(kernel_size))
+      end
+
+    # Compute padding from auto_pad and pads attributes
     padding_config = padding!(auto_pad, pads)
 
-    inp = input_or_param!(inp, params, axon, used_params)
+    inp = axon!(inp, axon)
 
     updated_axon =
       Map.put(
@@ -509,6 +562,7 @@ defmodule AxonOnnx.Deserialize do
           kernel_size: kernel_size,
           strides: strides,
           padding: padding_config,
+          dilations: dilations,
           name: output_name
         )
       )
@@ -533,7 +587,7 @@ defmodule AxonOnnx.Deserialize do
 
     [inp, kernel | maybe_bias] = input
 
-    axon_inp = input_or_param!(inp, params, axon, used_params)
+    axon_inp = axon!(inp, axon)
 
     # Parameters can either be embedded in the graph as constants or
     # passed as parameters
@@ -600,10 +654,10 @@ defmodule AxonOnnx.Deserialize do
 
     [data, pads | maybe_constant] = inputs
 
-    inp = input_or_param!(data, params, axon, used_params)
+    inp = axon!(data, axon)
     # TODO(seanmor5): Pads should probably be scrubbed from the graph
     # and parameters
-    pads = input_or_param!(pads, params, axon, used_params)
+    pads = param!(pads, params)
 
     padding_config =
       pads.ints
@@ -636,10 +690,10 @@ defmodule AxonOnnx.Deserialize do
          params,
          used_params
        ) do
-    inp = input_or_param!(inp, params, axon, used_params)
+    inp = axon!(inp, axon)
 
-    gamma = input_or_param!(gamma, params, axon, used_params)
-    beta = input_or_param!(beta, params, axon, used_params)
+    gamma = param!(gamma, params)
+    beta = param!(beta, params)
 
     updated_axon = Map.put(axon, output_name, Axon.batch_norm(inp, name: output_name))
 
@@ -654,17 +708,107 @@ defmodule AxonOnnx.Deserialize do
   # Builds an axon activation layer with the given activation function.
   # `activation` must be a legitimate Axon activation. `activation` functions
   # are all element-wise with 1 input. Optionally has activation options.
-  #
-  # TODO(seanmor5): Handle activation options
   defp to_axon_activation(
-         %Node{input: [inp], output: [output_name]},
+         %Node{attribute: attrs, input: [inp], output: [output_name]},
+         axon,
+         _params,
+         used_params,
+         activation,
+         opts \\ []
+       ) do
+    attrs = options!(attrs)
+
+    opts =
+      Enum.map(opts, fn {k, {name, default}} ->
+        if attrs[name] do
+          {k, attrs[name]}
+        else
+          {k, default}
+        end
+      end)
+
+    opts = [name: output_name] ++ opts
+    inp = axon!(inp, axon)
+    {Map.put(axon, output_name, Axon.activation(inp, activation, opts)), used_params}
+  end
+
+  # Builds an Axon layer which returns a new layer with input values 
+  # concatenated on the given axis 
+  defp to_axon_concat(
+         %Node{attribute: attrs, input: inputs, output: [output_name]},
+         axon,
+         _params,
+         used_params
+       )
+       when is_list(inputs) do
+    inputs = for inp <- inputs, do: axon!(inp, axon)
+    %{"axis" => axis} = options!(attrs)
+
+    {Map.put(axon, output_name, Axon.concatenate(inputs, axis: axis, name: output_name)),
+     used_params}
+  end
+
+  # Builds an Axon layer which returns a new layer upsampling the input
+  # layer. The scale activation layer must contain 1.0 as the first two values
+  # Each dimension value of the output layer is:
+  # output_dimension = floor(input_dimension * scale)
+  defp to_axon_upsample(
+         %Node{attribute: attrs, input: [inp, scale], output: [output_name]},
          axon,
          params,
-         used_params,
-         activation
+         used_params
        ) do
-    inp = input_or_param!(inp, params, axon, used_params)
-    {Map.put(axon, output_name, Axon.activation(inp, activation, name: output_name)), used_params}
+    %Axon{output_shape: shape} = inp = axon!(inp, axon)
+    %{"mode" => mode} = options!(attrs)
+    scale = param!(scale, params)
+
+    # Ignoring the first two 1.0 values to obtain the same dimension of scale_values 
+    [_, _ | shape] = Tuple.to_list(shape)
+
+    # Converting mode from string to atom to ensure Axon init and predict works correctly
+    method =
+      cond do
+        is_binary(mode) -> String.to_atom(mode)
+        is_atom(mode) -> mode
+        true -> raise ArgumentError, "unsupported mode type. Must be string or atom, got: #{mode}"
+      end
+
+    output_shape =
+      case Nx.to_flat_list(scale) do
+        [1.0, 1.0 | scale_values] ->
+          scale_values
+          |> Enum.zip_with(shape, fn x, y -> floor(x * y) end)
+          |> List.to_tuple()
+
+        [s1, s2 | _] ->
+          raise ArgumentError,
+                "unspported scale format, first two scale values must be 1, got #{s1} and #{s2}"
+      end
+
+    {Map.put(
+       axon,
+       output_name,
+       Axon.resize(inp, output_shape, method: method, name: output_name)
+     ), used_params}
+  end
+
+  defp to_axon_split(
+         %Node{attribute: attrs, input: [inp], output: output_names},
+         axon,
+         _params,
+         used_params
+       ) do
+    inp = axon!(inp, axon)
+    %{"axis" => axis, "split" => split_sizes} = options!(attrs)
+
+    split_layers = Axon.split(inp, split_sizes, axis: axis, name: output_names)
+
+    updated_axon =
+      Enum.reduce(Tuple.to_list(split_layers), axon, fn output, new_axon ->
+        Map.put(new_axon, output.name, output)
+      end)
+
+    {updated_axon, used_params}
   end
 
   # Builds an Axon layer which returns a new layer with input values 
@@ -749,18 +893,18 @@ defmodule AxonOnnx.Deserialize do
   defp to_axon_global_pool(
          %Node{op_type: op_type, attribute: attrs, input: [inp], output: [output_name]},
          axon,
-         params,
+         _params,
          used_params
        ) do
-    inp = input_or_param!(inp, params, axon, used_params)
+    inp = axon!(inp, axon)
 
     updated_axon =
       case op_type do
         "GlobalAveragePool" ->
-          Map.put(axon, output_name, Axon.global_avg_pool(inp, name: output_name))
+          Map.put(axon, output_name, Axon.global_avg_pool(inp, name: output_name, keep_axes: true))
 
         "GlobalMaxPool" ->
-          Map.put(axon, output_name, Axon.global_max_pool(inp, name: output_name))
+          Map.put(axon, output_name, Axon.global_max_pool(inp, name: output_name, keep_axes: true))
 
         "GlobalLpPool" ->
           lp_pool_options = options!(attrs)
@@ -829,12 +973,12 @@ defmodule AxonOnnx.Deserialize do
   defp to_axon_reshape(
          %Node{op_type: "Reshape", input: [inp], attribute: attrs, output: [output_name]},
          axon,
-         params,
+         _params,
          used_params
        ) do
     reshape_options = options!(attrs)
 
-    inp = input_or_param!(inp, params, axon, used_params)
+    inp = axon!(inp, axon)
 
     new_shape =
       reshape_options["shape"]
@@ -846,10 +990,10 @@ defmodule AxonOnnx.Deserialize do
   defp to_axon_flatten(
          %Node{op_type: "Flatten", input: [inp], output: [output_name]},
          axon,
-         params,
+         _params,
          used_params
        ) do
-    inp = input_or_param!(inp, params, axon, used_params)
+    inp = axon!(inp, axon)
 
     {Map.put(axon, output_name, Axon.flatten(inp, name: output_name)), used_params}
   end
@@ -859,10 +1003,10 @@ defmodule AxonOnnx.Deserialize do
   defp to_axon_transpose(
          %Node{op_type: "Transpose", input: [input], attribute: attrs, output: [output_name]},
          axon,
-         params,
+         _params,
          used_params
        ) do
-    inp = input_or_param!(input, params, axon, used_params)
+    inp = axon!(input, axon)
 
     transpose_options = options!(attrs)
 
@@ -880,12 +1024,12 @@ defmodule AxonOnnx.Deserialize do
   defp to_axon_unsqueeze(
          %Node{op_type: "Unsqueeze", input: [input], attribute: attrs, output: [output_name]},
          axon,
-         params,
+         _params,
          used_params
        ) do
     unsqueeze_options = options!(attrs)
 
-    inp = input_or_param!(input, params, axon, used_params)
+    inp = axon!(input, axon)
 
     axes = unsqueeze_options["axes"]
 
@@ -977,29 +1121,40 @@ defmodule AxonOnnx.Deserialize do
     |> Nx.reshape(shape)
   end
 
-  defp input_or_param!(name, params, axon, used_params) do
-    cond do
-      Map.has_key?(params, name) ->
-        params[name]
+  # Retrieves value `name` from current built graphs, asserting
+  # that the given input is a graph operation and not a parameter
+  defp axon!(name, axon) do
+    if Map.has_key?(axon, name) do
+      axon[name]
+    else
+      raise CompileError,
+            "unable to build model from ONNX graph, expected value #{name}" <>
+              " to be a graph input, but it was not present in built" <>
+              " graphs"
+    end
+  end
 
-      Map.has_key?(axon, name) ->
-        axon[name]
-
-      Map.has_key?(used_params, name) ->
-        used_params[name]
-
-      true ->
-        raise "unable to find value with name #{inspect(name)} in" <>
-                " parameters or model"
+  defp param!(name, params) do
+    if Map.has_key?(params, name) do
+      params[name]
+    else
+      raise CompileError,
+            "unable to build model from ONNX graph, expected value #{name}" <>
+              " to be a parameter input, but it was not present in" <>
+              " initializers"
     end
   end
 
   defp padding!(auto_pad, pads) do
     case auto_pad do
       val when val == "NOTSET" or val == nil ->
-        pads
-        |> Enum.chunk_every(2)
-        |> Enum.zip()
+        if pads do
+          pads
+          |> Enum.chunk_every(2)
+          |> Enum.zip()
+        else
+          :valid
+        end
 
       val when val == "SAME_UPPER" or val == "SAME_LOWER" ->
         :same

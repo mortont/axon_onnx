@@ -83,6 +83,9 @@ defmodule OnnxTestHelper do
       # TODO: Update with better container support
       actual_outputs =
         case inp_tensors do
+          [] ->
+            Axon.predict(model, params, {})
+
           [input] ->
             Axon.predict(model, params, input)
 
@@ -191,31 +194,33 @@ end
 
 require Logger
 
+cases_path = Path.join([__DIR__], "cases")
 Logger.info("Generating ONNX test cases...")
 
-# Generate cases
-System.cmd("backend-test-tools", ["generate-data"])
+if not File.exists?(cases_path) do
+  # Generate cases
+  System.cmd("backend-test-tools", ["generate-data"])
 
-# Get cases path
-{path, _} =
-  System.cmd("python3", [
-    "-c",
-    "from onnx.backend import test; import os; print(os.path.dirname(test.__file__), end='', sep='')"
-  ])
+  # Get cases path
+  {path, _} =
+    System.cmd("python3", [
+      "-c",
+      "from onnx.backend import test; import os; print(os.path.dirname(test.__file__), end='', sep='')"
+    ])
 
-path = Path.join([path, "data"])
+  path = Path.join([path, "data"])
 
-# Move all to test directory
-cases_path = Path.join([__DIR__], "cases")
-File.mkdir_p!(cases_path)
+  # Move all to test directory
+  File.mkdir_p!(cases_path)
 
-path
-|> File.ls!()
-|> Enum.each(fn base_path ->
-  src = Path.join([path, base_path])
-  dst = Path.join([cases_path, base_path])
-  File.cp_r!(src, dst)
-end)
+  path
+  |> File.ls!()
+  |> Enum.each(fn base_path ->
+    src = Path.join([path, base_path])
+    dst = Path.join([cases_path, base_path])
+    File.cp_r!(src, dst)
+  end)
+end
 
 Logger.info("Finished generating test cases")
 
