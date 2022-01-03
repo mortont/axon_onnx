@@ -87,7 +87,7 @@ defmodule AxonOnnx.Helper do
       do: raise(ArgumentError, "Can not use raw_data to store string type")
 
     itemsize = Mapping.tensor_type_to_nx_size()[data_type_atom]
-    expected_size = (raw == false) && 1 || itemsize
+    expected_size = (raw == false && 1) || itemsize
     expected_size = Enum.reduce(Tuple.to_list(dims), expected_size, fn val, acc -> acc * val end)
 
     if Enum.count(vals) != expected_size,
