@@ -570,59 +570,68 @@ defmodule AxonOnnx.Deserialize do
     {updated_axon, used_params}
   end
 
-  defp to_axon_conv(%Node{op_type: "Conv"} = conv_node, axon, params, used_params) do
-    %{attribute: attrs, input: input, output: [output_name]} = conv_node
-
+  defp to_axon_conv(
+         %Node{op_type: "Conv", attribute: attrs, input: input, output: [output_name]},
+         axon,
+         params,
+         used_params
+       ) do
     conv_options = options!(attrs)
 
-    auto_pad = conv_options["auto_pad"]
-    # dilations = conv_options["dilations"]
-    group = conv_options["group"]
     kernel_shape = conv_options["kernel_shape"]
+    auto_pad = conv_options["auto_pad"] || "NOTSET"
+    dilations = conv_options["dilations"]
+    group = conv_options["group"]
     pads = conv_options["pads"]
     strides = conv_options["strides"]
 
     padding_config = padding!(auto_pad, pads)
-    kernel_size = List.to_tuple(kernel_shape)
 
     [inp, kernel | maybe_bias] = input
 
     axon_inp = axon!(inp, axon)
+    kernel = param!(kernel, params)
 
-    # Parameters can either be embedded in the graph as constants or
-    # passed as parameters
-    {axon_kernel, units} =
-      cond do
-        Map.has_key?(params, kernel) ->
-          kernel = params[kernel]
-          {kernel, elem(Nx.shape(kernel), 0)}
+    {units, kernel_size} =
+      if kernel_shape do
+        full_shape = List.to_tuple(kernel_shape)
+        units = elem(full_shape, 0)
+        shape =
+          full_shape
+          |> Tuple.delete_at(0)
+          |> Tuple.delete_at(0)
 
-        Map.has_key?(axon, kernel) ->
-          %{opts: [value: kernel]} = axon[kernel]
-          {kernel, elem(Nx.shape(kernel), 0)}
+        {units, shape}
+      else
+        full_shape = Nx.shape(kernel)
+        units = elem(full_shape, 0)
+        shape =
+          full_shape
+          |> Tuple.delete_at(0)
+          |> Tuple.delete_at(0)
 
-        true ->
-          raise "unable to find kernel for conv"
+        {units, shape}
       end
-
-    updated_params = Map.put(used_params, output_name <> "_kernel", axon_kernel)
 
     updated_params =
       if maybe_bias == [] do
-        updated_params
+        Map.put(used_params, output_name, %{"kernel" => kernel})
       else
         [bias] = maybe_bias
-        axon_bias = params[bias]
-        Map.put(updated_params, output_name <> "_bias", axon_bias)
+        bias = param!(bias, params)
+        Map.put(used_params, output_name, %{"kernel" => kernel, "bias" => bias})
       end
 
     updated_axon =
       Map.put(
         axon,
         output_name,
-        Axon.conv(axon_inp, units,
+        Axon.conv(
+          axon_inp,
+          units,
           kernel_size: kernel_size,
           feature_group_size: group,
+          kernel_dilation: dilations,
           padding: padding_config,
           strides: strides,
           use_bias: maybe_bias != [],
@@ -899,18 +908,35 @@ defmodule AxonOnnx.Deserialize do
     {updated_axon, used_params}
   end
 
+  # TODO: This currently won't pass any Node tests because reshape
+  # value is read in as an input, how do we handle that?
   defp to_axon_reshape(
-         %Node{op_type: "Reshape", input: [inp], attribute: attrs, output: [output_name]},
+         %Node{op_type: "Reshape", input: [inp, shape], attribute: attrs, output: [output_name]},
          axon,
-         _params,
+         params,
          used_params
        ) do
     reshape_options = options!(attrs)
 
+    allowzero = reshape_options["allowzero"] || 0
+
     inp = axon!(inp, axon)
+    # Reshape is a constant value input that MUST be known
+    # ahead of time so we can build a static graph, we can't
+    # support any other reshape types
+    shape = constant!(shape, axon, params)
+
+    # We currently do not support zero sized dimensions
+    if allowzero == 1 do
+      Logger.warning(
+        "Nx does not support zero-sized dimensions. If your reshape"
+          <> " operation contains a zero-sized dimension, it will fail"
+      )
+    end
 
     new_shape =
-      reshape_options["shape"]
+      shape
+      |> Nx.to_flat_list()
       |> List.to_tuple()
 
     {Map.put(axon, output_name, Axon.reshape(inp, new_shape, name: output_name)), used_params}
@@ -928,20 +954,23 @@ defmodule AxonOnnx.Deserialize do
   end
 
   # Builds an Axon transpose layer. Transpose is given by
-  # the perm option in Node attribute.
+  # the perm option in Node attribute. ONNX does not ignore
+  # batch dimensions, so that option is always false.
   defp to_axon_transpose(
          %Node{op_type: "Transpose", input: [input], attribute: attrs, output: [output_name]},
          axon,
          _params,
          used_params
        ) do
-    inp = axon!(input, axon)
-
     transpose_options = options!(attrs)
 
-    permutation = transpose_options["perm"]
+    %Axon{output_shape: shape} = inp = axon!(input, axon)
 
-    updated_axon = Map.put(axon, output_name, Axon.transpose(inp, permutation, name: output_name))
+    rank = Nx.rank(shape)
+
+    permutation = transpose_options["perm"] || Enum.to_list((rank - 1)..0//-1)
+
+    updated_axon = Map.put(axon, output_name, Axon.transpose(inp, permutation, name: output_name, ignore_batch?: false))
 
     {updated_axon, used_params}
   end
@@ -1056,7 +1085,7 @@ defmodule AxonOnnx.Deserialize do
     if Map.has_key?(axon, name) do
       axon[name]
     else
-      raise CompileError,
+      raise ArgumentError,
             "unable to build model from ONNX graph, expected value #{name}" <>
               " to be a graph input, but it was not present in built" <>
               " graphs"
@@ -1067,10 +1096,31 @@ defmodule AxonOnnx.Deserialize do
     if Map.has_key?(params, name) do
       params[name]
     else
-      raise CompileError,
+      raise ArgumentError,
             "unable to build model from ONNX graph, expected value #{name}" <>
               " to be a parameter input, but it was not present in" <>
               " initializers"
+    end
+  end
+
+  defp constant!(name, axon, params) do
+    cond do
+      Map.has_key?(axon, name) ->
+        case axon[name] do
+          %Axon{op: :constant, opts: [value: shape]} ->
+            shape
+
+          %Axon{op: op} ->
+            raise ArgumentError, "unable to build model from ONNX graph, expected value #{name}" <>
+                                    " to be constant value, but was #{inspect(op)}"
+        end
+
+      Map.has_key?(params, name) ->
+        params[name]
+
+      true ->
+        raise ArgumentError, "unable to build model from ONNX graph, could not find constant" <>
+                                " value #{name} in subgraphs or parameters"
     end
   end
 
