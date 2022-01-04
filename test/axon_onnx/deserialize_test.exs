@@ -258,5 +258,15 @@ defmodule DeserializeTest do
       # TODO: https://github.com/elixir-nx/axon/issues/184
       # check_onnx_test_case!("node", "test_tanh_example")
     end
+
+    test "Transpose" do
+      check_onnx_test_case!("node", "test_transpose_default")
+      check_onnx_test_case!("node", "test_transpose_all_permutations_0")
+      check_onnx_test_case!("node", "test_transpose_all_permutations_1")
+      check_onnx_test_case!("node", "test_transpose_all_permutations_2")
+      check_onnx_test_case!("node", "test_transpose_all_permutations_3")
+      check_onnx_test_case!("node", "test_transpose_all_permutations_4")
+      check_onnx_test_case!("node", "test_transpose_all_permutations_5")
+    end
   end
 end
