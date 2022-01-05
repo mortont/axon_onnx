@@ -103,6 +103,11 @@ defmodule DeserializeTest do
       # check_onnx_test_case!("node", "test_identity_sequence")
     end
 
+    test "If" do
+      # TODO: https://github.com/elixir-nx/axon/issues/184
+      # check_onnx_test_case!("node", "test_if")
+    end
+
     test "LeakyRelu" do
       check_onnx_test_case!("node", "test_leakyrelu")
       check_onnx_test_case!("node", "test_leakyrelu_default")

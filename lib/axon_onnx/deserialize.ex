@@ -41,15 +41,22 @@ defmodule AxonOnnx.Deserialize do
     |> to_axon(opts)
   end
 
-  defp to_axon(%Model{graph: %Graph{node: nodes} = graph}, opts) do
+  defp to_axon(%Model{graph: %Graph{} = graph}, opts) do
     dimensions = opts[:dimensions] || []
     dimensions = Enum.map(dimensions, &Atom.to_string/1)
 
+    # TODO: Don't match for multi-output purposes
+    IO.inspect graph
+    {[graph], params} = graph_to_axon(graph, dimensions)
+    {graph, params}
+  end
+
+  def graph_to_axon(%Graph{node: nodes} = graph, dimensions) do
     params = get_params(graph)
     inputs = get_inputs(graph, params, dimensions)
     outputs = get_outputs(graph)
     {nodes, params} = get_nodes(nodes, inputs, params, %{})
-    {hd(Enum.map(outputs, fn name -> nodes[name] end)), params}
+    {Enum.map(outputs, fn name -> nodes[name] end), params}
   end
 
   defp get_inputs(%Graph{input: inputs}, params, dimensions) do
@@ -206,6 +213,9 @@ defmodule AxonOnnx.Deserialize do
 
         "Identity" ->
           to_axon_nx(op_node, axon, params, used_params, & &1)
+
+        "If" ->
+          to_axon_cond(op_node, axon, params, used_params)
 
         "LeakyRelu" ->
           to_axon_activation(op_node, axon, params, used_params, :leaky_relu,
@@ -596,6 +606,7 @@ defmodule AxonOnnx.Deserialize do
       if kernel_shape do
         full_shape = List.to_tuple(kernel_shape)
         units = elem(full_shape, 0)
+
         shape =
           full_shape
           |> Tuple.delete_at(0)
@@ -605,6 +616,7 @@ defmodule AxonOnnx.Deserialize do
       else
         full_shape = Nx.shape(kernel)
         units = elem(full_shape, 0)
+
         shape =
           full_shape
           |> Tuple.delete_at(0)
@@ -929,8 +941,8 @@ defmodule AxonOnnx.Deserialize do
     # We currently do not support zero sized dimensions
     if allowzero == 1 do
       Logger.warning(
-        "Nx does not support zero-sized dimensions. If your reshape"
-          <> " operation contains a zero-sized dimension, it will fail"
+        "Nx does not support zero-sized dimensions. If your reshape" <>
+          " operation contains a zero-sized dimension, it will fail"
       )
     end
 
@@ -970,7 +982,12 @@ defmodule AxonOnnx.Deserialize do
 
     permutation = transpose_options["perm"] || Enum.to_list((rank - 1)..0//-1)
 
-    updated_axon = Map.put(axon, output_name, Axon.transpose(inp, permutation, name: output_name, ignore_batch?: false))
+    updated_axon =
+      Map.put(
+        axon,
+        output_name,
+        Axon.transpose(inp, permutation, name: output_name, ignore_batch?: false)
+      )
 
     {updated_axon, used_params}
   end
@@ -1004,6 +1021,37 @@ defmodule AxonOnnx.Deserialize do
         updated_axon = Map.put(axon, output_name, Axon.nx(model, fun, name: output_name))
         {updated_axon, used_params}
     end
+  end
+
+  # Builds a conditional `If` layer.
+  defp to_axon_cond(
+         %Node{op_type: "If", input: [input], attribute: attrs, output: outputs},
+         axon,
+         _params,
+         used_params
+       ) do
+    cond_options = options!(attrs)
+
+    inp = axon!(input, axon)
+
+    else_branch = cond_options["else_branch"]
+    then_branch = cond_options["then_branch"]
+
+    {else_graph, else_params} = graph_to_axon(else_branch, [])
+    {then_graph, then_params} = graph_to_axon(then_branch, [])
+
+    updated_axon =
+      outputs
+      |> Enum.reduce(axon, fn out_name, axon ->
+        Map.put(axon, out_name, Axon.cond(inp, & &1, else_graph[out_name], then_graph[out_name]))
+      end)
+
+    updated_params =
+      else_params
+      |> Map.merge(then_params)
+      |> Map.merge(used_params)
+
+    {updated_axon, updated_params}
   end
 
   # TODO(seanmor5): Handle segments
@@ -1111,16 +1159,18 @@ defmodule AxonOnnx.Deserialize do
             shape
 
           %Axon{op: op} ->
-            raise ArgumentError, "unable to build model from ONNX graph, expected value #{name}" <>
-                                    " to be constant value, but was #{inspect(op)}"
+            raise ArgumentError,
+                  "unable to build model from ONNX graph, expected value #{name}" <>
+                    " to be constant value, but was #{inspect(op)}"
         end
 
       Map.has_key?(params, name) ->
         params[name]
 
       true ->
-        raise ArgumentError, "unable to build model from ONNX graph, could not find constant" <>
-                                " value #{name} in subgraphs or parameters"
+        raise ArgumentError,
+              "unable to build model from ONNX graph, could not find constant" <>
+                " value #{name} in subgraphs or parameters"
     end
   end
 
