@@ -46,7 +46,6 @@ defmodule AxonOnnx.Deserialize do
     dimensions = Enum.map(dimensions, &Atom.to_string/1)
 
     # TODO: Don't match for multi-output purposes
-    IO.inspect graph
     {[graph], params} = graph_to_axon(graph, dimensions)
     {graph, params}
   end
@@ -108,11 +107,14 @@ defmodule AxonOnnx.Deserialize do
         "Add" ->
           to_axon_binary_op(op_node, axon, params, used_params, :add)
 
+        "And" ->
+          to_axon_binary_op(op_node, axon, params, used_params, &Nx.logical_and/2)
+
         "ArgMax" ->
-          to_axon_reduction(op_node, axon, params, used_params, &Nx.argmax/2)
+          to_axon_reduction(op_node, axon, params, used_params, &Nx.argmax/2, :axis)
 
         "ArgMin" ->
-          to_axon_reduction(op_node, axon, params, used_params, &Nx.argmin/2)
+          to_axon_reduction(op_node, axon, params, used_params, &Nx.argmin/2, :axis)
 
         "Asin" ->
           to_axon_nx(op_node, axon, params, used_params, &Nx.asin/1)
@@ -128,6 +130,21 @@ defmodule AxonOnnx.Deserialize do
 
         "BatchNormalization" ->
           to_axon_batch_norm(op_node, axon, params, used_params)
+
+        "BitShift" ->
+          %Node{attribute: attrs} = op_node
+
+          to_axon_binary_op(op_node, axon, params, used_params, fn x, y ->
+            shift_options = options!(attrs)
+
+            case shift_options["direction"] do
+              "LEFT" ->
+                Nx.left_shift(x, y)
+
+              "RIGHT" ->
+                Nx.right_shift(x, y)
+            end
+          end)
 
         "Ceil" ->
           to_axon_nx(op_node, axon, params, used_params, &Nx.ceil/1)
@@ -151,13 +168,13 @@ defmodule AxonOnnx.Deserialize do
           to_axon_nx(op_node, axon, params, used_params, &Nx.cosh/1)
 
         "Div" ->
-          to_axon_binary_op(op_node, axon, params, used_params, fn {x, y} -> Nx.divide(x, y) end)
+          to_axon_binary_op(op_node, axon, params, used_params, &Nx.divide/2)
 
         "Elu" ->
           to_axon_activation(op_node, axon, params, used_params, :elu, alpha: {"alpha", 1.0})
 
         "Equal" ->
-          to_axon_binary_op(op_node, axon, params, used_params, fn {x, y} -> Nx.equal(x, y) end)
+          to_axon_binary_op(op_node, axon, params, used_params, &Nx.equal/2)
 
         "Erf" ->
           to_axon_nx(op_node, axon, params, used_params, &Nx.erf/1)
@@ -184,12 +201,10 @@ defmodule AxonOnnx.Deserialize do
           to_axon_global_pool(op_node, axon, params, used_params)
 
         "Greater" ->
-          to_axon_binary_op(op_node, axon, params, used_params, fn {x, y} -> Nx.greater(x, y) end)
+          to_axon_binary_op(op_node, axon, params, used_params, &Nx.greater/2)
 
         "GreaterOrEqual" ->
-          to_axon_binary_op(op_node, axon, params, used_params, fn {x, y} ->
-            Nx.greater_equal(x, y)
-          end)
+          to_axon_binary_op(op_node, axon, params, used_params, &Nx.greater_equal/2)
 
         "HardSigmoid" ->
           to_axon_activation(op_node, axon, params, used_params, :hard_sigmoid,
@@ -223,12 +238,10 @@ defmodule AxonOnnx.Deserialize do
           )
 
         "Less" ->
-          to_axon_binary_op(op_node, axon, params, used_params, fn {x, y} -> Nx.less(x, y) end)
+          to_axon_binary_op(op_node, axon, params, used_params, &Nx.less/2)
 
         "LessOrEqual" ->
-          to_axon_binary_op(op_node, axon, params, used_params, fn {x, y} ->
-            Nx.less_equal(x, y)
-          end)
+          to_axon_binary_op(op_node, axon, params, used_params, &Nx.less_equal/2)
 
         "Log" ->
           to_axon_nx(op_node, axon, params, used_params, &Nx.log/1)
@@ -255,21 +268,52 @@ defmodule AxonOnnx.Deserialize do
           to_axon_nx(op_node, axon, params, used_params, &Nx.logical_not/1)
 
         "Or" ->
-          to_axon_binary_op(op_node, axon, params, used_params, fn {x, y} ->
-            Nx.logical_or(x, y)
-          end)
+          to_axon_binary_op(op_node, axon, params, used_params, &Nx.logical_or/2)
 
         "Pow" ->
-          to_axon_binary_op(op_node, axon, params, used_params, fn {x, y} -> Nx.power(x, y) end)
+          to_axon_binary_op(op_node, axon, params, used_params, &Nx.power/2)
 
         "ReduceMax" ->
-          to_axon_reduction(op_node, axon, params, used_params, &Nx.reduce_max/2)
+          to_axon_reduction(op_node, axon, params, used_params, &Nx.reduce_max/2, :axes)
+
+        "ReduceMean" ->
+          to_axon_reduction(op_node, axon, params, used_params, &Nx.mean/2, :axes)
 
         "ReduceMin" ->
-          to_axon_reduction(op_node, axon, params, used_params, &Nx.reduce_min/2)
+          to_axon_reduction(op_node, axon, params, used_params, &Nx.reduce_min/2, :axes)
 
         "ReduceProd" ->
-          to_axon_reduction(op_node, axon, params, used_params, &Nx.product/2)
+          to_axon_reduction(op_node, axon, params, used_params, &Nx.product/2, :axes)
+
+        "ReduceLogSum" ->
+          # TODO: I think there is a stability problem here
+          to_axon_reduction(op_node, axon, params, used_params, &Nx.log(Nx.sum(&1, &2)), :axes)
+
+        "ReduceLogSumExp" ->
+          # TODO: I think there is a stability problem here
+          to_axon_reduction(
+            op_node,
+            axon,
+            params,
+            used_params,
+            fn x, opts ->
+              x
+              |> Nx.exp()
+              |> Nx.sum(opts)
+              |> Nx.log()
+            end,
+            :axes
+          )
+
+        "ReduceSumSquare" ->
+          to_axon_reduction(
+            op_node,
+            axon,
+            params,
+            used_params,
+            &Nx.sum(Nx.power(&1, 2), &2),
+            :axes
+          )
 
         "Relu" ->
           to_axon_activation(op_node, axon, params, used_params, :relu)
@@ -347,9 +391,7 @@ defmodule AxonOnnx.Deserialize do
           to_axon_upsample(op_node, axon, params, used_params)
 
         "Xor" ->
-          to_axon_binary_op(op_node, axon, params, used_params, fn {x, y} ->
-            Nx.logical_xor(x, y)
-          end)
+          to_axon_binary_op(op_node, axon, params, used_params, &Nx.logical_xor/2)
 
         "MaxPool" ->
           to_axon_max_pool(op_node, axon, params, used_params)
@@ -375,35 +417,52 @@ defmodule AxonOnnx.Deserialize do
     {updated_axon, used_params}
   end
 
-  # Builds a generic Nx layer by applying the given reduction operation
-  # to the input.
-  #
-  # TODO(seanmor5): Replace with Axon.layer when we have better shape
-  # inference
+  # Builds a generic reduction layer by applying the given reduction operation
+  # to the input in a custom layer.
   defp to_axon_reduction(
          %Node{input: [input], attribute: attrs, output: [output_name]},
          axon,
          _params,
          used_params,
-         reduce_fun
+         reduce_fun,
+         axis_or_axes
        ) do
     reduce_options = options!(attrs)
 
-    axes = reduce_options["axes"]
-    keepdims = reduce_options["keepdims"]
+    %Axon{output_shape: shape} = axon_input = axon!(input, axon)
+
+    keepdims = reduce_options["keepdims"] || 1
     keep_axes = if keepdims == 1, do: true, else: false
 
-    axon_input = axon!(input, axon)
+    axes =
+      if axis_or_axes == :axis do
+        axis = reduce_options["axis"] || 0
+        Nx.Shape.normalize_axis(shape, axis, List.duplicate(nil, Nx.rank(shape) - 1))
+      else
+        axes = reduce_options["axes"] || Nx.axes(shape)
+        Nx.Shape.normalize_axes(shape, axes, List.duplicate(nil, Nx.rank(shape) - 1))
+      end
 
-    updated_axon =
-      Map.put(
-        axon,
-        output_name,
-        Axon.nx(axon_input, reduce_fun,
-          name: output_name,
-          opts: [axes: axes, keep_axes: keep_axes]
-        )
-      )
+    opts =
+      if axis_or_axes == :axis do
+        last_index = reduce_options["select_last_index"] || 0
+        tie_break = if last_index == 0, do: :low, else: :high
+        [keep_axis: keep_axes, axis: axes, tie_break: tie_break]
+      else
+        [keep_axes: keep_axes, axes: axes]
+      end
+
+    out_shape =
+      if keep_axes do
+        Enum.reduce(List.wrap(axes), shape, fn x, shape -> put_elem(shape, x, 1) end)
+      else
+        shape = for i <- Nx.axes(shape), i not in List.wrap(axes), do: i
+        List.to_tuple(shape)
+      end
+
+    layer = Axon.layer(axon_input, reduce_fun, out_shape, %{}, output_name, opts)
+
+    updated_axon = Map.put(axon, output_name, layer)
 
     {updated_axon, used_params}
   end
@@ -499,8 +558,8 @@ defmodule AxonOnnx.Deserialize do
          used_params,
          binary_op
        ) do
-    inp1 = axon!(x, axon)
-    inp2 = axon!(y, axon)
+    %Axon{output_shape: s1} = inp1 = axon!(x, axon)
+    %Axon{output_shape: s2} = inp2 = axon!(y, axon)
 
     updated_axon =
       case binary_op do
@@ -508,8 +567,14 @@ defmodule AxonOnnx.Deserialize do
           Map.put(axon, output_name, apply(Axon, op, [inp1, inp2, [name: output_name]]))
 
         fun when is_function(fun, 2) ->
-          # TODO(seanmor5): Use Axon.layer when shape inference improves
-          Map.put(axon, output_name, Axon.nx({inp1, inp2}, fun, name: output_name))
+          # TODO: Must fix Axon.layer with no parameters
+          out_shape = Axon.Shape.element_wise([s1, s2])
+
+          Map.put(
+            axon,
+            output_name,
+            Axon.layer([inp1, inp2], fun, out_shape, %{}, name: output_name)
+          )
       end
 
     {updated_axon, used_params}

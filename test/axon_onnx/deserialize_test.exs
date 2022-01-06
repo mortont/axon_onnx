@@ -19,6 +19,73 @@ defmodule DeserializeTest do
       # check_onnx_test_case!("node", "test_acosh_example")
     end
 
+    test "Add" do
+      check_onnx_test_case!("node", "test_add")
+      # TODO: Update Axon broadcasting semantics
+      # check_onnx_test_case!("node", "test_add_bcast")
+      check_onnx_test_case!("node", "test_add_uint8")
+    end
+
+    test "And" do
+      check_onnx_test_case!("node", "test_and2d")
+      check_onnx_test_case!("node", "test_and3d")
+      check_onnx_test_case!("node", "test_and4d")
+      # TODO: Update Axon broadcasting semantics
+      # check_onnx_test_case!("node", "test_and_bcast3v1d")
+      check_onnx_test_case!("node", "test_and_bcast3v2d")
+      check_onnx_test_case!("node", "test_and_bcast4v2d")
+      check_onnx_test_case!("node", "test_and_bcast4v3d")
+      check_onnx_test_case!("node", "test_and_bcast4v4d")
+    end
+
+    test "ArgMax" do
+      check_onnx_test_case!("node", "test_argmax_default_axis_example")
+      check_onnx_test_case!("node", "test_argmax_default_axis_example_select_last_index")
+      check_onnx_test_case!("node", "test_argmax_default_axis_random")
+      check_onnx_test_case!("node", "test_argmax_default_axis_random_select_last_index")
+      check_onnx_test_case!("node", "test_argmax_keepdims_example")
+      check_onnx_test_case!("node", "test_argmax_keepdims_example_select_last_index")
+      check_onnx_test_case!("node", "test_argmax_keepdims_random")
+      check_onnx_test_case!("node", "test_argmax_keepdims_random_select_last_index")
+      check_onnx_test_case!("node", "test_argmax_negative_axis_keepdims_example")
+
+      check_onnx_test_case!(
+        "node",
+        "test_argmax_negative_axis_keepdims_example_select_last_index"
+      )
+
+      check_onnx_test_case!("node", "test_argmax_negative_axis_keepdims_random")
+      check_onnx_test_case!("node", "test_argmax_negative_axis_keepdims_random_select_last_index")
+      check_onnx_test_case!("node", "test_argmax_no_keepdims_example")
+      check_onnx_test_case!("node", "test_argmax_no_keepdims_example_select_last_index")
+      check_onnx_test_case!("node", "test_argmax_no_keepdims_random")
+      check_onnx_test_case!("node", "test_argmax_no_keepdims_random_select_last_index")
+    end
+
+    test "ArgMin" do
+      check_onnx_test_case!("node", "test_argmin_default_axis_example")
+      check_onnx_test_case!("node", "test_argmin_default_axis_example_select_last_index")
+      check_onnx_test_case!("node", "test_argmin_default_axis_random")
+      check_onnx_test_case!("node", "test_argmin_default_axis_random_select_last_index")
+      check_onnx_test_case!("node", "test_argmin_keepdims_example")
+      check_onnx_test_case!("node", "test_argmin_keepdims_example_select_last_index")
+      check_onnx_test_case!("node", "test_argmin_keepdims_random")
+      check_onnx_test_case!("node", "test_argmin_keepdims_random_select_last_index")
+      check_onnx_test_case!("node", "test_argmin_negative_axis_keepdims_example")
+
+      check_onnx_test_case!(
+        "node",
+        "test_argmin_negative_axis_keepdims_example_select_last_index"
+      )
+
+      check_onnx_test_case!("node", "test_argmin_negative_axis_keepdims_random")
+      check_onnx_test_case!("node", "test_argmin_negative_axis_keepdims_random_select_last_index")
+      check_onnx_test_case!("node", "test_argmin_no_keepdims_example")
+      check_onnx_test_case!("node", "test_argmin_no_keepdims_example_select_last_index")
+      check_onnx_test_case!("node", "test_argmin_no_keepdims_random")
+      check_onnx_test_case!("node", "test_argmin_no_keepdims_random_select_last_index")
+    end
+
     test "Asin" do
       check_onnx_test_case!("node", "test_asin")
       # TODO: https://github.com/elixir-nx/axon/issues/184
@@ -29,6 +96,18 @@ defmodule DeserializeTest do
       check_onnx_test_case!("node", "test_asinh")
       # TODO: https://github.com/elixir-nx/axon/issues/184
       # check_onnx_test_case!("node", "test_asinh_example")
+    end
+
+    test "BitShift" do
+      # TODO: https://github.com/elixir-nx/axon/issues/184
+      # check_onnx_test_case!("node", "test_bitshift_left_uint8")
+      # check_onnx_test_case!("node", "test_bitshift_left_uint16")
+      # check_onnx_test_case!("node", "test_bitshift_left_uint32")
+      # check_onnx_test_case!("node", "test_bitshift_left_uint64")
+      # check_onnx_test_case!("node", "test_bitshift_right_uint8")
+      # check_onnx_test_case!("node", "test_bitshift_right_uint16")
+      # check_onnx_test_case!("node", "test_bitshift_right_uint32")
+      # check_onnx_test_case!("node", "test_bitshift_right_uint64")
     end
 
     test "Ceil" do
@@ -61,6 +140,21 @@ defmodule DeserializeTest do
       # check_onnx_test_case!("node", "test_cosh_example")
     end
 
+    test "Div" do
+      check_onnx_test_case!("node", "test_div")
+      # TODO: Update Axon broadcasting semantics
+      # check_onnx_test_case!("node", "test_div_bcast")
+      # check_onnx_test_case!("node", "test_div_example")
+      # TODO: Cast?
+      # check_onnx_test_case!("node", "test_div_uint8")
+    end
+
+    test "Equal" do
+      check_onnx_test_case!("node", "test_equal")
+      # TODO: Update Axon broadcasting semantics
+      # check_onnx_test_case!("node", "test_equal_bcast")
+    end
+
     test "Erf" do
       check_onnx_test_case!("node", "test_erf")
     end
@@ -85,6 +179,20 @@ defmodule DeserializeTest do
     test "GlobalMaxPool" do
       check_onnx_test_case!("node", "test_globalmaxpool")
       check_onnx_test_case!("node", "test_globalmaxpool_precomputed")
+    end
+
+    test "Greater" do
+      check_onnx_test_case!("node", "test_greater")
+      # TODO: Update Axon broadcasting semantics
+      # check_onnx_test_case!("node", "test_greater_bcast")
+    end
+
+    test "GreaterOrEqual" do
+      check_onnx_test_case!("node", "test_greater_equal")
+      check_onnx_test_case!("node", "test_greater_equal_expanded")
+      # TODO: Update Axon broadcasting semantics
+      # check_onnx_test_case!("node", "test_greater_equal_bcast")
+      # check_onnx_test_case!("node", "test_greater_equal_bcast_expanded")
     end
 
     test "HardSigmoid" do
@@ -113,6 +221,20 @@ defmodule DeserializeTest do
       check_onnx_test_case!("node", "test_leakyrelu_default")
       # TODO: https://github.com/elixir-nx/axon/issues/184
       # check_onnx_test_case!("node", "test_leakyrelu_example")
+    end
+
+    test "Less" do
+      check_onnx_test_case!("node", "test_less")
+      # TODO: Update Axon broadcasting semantics
+      # check_onnx_test_case!("node", "test_less_bcast")
+    end
+
+    test "LessOrEqual" do
+      check_onnx_test_case!("node", "test_less_equal")
+      check_onnx_test_case!("node", "test_less_equal_expanded")
+      # TODO: Update Axon broadcasting semantics
+      # check_onnx_test_case!("node", "test_less_equal_bcast")
+      # check_onnx_test_case!("node", "test_less_equal_bcast_expanded")
     end
 
     test "Log" do
@@ -180,6 +302,111 @@ defmodule DeserializeTest do
       check_onnx_test_case!("node", "test_not_2d")
       check_onnx_test_case!("node", "test_not_3d")
       check_onnx_test_case!("node", "test_not_4d")
+    end
+
+    test "Or" do
+      check_onnx_test_case!("node", "test_or2d")
+      check_onnx_test_case!("node", "test_or3d")
+      check_onnx_test_case!("node", "test_or4d")
+      # TODO: Update Axon broadcasting semantics
+      # check_onnx_test_case!("node", "test_or_bcast3v1d")
+      check_onnx_test_case!("node", "test_or_bcast3v2d")
+      check_onnx_test_case!("node", "test_or_bcast4v2d")
+      check_onnx_test_case!("node", "test_or_bcast4v3d")
+      check_onnx_test_case!("node", "test_or_bcast4v4d")
+    end
+
+    test "Pow" do
+      check_onnx_test_case!("node", "test_pow")
+      # TODO: Update Axon broadcasting semantics
+      # check_onnx_test_case!("node", "test_pow_bcast_array")
+      # TODO: Axon 184
+      # check_onnx_test_case!("node", "test_pow_bcast_scalar")
+      # check_onnx_test_case!("node", "test_pow_example")
+      # check_onnx_test_case!("node", "test_pow_types_float")
+      # check_onnx_test_case!("node", "test_pow_types_float32_int32")
+      # check_onnx_test_case!("node", "test_pow_types_float32_int64")
+      # check_onnx_test_case!("node", "test_pow_types_float32_uint32")
+      # check_onnx_test_case!("node", "test_pow_types_float32_uint64")
+      # check_onnx_test_case!("node", "test_pow_types_int")
+      # check_onnx_test_case!("node", "test_pow_types_int32_float32")
+      # check_onnx_test_case!("node", "test_pow_types_int32_int32")
+      # check_onnx_test_case!("node", "test_pow_types_int64_float32")
+      # check_onnx_test_case!("node", "test_pow_types_int64_int64")
+    end
+
+    test "ReduceLogSum" do
+      check_onnx_test_case!("node", "test_reduce_log_sum")
+      check_onnx_test_case!("node", "test_reduce_log_sum_asc_axes")
+      check_onnx_test_case!("node", "test_reduce_log_sum_default")
+      check_onnx_test_case!("node", "test_reduce_log_sum_desc_axes")
+      check_onnx_test_case!("node", "test_reduce_log_sum_negative_axes")
+    end
+
+    test "ReduceLogSumExp" do
+      check_onnx_test_case!("node", "test_reduce_log_sum_exp_default_axes_keepdims_example")
+      check_onnx_test_case!("node", "test_reduce_log_sum_exp_default_axes_keepdims_random")
+      check_onnx_test_case!("node", "test_reduce_log_sum_exp_do_not_keepdims_example")
+      check_onnx_test_case!("node", "test_reduce_log_sum_exp_do_not_keepdims_random")
+      check_onnx_test_case!("node", "test_reduce_log_sum_exp_keepdims_example")
+      check_onnx_test_case!("node", "test_reduce_log_sum_exp_keepdims_random")
+      check_onnx_test_case!("node", "test_reduce_log_sum_exp_negative_axes_keepdims_example")
+      check_onnx_test_case!("node", "test_reduce_log_sum_exp_negative_axes_keepdims_random")
+    end
+
+    test "ReduceMax" do
+      check_onnx_test_case!("node", "test_reduce_max_default_axes_keepdim_example")
+      check_onnx_test_case!("node", "test_reduce_max_default_axes_keepdims_random")
+      check_onnx_test_case!("node", "test_reduce_max_do_not_keepdims_example")
+      check_onnx_test_case!("node", "test_reduce_max_do_not_keepdims_random")
+      check_onnx_test_case!("node", "test_reduce_max_keepdims_example")
+      check_onnx_test_case!("node", "test_reduce_max_keepdims_random")
+      check_onnx_test_case!("node", "test_reduce_max_negative_axes_keepdims_example")
+      check_onnx_test_case!("node", "test_reduce_max_negative_axes_keepdims_random")
+    end
+
+    test "ReduceMean" do
+      check_onnx_test_case!("node", "test_reduce_mean_default_axes_keepdims_example")
+      check_onnx_test_case!("node", "test_reduce_mean_default_axes_keepdims_random")
+      check_onnx_test_case!("node", "test_reduce_mean_do_not_keepdims_example")
+      check_onnx_test_case!("node", "test_reduce_mean_do_not_keepdims_random")
+      check_onnx_test_case!("node", "test_reduce_mean_keepdims_example")
+      check_onnx_test_case!("node", "test_reduce_mean_keepdims_random")
+      check_onnx_test_case!("node", "test_reduce_mean_negative_axes_keepdims_example")
+      check_onnx_test_case!("node", "test_reduce_mean_negative_axes_keepdims_random")
+    end
+
+    test "ReduceMin" do
+      check_onnx_test_case!("node", "test_reduce_min_default_axes_keepdims_example")
+      check_onnx_test_case!("node", "test_reduce_min_default_axes_keepdims_random")
+      check_onnx_test_case!("node", "test_reduce_min_do_not_keepdims_example")
+      check_onnx_test_case!("node", "test_reduce_min_do_not_keepdims_random")
+      check_onnx_test_case!("node", "test_reduce_min_keepdims_example")
+      check_onnx_test_case!("node", "test_reduce_min_keepdims_random")
+      check_onnx_test_case!("node", "test_reduce_min_negative_axes_keepdims_example")
+      check_onnx_test_case!("node", "test_reduce_min_negative_axes_keepdims_random")
+    end
+
+    test "ReduceProd" do
+      check_onnx_test_case!("node", "test_reduce_prod_default_axes_keepdims_example")
+      check_onnx_test_case!("node", "test_reduce_prod_default_axes_keepdims_random")
+      check_onnx_test_case!("node", "test_reduce_prod_do_not_keepdims_example")
+      check_onnx_test_case!("node", "test_reduce_prod_do_not_keepdims_random")
+      check_onnx_test_case!("node", "test_reduce_prod_keepdims_example")
+      check_onnx_test_case!("node", "test_reduce_prod_keepdims_random")
+      check_onnx_test_case!("node", "test_reduce_prod_negative_axes_keepdims_example")
+      check_onnx_test_case!("node", "test_reduce_prod_negative_axes_keepdims_random")
+    end
+
+    test "ReduceSumSquare" do
+      check_onnx_test_case!("node", "test_reduce_sum_square_default_axes_keepdims_example")
+      check_onnx_test_case!("node", "test_reduce_sum_square_default_axes_keepdims_random")
+      check_onnx_test_case!("node", "test_reduce_sum_square_do_not_keepdims_example")
+      check_onnx_test_case!("node", "test_reduce_sum_square_do_not_keepdims_random")
+      check_onnx_test_case!("node", "test_reduce_sum_square_keepdims_example")
+      check_onnx_test_case!("node", "test_reduce_sum_square_keepdims_random")
+      check_onnx_test_case!("node", "test_reduce_sum_square_negative_axes_keepdims_example")
+      check_onnx_test_case!("node", "test_reduce_sum_square_negative_axes_keepdims_random")
     end
 
     test "Relu" do
@@ -272,6 +499,18 @@ defmodule DeserializeTest do
       check_onnx_test_case!("node", "test_transpose_all_permutations_3")
       check_onnx_test_case!("node", "test_transpose_all_permutations_4")
       check_onnx_test_case!("node", "test_transpose_all_permutations_5")
+    end
+
+    test "Xor" do
+      check_onnx_test_case!("node", "test_xor2d")
+      check_onnx_test_case!("node", "test_xor3d")
+      check_onnx_test_case!("node", "test_xor4d")
+      # TODO: Update Axon broadcasting semantics
+      # check_onnx_test_case!("node", "test_xor_bcast3v1d")
+      check_onnx_test_case!("node", "test_xor_bcast3v2d")
+      check_onnx_test_case!("node", "test_xor_bcast4v2d")
+      check_onnx_test_case!("node", "test_xor_bcast4v3d")
+      check_onnx_test_case!("node", "test_xor_bcast4v4d")
     end
   end
 end

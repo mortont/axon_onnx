@@ -32,7 +32,7 @@ defmodule AxonOnnx.MixProject do
 
   defp axon_opts do
     if path = System.get_env("AXON_PATH") do
-      [github: "elixir-nx/axon", path: path]
+      [path: path]
     else
       [github: "elixir-nx/axon"]
     end
