@@ -122,6 +122,22 @@ defmodule DeserializeTest do
       # check_onnx_test_case!("node", "test_celu_expanded")
     end
 
+    test "Concat" do
+      # TODO: https://github.com/elixir-nx/axon/issues/184
+      # check_onnx_test_case!("node", "test_concat_1d_axis_0")
+      # check_onnx_test_case!("node", "test_concat_1d_axis_negative_1")
+      check_onnx_test_case!("node", "test_concat_2d_axis_0")
+      check_onnx_test_case!("node", "test_concat_2d_axis_1")
+      check_onnx_test_case!("node", "test_concat_2d_axis_negative_1")
+      check_onnx_test_case!("node", "test_concat_2d_axis_negative_2")
+      check_onnx_test_case!("node", "test_concat_3d_axis_0")
+      check_onnx_test_case!("node", "test_concat_3d_axis_1")
+      check_onnx_test_case!("node", "test_concat_3d_axis_2")
+      check_onnx_test_case!("node", "test_concat_3d_axis_negative_1")
+      check_onnx_test_case!("node", "test_concat_3d_axis_negative_2")
+      check_onnx_test_case!("node", "test_concat_3d_axis_negative_3")
+    end
+
     test "Constant" do
       check_onnx_test_case!("node", "test_constant")
       # TODO

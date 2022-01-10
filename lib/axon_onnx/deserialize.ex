@@ -829,9 +829,10 @@ defmodule AxonOnnx.Deserialize do
        when is_list(inputs) do
     inputs = for inp <- inputs, do: axon!(inp, axon)
     %{"axis" => axis} = options!(attrs)
+    updated_axon =
+      Map.put(axon, output_name, Axon.concatenate(inputs, axis: axis, name: output_name))
 
-    {Map.put(axon, output_name, Axon.concatenate(inputs, axis: axis, name: output_name)),
-     used_params}
+    {updated_axon, used_params}
   end
 
   # Builds an Axon layer which returns a new layer upsampling the input
