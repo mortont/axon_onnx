@@ -9,14 +9,12 @@ defmodule DeserializeTest do
 
     test "Acos" do
       check_onnx_test_case!("node", "test_acos")
-      # TODO: https://github.com/elixir-nx/axon/issues/184
-      # check_onnx_test_case!("node", "test_acos_example")
+      check_onnx_test_case!("node", "test_acos_example")
     end
 
     test "Acosh" do
       check_onnx_test_case!("node", "test_acosh")
-      # TODO: https://github.com/elixir-nx/axon/issues/184
-      # check_onnx_test_case!("node", "test_acosh_example")
+      check_onnx_test_case!("node", "test_acosh_example")
     end
 
     test "Add" do
@@ -88,44 +86,38 @@ defmodule DeserializeTest do
 
     test "Asin" do
       check_onnx_test_case!("node", "test_asin")
-      # TODO: https://github.com/elixir-nx/axon/issues/184
-      # check_onnx_test_case!("node", "test_asin_example")
+      check_onnx_test_case!("node", "test_asin_example")
     end
 
     test "Asinh" do
       check_onnx_test_case!("node", "test_asinh")
-      # TODO: https://github.com/elixir-nx/axon/issues/184
-      # check_onnx_test_case!("node", "test_asinh_example")
+      check_onnx_test_case!("node", "test_asinh_example")
     end
 
     test "BitShift" do
-      # TODO: https://github.com/elixir-nx/axon/issues/184
-      # check_onnx_test_case!("node", "test_bitshift_left_uint8")
-      # check_onnx_test_case!("node", "test_bitshift_left_uint16")
-      # check_onnx_test_case!("node", "test_bitshift_left_uint32")
-      # check_onnx_test_case!("node", "test_bitshift_left_uint64")
-      # check_onnx_test_case!("node", "test_bitshift_right_uint8")
-      # check_onnx_test_case!("node", "test_bitshift_right_uint16")
-      # check_onnx_test_case!("node", "test_bitshift_right_uint32")
-      # check_onnx_test_case!("node", "test_bitshift_right_uint64")
+      check_onnx_test_case!("node", "test_bitshift_left_uint8")
+      check_onnx_test_case!("node", "test_bitshift_left_uint16")
+      check_onnx_test_case!("node", "test_bitshift_left_uint32")
+      check_onnx_test_case!("node", "test_bitshift_left_uint64")
+      check_onnx_test_case!("node", "test_bitshift_right_uint8")
+      check_onnx_test_case!("node", "test_bitshift_right_uint16")
+      check_onnx_test_case!("node", "test_bitshift_right_uint32")
+      check_onnx_test_case!("node", "test_bitshift_right_uint64")
     end
 
     test "Ceil" do
       check_onnx_test_case!("node", "test_ceil")
-      # TODO: https://github.com/elixir-nx/axon/issues/184
-      # check_onnx_test_case!("node", "test_ceil_example")
+      check_onnx_test_case!("node", "test_ceil_example")
     end
 
     test "Celu" do
       check_onnx_test_case!("node", "test_celu")
-      # TODO
-      # check_onnx_test_case!("node", "test_celu_expanded")
+      check_onnx_test_case!("node", "test_celu_expanded")
     end
 
     test "Concat" do
-      # TODO: https://github.com/elixir-nx/axon/issues/184
-      # check_onnx_test_case!("node", "test_concat_1d_axis_0")
-      # check_onnx_test_case!("node", "test_concat_1d_axis_negative_1")
+      check_onnx_test_case!("node", "test_concat_1d_axis_0")
+      check_onnx_test_case!("node", "test_concat_1d_axis_negative_1")
       check_onnx_test_case!("node", "test_concat_2d_axis_0")
       check_onnx_test_case!("node", "test_concat_2d_axis_1")
       check_onnx_test_case!("node", "test_concat_2d_axis_negative_1")
@@ -146,14 +138,12 @@ defmodule DeserializeTest do
 
     test "Cos" do
       check_onnx_test_case!("node", "test_cos")
-      # TODO: https://github.com/elixir-nx/axon/issues/184
-      # check_onnx_test_case!("node", "test_cos_example")
+      check_onnx_test_case!("node", "test_cos_example")
     end
 
     test "Cosh" do
       check_onnx_test_case!("node", "test_cosh")
-      # TODO: https://github.com/elixir-nx/axon/issues/184
-      # check_onnx_test_case!("node", "test_cosh_example")
+      check_onnx_test_case!("node", "test_cosh_example")
     end
 
     test "Div" do
@@ -177,14 +167,12 @@ defmodule DeserializeTest do
 
     test "Exp" do
       check_onnx_test_case!("node", "test_exp")
-      # TODO: https://github.com/elixir-nx/axon/issues/184
-      # check_onnx_test_case!("node", "test_exp_example")
+      check_onnx_test_case!("node", "test_exp_example")
     end
 
     test "Floor" do
       check_onnx_test_case!("node", "test_floor")
-      # TODO: https://github.com/elixir-nx/axon/issues/184
-      # check_onnx_test_case!("node", "test_floor_example")
+      check_onnx_test_case!("node", "test_floor_example")
     end
 
     test "GlobalAveragePool" do
@@ -228,15 +216,13 @@ defmodule DeserializeTest do
     end
 
     test "If" do
-      # TODO: https://github.com/elixir-nx/axon/issues/184
-      # check_onnx_test_case!("node", "test_if")
+      check_onnx_test_case!("node", "test_if")
     end
 
     test "LeakyRelu" do
       check_onnx_test_case!("node", "test_leakyrelu")
       check_onnx_test_case!("node", "test_leakyrelu_default")
-      # TODO: https://github.com/elixir-nx/axon/issues/184
-      # check_onnx_test_case!("node", "test_leakyrelu_example")
+      check_onnx_test_case!("node", "test_leakyrelu_example")
     end
 
     test "Less" do
@@ -255,8 +241,7 @@ defmodule DeserializeTest do
 
     test "Log" do
       check_onnx_test_case!("node", "test_log")
-      # TODO: https://github.com/elixir-nx/axon/issues/184
-      # check_onnx_test_case!("node", "test_log_example")
+      check_onnx_test_case!("node", "test_log_example")
     end
 
     test "LogSoftmax" do
@@ -297,7 +282,7 @@ defmodule DeserializeTest do
       check_onnx_test_case!("node", "test_maxpool_2d_precomputed_pads")
       check_onnx_test_case!("node", "test_maxpool_2d_precomputed_same_upper")
       check_onnx_test_case!("node", "test_maxpool_2d_precomputed_strides")
-      # TODO: ArgMax
+      # TODO: Return indices in MaxPool
       # check_onnx_test_case!("node", "test_maxpool_with_argmax_2d_precomputed_pads")
       # check_onnx_test_case!("node", "test_maxpool_with_argmax_2d_precomputed_strides")
       check_onnx_test_case!("node", "test_maxpool_3d_default")
@@ -310,8 +295,7 @@ defmodule DeserializeTest do
 
     test "Neg" do
       check_onnx_test_case!("node", "test_neg")
-      # TODO: https://github.com/elixir-nx/axon/issues/184
-      # check_onnx_test_case!("node", "test_neg_example")
+      check_onnx_test_case!("node", "test_neg_example")
     end
 
     test "Not" do
@@ -336,19 +320,18 @@ defmodule DeserializeTest do
       check_onnx_test_case!("node", "test_pow")
       # TODO: Update Axon broadcasting semantics
       # check_onnx_test_case!("node", "test_pow_bcast_array")
-      # TODO: Axon 184
-      # check_onnx_test_case!("node", "test_pow_bcast_scalar")
-      # check_onnx_test_case!("node", "test_pow_example")
-      # check_onnx_test_case!("node", "test_pow_types_float")
-      # check_onnx_test_case!("node", "test_pow_types_float32_int32")
-      # check_onnx_test_case!("node", "test_pow_types_float32_int64")
-      # check_onnx_test_case!("node", "test_pow_types_float32_uint32")
-      # check_onnx_test_case!("node", "test_pow_types_float32_uint64")
-      # check_onnx_test_case!("node", "test_pow_types_int")
-      # check_onnx_test_case!("node", "test_pow_types_int32_float32")
-      # check_onnx_test_case!("node", "test_pow_types_int32_int32")
-      # check_onnx_test_case!("node", "test_pow_types_int64_float32")
-      # check_onnx_test_case!("node", "test_pow_types_int64_int64")
+      check_onnx_test_case!("node", "test_pow_bcast_scalar")
+      check_onnx_test_case!("node", "test_pow_example")
+      check_onnx_test_case!("node", "test_pow_types_float")
+      check_onnx_test_case!("node", "test_pow_types_float32_int32")
+      check_onnx_test_case!("node", "test_pow_types_float32_int64")
+      check_onnx_test_case!("node", "test_pow_types_float32_uint32")
+      check_onnx_test_case!("node", "test_pow_types_float32_uint64")
+      check_onnx_test_case!("node", "test_pow_types_int")
+      check_onnx_test_case!("node", "test_pow_types_int32_float32")
+      check_onnx_test_case!("node", "test_pow_types_int32_int32")
+      check_onnx_test_case!("node", "test_pow_types_int64_float32")
+      check_onnx_test_case!("node", "test_pow_types_int64_int64")
     end
 
     test "ReduceLogSum" do
@@ -432,31 +415,26 @@ defmodule DeserializeTest do
     test "Selu" do
       check_onnx_test_case!("node", "test_selu")
       check_onnx_test_case!("node", "test_selu_default")
-      # TODO: https://github.com/elixir-nx/axon/issues/184
-      # check_onnx_test_case!("node", "test_selu_example")
+      check_onnx_test_case!("node", "test_selu_example")
     end
 
     test "Sigmoid" do
       check_onnx_test_case!("node", "test_sigmoid")
-      # TODO: https://github.com/elixir-nx/axon/issues/184
-      # check_onnx_test_case!("node", "test_sigmoid_example")
+      check_onnx_test_case!("node", "test_sigmoid_example")
     end
 
     test "Sign" do
-      # TODO: https://github.com/elixir-nx/axon/issues/184
-      # check_onnx_test_case!("node", "test_sign")
+      check_onnx_test_case!("node", "test_sign")
     end
 
     test "Sin" do
       check_onnx_test_case!("node", "test_sin")
-      # TODO: https://github.com/elixir-nx/axon/issues/184
-      # check_onnx_test_case!("node", "test_sin_example")
+      check_onnx_test_case!("node", "test_sin_example")
     end
 
     test "Sinh" do
       check_onnx_test_case!("node", "test_sinh")
-      # TODO: https://github.com/elixir-nx/axon/issues/184
-      # check_onnx_test_case!("node", "test_sinh_example")
+      check_onnx_test_case!("node", "test_sinh_example")
     end
 
     test "Softmax" do
@@ -485,26 +463,22 @@ defmodule DeserializeTest do
 
     test "Softsign" do
       check_onnx_test_case!("node", "test_softsign")
-      # TODO: https://github.com/elixir-nx/axon/issues/184
-      # check_onnx_test_case!("node", "test_softsign_example")
+      check_onnx_test_case!("node", "test_softsign_example")
     end
 
     test "Sqrt" do
       check_onnx_test_case!("node", "test_sqrt")
-      # TODO: https://github.com/elixir-nx/axon/issues/184
-      # check_onnx_test_case!("node", "test_sqrt_example")
+      check_onnx_test_case!("node", "test_sqrt_example")
     end
 
     test "Tan" do
       check_onnx_test_case!("node", "test_tan")
-      # TODO: https://github.com/elixir-nx/axon/issues/184
-      # check_onnx_test_case!("node", "test_tan_example")
+      check_onnx_test_case!("node", "test_tan_example")
     end
 
     test "Tanh" do
       check_onnx_test_case!("node", "test_tanh")
-      # TODO: https://github.com/elixir-nx/axon/issues/184
-      # check_onnx_test_case!("node", "test_tanh_example")
+      check_onnx_test_case!("node", "test_tanh_example")
     end
 
     test "Transpose" do

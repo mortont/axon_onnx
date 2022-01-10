@@ -66,12 +66,6 @@ defmodule AxonOnnx.Deserialize do
         case value do
           {:tensor_type, %Placeholder{} = tensor} ->
             input_shape = shape!(tensor, dimensions)
-
-            input_shape =
-              if tuple_size(input_shape) == 1,
-                do: Tuple.insert_at(input_shape, 0, nil),
-                else: input_shape
-
             Map.put(acc, name, Axon.input(input_shape))
 
           unsupported ->
@@ -829,6 +823,7 @@ defmodule AxonOnnx.Deserialize do
        when is_list(inputs) do
     inputs = for inp <- inputs, do: axon!(inp, axon)
     %{"axis" => axis} = options!(attrs)
+
     updated_axon =
       Map.put(axon, output_name, Axon.concatenate(inputs, axis: axis, name: output_name))
 
@@ -1103,13 +1098,14 @@ defmodule AxonOnnx.Deserialize do
     else_branch = cond_options["else_branch"]
     then_branch = cond_options["then_branch"]
 
-    {else_graph, else_params} = graph_to_axon(else_branch, [])
-    {then_graph, then_params} = graph_to_axon(then_branch, [])
+    # TODO: Don't match
+    {[else_graph], else_params} = graph_to_axon(else_branch, [])
+    {[then_graph], then_params} = graph_to_axon(then_branch, [])
 
     updated_axon =
       outputs
       |> Enum.reduce(axon, fn out_name, axon ->
-        Map.put(axon, out_name, Axon.cond(inp, & &1, else_graph[out_name], then_graph[out_name]))
+        Map.put(axon, out_name, Axon.cond(inp, & &1, then_graph, else_graph))
       end)
 
     updated_params =
