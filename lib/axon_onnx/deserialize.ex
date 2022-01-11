@@ -663,7 +663,7 @@ defmodule AxonOnnx.Deserialize do
 
     {units, kernel_size} =
       if kernel_shape do
-        full_shape = List.to_tuple(kernel_shape)
+        full_shape = Nx.shape(kernel)
         units = elem(full_shape, 0)
 
         shape =
@@ -1239,12 +1239,17 @@ defmodule AxonOnnx.Deserialize do
   defp padding!(auto_pad, pads) do
     case auto_pad do
       val when val == "NOTSET" or val == nil ->
-        if pads do
-          pads
-          |> Enum.chunk_every(2)
-          |> Enum.zip()
-        else
-          :valid
+        case pads do
+          [l1, u1] ->
+            [{l1, u1}]
+
+          pads when is_list(pads) ->
+            pads
+            |> Enum.chunk_every(2)
+            |> Enum.zip()
+
+          nil ->
+            :valid
         end
 
       val when val == "SAME_UPPER" or val == "SAME_LOWER" ->

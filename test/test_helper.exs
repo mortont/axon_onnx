@@ -223,6 +223,3 @@ if not File.exists?(cases_path) do
 end
 
 Logger.info("Finished generating test cases")
-
-# Set EXLA as default compiler
-Nx.Defn.default_options(compiler: EXLA)

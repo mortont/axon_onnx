@@ -503,4 +503,101 @@ defmodule DeserializeTest do
       check_onnx_test_case!("node", "test_xor_bcast4v4d")
     end
   end
+
+  describe "pytorch converted tests" do
+    test "ELU" do
+      check_onnx_test_case!("pytorch-converted", "test_ELU")
+    end
+
+    test "LeakyReLU" do
+      check_onnx_test_case!("pytorch-converted", "test_LeakyReLU")
+      check_onnx_test_case!("pytorch-converted", "test_LeakyReLU_with_negval")
+    end
+
+    test "LogSoftmax" do
+      check_onnx_test_case!("pytorch-converted", "test_log_softmax_lastdim")
+      check_onnx_test_case!("pytorch-converted", "test_log_softmax_dim3")
+      check_onnx_test_case!("pytorch-converted", "test_LogSoftmax")
+    end
+
+    test "ReLU" do
+      check_onnx_test_case!("pytorch-converted", "test_ReLU")
+    end
+
+    test "SELU" do
+      check_onnx_test_case!("pytorch-converted", "test_SELU")
+    end
+
+    test "Sigmoid" do
+      check_onnx_test_case!("pytorch-converted", "test_Sigmoid")
+    end
+
+    test "Softmax" do
+      check_onnx_test_case!("pytorch-converted", "test_Softmax")
+      check_onnx_test_case!("pytorch-converted", "test_softmax_functional_dim3")
+      check_onnx_test_case!("pytorch-converted", "test_softmax_lastdim")
+    end
+
+    test "Softmin" do
+      check_onnx_test_case!("pytorch-converted", "test_Softmin")
+    end
+
+    test "Softplus" do
+      check_onnx_test_case!("pytorch-converted", "test_Softplus")
+    end
+
+    test "Softsign" do
+      check_onnx_test_case!("pytorch-converted", "test_Softsign")
+    end
+
+    test "Tanh" do
+      check_onnx_test_case!("pytorch-converted", "test_Tanh")
+    end
+  end
+
+  describe "pytorch operator tests" do
+    test "basic" do
+      check_onnx_test_case!("pytorch-operator", "test_operator_basic")
+    end
+
+    test "conv" do
+      Nx.Defn.default_options(compiler: EXLA)
+      check_onnx_test_case!("pytorch-operator", "test_operator_conv")
+    end
+
+    test "exp" do
+      check_onnx_test_case!("pytorch-operator", "test_operator_exp")
+    end
+
+    test "flatten" do
+      check_onnx_test_case!("pytorch-operator", "test_operator_flatten")
+    end
+
+    test "maxpool" do
+      check_onnx_test_case!("pytorch-operator", "test_operator_maxpool")
+    end
+
+    test "permute" do
+      check_onnx_test_case!("pytorch-operator", "test_operator_permute2")
+    end
+
+    test "reduce_mean" do
+      check_onnx_test_case!("pytorch-operator", "test_operator_reduced_mean")
+      check_onnx_test_case!("pytorch-operator", "test_operator_reduced_mean_keepdim")
+    end
+
+    test "selu" do
+      check_onnx_test_case!("pytorch-operator", "test_operator_selu")
+    end
+  end
+
+  describe "simple tests" do
+    test "sign model" do
+      check_onnx_test_case!("simple", "test_sign_model")
+    end
+
+    test "single relu model" do
+      check_onnx_test_case!("simple", "test_single_relu_model")
+    end
+  end
 end
