@@ -205,6 +205,12 @@ defmodule DeserializeTest do
       check_onnx_test_case!("node", "test_floor_example")
     end
 
+    test "Gather" do
+      check_onnx_test_case!("node", "test_gather_0")
+      check_onnx_test_case!("node", "test_gather_1")
+      check_onnx_test_case!("node", "test_gather_2d_indices")
+    end
+
     test "GlobalAveragePool" do
       check_onnx_test_case!("node", "test_globalaveragepool")
       check_onnx_test_case!("node", "test_globalaveragepool_precomputed")
@@ -326,6 +332,11 @@ defmodule DeserializeTest do
     test "Neg" do
       check_onnx_test_case!("node", "test_neg")
       check_onnx_test_case!("node", "test_neg_example")
+    end
+
+    test "LRN" do
+      check_onnx_test_case!("node", "test_lrn")
+      check_onnx_test_case!("node", "test_lrn_default")
     end
 
     test "Not" do
@@ -638,6 +649,11 @@ defmodule DeserializeTest do
   end
 
   describe "real tests" do
+    test "bvlc alexnet" do
+      Nx.Defn.default_options(compiler: EXLA)
+      check_onnx_model!("bvlc_alexnet")
+    end
+
     test "resnet50" do
       Nx.Defn.default_options(compiler: EXLA)
       check_onnx_model!("resnet50")

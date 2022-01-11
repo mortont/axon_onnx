@@ -43,7 +43,6 @@ defmodule AxonOnnx.Deserialize do
 
   defp to_axon(%Model{graph: %Graph{} = graph}, opts) do
     dimensions = opts[:dimensions] || []
-    dimensions = Enum.map(dimensions, &Atom.to_string/1)
 
     # TODO: Don't match for multi-output purposes
     {[graph], params} = graph_to_axon(graph, dimensions)
@@ -188,6 +187,9 @@ defmodule AxonOnnx.Deserialize do
         "Floor" ->
           to_axon_nx(op_node, axon, params, used_params, &Nx.floor/1)
 
+        "Gather" ->
+          to_axon_gather(op_node, axon, params, used_params)
+
         "Gemm" ->
           to_axon_dense(op_node, axon, params, used_params)
 
@@ -248,6 +250,9 @@ defmodule AxonOnnx.Deserialize do
 
         "LogSoftmax" ->
           to_axon_activation(op_node, axon, params, used_params, :log_softmax, axis: {"axis", -1})
+
+        "LRN" ->
+          to_axon_lrn(op_node, axon, params, used_params)
 
         "MatMul" ->
           to_axon_dense(op_node, axon, params, used_params)
@@ -470,6 +475,58 @@ defmodule AxonOnnx.Deserialize do
     end
 
     updated_axon = Map.put(axon, output_name, Axon.nx(inp, fun, name: output_name))
+    {updated_axon, used_params}
+  end
+
+  defp to_axon_lrn(
+         %Node{input: [input], attribute: attrs, output: [output_name]},
+         axon,
+         _params,
+         used_params
+       ) do
+    inp = axon!(input, axon)
+    lrn_options = options!(attrs)
+
+    alpha = lrn_options["alpha"] || 0.0001
+    beta = lrn_options["beta"] || 0.75
+    bias = lrn_options["bias"] || 1.0
+    size = lrn_options["size"]
+
+    axes = Enum.to_list(0..(size - 1))
+
+    fun = fn x ->
+      squares = Nx.power(x, 2)
+      sum_squares = Nx.sum(squares, axes: axes, keep_axes: true)
+      denom = Nx.power(Nx.add(bias, Nx.divide(alpha, Nx.multiply(size, sum_squares))), beta)
+      Nx.divide(x, denom)
+    end
+
+    updated_axon = Map.put(axon, output_name, Axon.nx(inp, fun, name: output_name))
+    {updated_axon, used_params}
+  end
+
+  defp to_axon_gather(
+         %Node{op_type: "Gather", input: [x, ind], output: [output_name], attribute: attrs},
+         axon,
+         _params,
+         used_params
+       ) do
+    gather_options = options!(attrs)
+
+    axis = gather_options["axis"]
+
+    %Axon{output_shape: shape} = inp = axon!(x, axon)
+    inp_names = List.duplicate(nil, Nx.rank(shape))
+    %Axon{output_shape: indices_shape} = indices = axon!(ind, axon)
+    ind_names = List.duplicate(nil, Nx.rank(indices_shape))
+    output_shape = Nx.Shape.take(shape, inp_names, indices_shape, ind_names, axis)
+
+    fun = fn x, indices ->
+      Nx.take(x, indices, axis: axis)
+    end
+
+    layer = Axon.layer([inp, indices], fun, output_shape, %{}, output_name)
+    updated_axon = Map.put(axon, output_name, layer)
     {updated_axon, used_params}
   end
 
