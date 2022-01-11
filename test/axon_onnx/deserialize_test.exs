@@ -94,6 +94,24 @@ defmodule DeserializeTest do
       check_onnx_test_case!("node", "test_asinh_example")
     end
 
+    test "AveragePool" do
+      check_onnx_test_case!("node", "test_averagepool_1d_default")
+      check_onnx_test_case!("node", "test_averagepool_2d_default")
+      # TODO: Count include pad
+      # check_onnx_test_case!("node", "test_averagepool_2d_pads")
+      check_onnx_test_case!("node", "test_averagepool_2d_pads_count_include_pad")
+      # check_onnx_test_case!("node", "test_averagepool_2d_precomputed_pads")
+      check_onnx_test_case!("node", "test_averagepool_2d_precomputed_pads_count_include_pad")
+      # check_onnx_test_case!("node", "test_averagepool_2d_precomputed_same_upper")
+      check_onnx_test_case!("node", "test_averagepool_2d_precomputed_strides")
+      # check_onnx_test_case!("node", "test_averagepool_2d_same_lower")
+      # check_onnx_test_case!("node", "test_averagepool_2d_same_upper")
+      check_onnx_test_case!("node", "test_averagepool_2d_strides")
+      check_onnx_test_case!("node", "test_averagepool_3d_default")
+      # TODO: Ceil mode
+      # check_onnx_test_case!("node", "test_averagepool_2d_ceil")
+    end
+
     test "BitShift" do
       check_onnx_test_case!("node", "test_bitshift_left_uint8")
       check_onnx_test_case!("node", "test_bitshift_left_uint16")
@@ -103,6 +121,18 @@ defmodule DeserializeTest do
       check_onnx_test_case!("node", "test_bitshift_right_uint16")
       check_onnx_test_case!("node", "test_bitshift_right_uint32")
       check_onnx_test_case!("node", "test_bitshift_right_uint64")
+    end
+
+    test "Cast" do
+      # check_onnx_test_case!("node", "test_cast_BFLOAT16_to_FLOAT")
+      check_onnx_test_case!("node", "test_cast_DOUBLE_to_FLOAT")
+      check_onnx_test_case!("node", "test_cast_DOUBLE_to_FLOAT16")
+      check_onnx_test_case!("node", "test_cast_FLOAT16_to_FLOAT")
+      # check_onnx_test_case!("node", "test_cast_FLOAT_to_BFLOAT16")
+      check_onnx_test_case!("node", "test_cast_FLOAT_to_DOUBLE")
+      check_onnx_test_case!("node", "test_cast_FLOAT_to_FLOAT16")
+      # check_onnx_test_case!("node", "test_cast_FLOAT_to_STRING")
+      # check_onnx_test_case!("node", "test_cast_STRING_to_FLOAT")
     end
 
     test "Ceil" do
@@ -471,6 +501,12 @@ defmodule DeserializeTest do
       check_onnx_test_case!("node", "test_sqrt_example")
     end
 
+    test "Sum" do
+      check_onnx_test_case!("node", "test_sum_example")
+      check_onnx_test_case!("node", "test_sum_one_input")
+      check_onnx_test_case!("node", "test_sum_two_inputs")
+    end
+
     test "Tan" do
       check_onnx_test_case!("node", "test_tan")
       check_onnx_test_case!("node", "test_tan_example")
@@ -598,6 +634,23 @@ defmodule DeserializeTest do
 
     test "single relu model" do
       check_onnx_test_case!("simple", "test_single_relu_model")
+    end
+  end
+
+  describe "real tests" do
+    test "resnet50" do
+      Nx.Defn.default_options(compiler: EXLA)
+      check_onnx_model!("resnet50")
+    end
+
+    test "shufflenet" do
+      Nx.Defn.default_options(compiler: EXLA)
+      check_onnx_model!("shufflenet")
+    end
+
+    test "vgg19" do
+      Nx.Defn.default_options(compiler: EXLA)
+      check_onnx_model!("vgg19")
     end
   end
 end

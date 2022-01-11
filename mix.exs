@@ -26,6 +26,7 @@ defmodule AxonOnnx.MixProject do
       {:exla, "~> 0.1.0-dev",
        github: "elixir-nx/nx", sparse: "exla", override: true, only: :test},
       {:req, "~> 0.1.0", only: :test},
+      {:jason, "~> 1.2", only: :test},
       {:axon, "~> 0.1.0-dev", axon_opts()}
     ]
   end

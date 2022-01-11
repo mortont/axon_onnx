@@ -122,6 +122,9 @@ defmodule AxonOnnx.Deserialize do
         "Atanh" ->
           to_axon_nx(op_node, axon, params, used_params, &Nx.atanh/1)
 
+        "AveragePool" ->
+          to_axon_avg_pool(op_node, axon, params, used_params)
+
         "BatchNormalization" ->
           to_axon_batch_norm(op_node, axon, params, used_params)
 
@@ -139,6 +142,9 @@ defmodule AxonOnnx.Deserialize do
                 Nx.right_shift(x, y)
             end
           end)
+
+        "Cast" ->
+          to_axon_cast(op_node, axon, params, used_params)
 
         "Ceil" ->
           to_axon_nx(op_node, axon, params, used_params, &Nx.ceil/1)
@@ -369,6 +375,9 @@ defmodule AxonOnnx.Deserialize do
         "Sub" ->
           to_axon_binary_op(op_node, axon, params, used_params, :subtract)
 
+        "Sum" ->
+          to_axon_sum(op_node, axon, params, used_params)
+
         "Tan" ->
           to_axon_nx(op_node, axon, params, used_params, &Nx.tan/1)
 
@@ -397,6 +406,71 @@ defmodule AxonOnnx.Deserialize do
           raise "unsupported #{op} op in graph"
       end
     end)
+  end
+
+  defp to_axon_cast(
+         %Node{op_type: "Cast", attribute: attrs, input: [input], output: [output_name]},
+         axon,
+         _params,
+         used_params
+       ) do
+    cast_options = options!(attrs)
+    inp = axon!(input, axon)
+
+    fun = fn x ->
+      case cast_options["to"] do
+        1 ->
+          Nx.as_type(x, {:f, 32})
+
+        2 ->
+          Nx.as_type(x, {:u, 8})
+
+        3 ->
+          Nx.as_type(x, {:s, 8})
+
+        4 ->
+          Nx.as_type(x, {:u, 16})
+
+        5 ->
+          Nx.as_type(x, {:s, 16})
+
+        6 ->
+          Nx.as_type(x, {:s, 32})
+
+        7 ->
+          Nx.as_type(x, {:s, 64})
+
+        8 ->
+          raise ArgumentError, "unsupported STRING type"
+
+        9 ->
+          raise ArgumentError, "unsupported BOOL type"
+
+        10 ->
+          Nx.as_type(x, {:f, 16})
+
+        11 ->
+          Nx.as_type(x, {:f, 64})
+
+        12 ->
+          Nx.as_type(x, {:u, 32})
+
+        13 ->
+          Nx.as_type(x, {:u, 64})
+
+        14 ->
+          raise ArgumentError, "unsupported COMPLEX type"
+
+        15 ->
+          raise ArgumentError, "unsupported COMPLEX type"
+
+        16 ->
+          Nx.as_type(x, {:bf, 16})
+      end
+    end
+
+    updated_axon = Map.put(axon, output_name, Axon.nx(inp, fun, name: output_name))
+    {updated_axon, used_params}
   end
 
   # Builds a generic Nx layer by applying the given operation
@@ -574,6 +648,12 @@ defmodule AxonOnnx.Deserialize do
     {updated_axon, used_params}
   end
 
+  defp to_axon_sum(%Node{input: inputs, output: [output_name]}, axon, _params, used_params) do
+    axons = for input <- inputs, do: axon!(input, axon)
+    updated_axon = Map.put(axon, output_name, Axon.add(axons, name: output_name))
+    {updated_axon, used_params}
+  end
+
   defp to_axon_max_pool(
          %Node{op_type: "MaxPool", input: [inp], attribute: attrs, output: [output_name]},
          axon,
@@ -628,6 +708,68 @@ defmodule AxonOnnx.Deserialize do
         axon,
         output_name,
         Axon.max_pool(inp,
+          kernel_size: kernel_size,
+          strides: strides,
+          padding: padding_config,
+          dilations: dilations,
+          name: output_name
+        )
+      )
+
+    {updated_axon, used_params}
+  end
+
+  defp to_axon_avg_pool(
+         %Node{op_type: "AveragePool", input: [inp], attribute: attrs, output: [output_name]},
+         axon,
+         _params,
+         used_params
+       ) do
+    avg_pool_options = options!(attrs)
+
+    kernel_shape = avg_pool_options["kernel_shape"]
+    ceil_mode = avg_pool_options["ceil_mode"] || 0
+    auto_pad = avg_pool_options["auto_pad"] || "NOTSET"
+    _count_include_pad = avg_pool_options["count_include_pad"] || 0
+    pads = avg_pool_options["pads"]
+    strides = avg_pool_options["strides"]
+    dilations = avg_pool_options["dilations"]
+
+    # Kernel size is a list of integers
+    kernel_size = List.to_tuple(kernel_shape)
+
+    # Axon only supports default ceil_mode right now
+    if ceil_mode != 0 do
+      raise ArgumentError,
+            "invalid ceil_mode #{inspect(ceil_mode)}, Axon only supports" <>
+              " ceil_mode of 0"
+    end
+
+    # Axon only supports count_include_pad == 1
+    # if count_include_pad != 1 do
+    #   raise ArgumentError, "invalid count_include_pad #{inspect(count_include_pad)}," <>
+    #                           " Axon only supports mode 1"
+    # end
+
+    # Axon default strides are equal to the kernel shape (Keras behavior)
+    # where as strides default to 1 in ONNX
+    strides =
+      if strides do
+        strides
+      else
+        List.duplicate(1, tuple_size(kernel_size))
+      end
+
+    # Compute padding from auto_pad and pads attributes
+    padding_config = padding!(auto_pad, pads)
+
+    inp = axon!(inp, axon)
+
+    updated_axon =
+      Map.put(
+        axon,
+        output_name,
+        Axon.avg_pool(inp,
           kernel_size: kernel_size,
           strides: strides,
           padding: padding_config,
@@ -1012,7 +1154,11 @@ defmodule AxonOnnx.Deserialize do
       |> Nx.to_flat_list()
       |> List.to_tuple()
 
-    {Map.put(axon, output_name, Axon.reshape(inp, new_shape, name: output_name)), used_params}
+    {Map.put(
+       axon,
+       output_name,
+       Axon.reshape(inp, new_shape, name: output_name, ignore_batch?: false)
+     ), used_params}
   end
 
   defp to_axon_flatten(
