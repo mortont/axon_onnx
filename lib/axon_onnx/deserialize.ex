@@ -44,9 +44,17 @@ defmodule AxonOnnx.Deserialize do
   defp to_axon(%Model{graph: %Graph{} = graph}, opts) do
     dimensions = opts[:dimensions] || []
 
-    # TODO: Don't match for multi-output purposes
-    {[graph], params} = graph_to_axon(graph, dimensions)
-    {graph, params}
+    {graph, params} = graph_to_axon(graph, dimensions)
+
+    case graph do
+      [graph] ->
+        # single-output
+        {graph, params}
+
+      graph when is_list(graph) ->
+        # multi-output
+        {List.to_tuple(graph), params}
+    end
   end
 
   def graph_to_axon(%Graph{node: nodes} = graph, dimensions) do
@@ -976,10 +984,7 @@ defmodule AxonOnnx.Deserialize do
 
     updated_axon = Map.put(axon, output_name, Axon.batch_norm(inp, name: output_name))
 
-    updated_params =
-      used_params
-      |> Map.put(output_name <> "_gamma", gamma)
-      |> Map.put(output_name <> "_beta", beta)
+    updated_params = Map.put(used_params, output_name, %{"gamma" => gamma, "beta" => beta})
 
     {updated_axon, updated_params}
   end
