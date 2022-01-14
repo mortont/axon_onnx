@@ -970,7 +970,7 @@ defmodule AxonOnnx.Deserialize do
   defp to_axon_batch_norm(
          %Node{
            op_type: "BatchNormalization",
-           input: [inp, gamma, beta, _mean, _var],
+           input: [inp, gamma, beta, mean, var],
            output: [output_name]
          },
          axon,
@@ -981,10 +981,18 @@ defmodule AxonOnnx.Deserialize do
 
     gamma = param!(gamma, params)
     beta = param!(beta, params)
+    mean = param!(mean, params)
+    var = param!(var, params)
 
     updated_axon = Map.put(axon, output_name, Axon.batch_norm(inp, name: output_name))
 
-    updated_params = Map.put(used_params, output_name, %{"gamma" => gamma, "beta" => beta})
+    updated_params =
+      Map.put(used_params, output_name, %{
+        "gamma" => gamma,
+        "beta" => beta,
+        "mean" => mean,
+        "var" => var
+      })
 
     {updated_axon, updated_params}
   end
