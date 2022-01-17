@@ -103,8 +103,47 @@ defmodule OnnxTestHelper do
     end)
   end
 
+  @doc """
+  Tests given ONNX model.
+  """
+  def check_onnx_model!(model_name) do
+    test_name = "test_" <> model_name
+    base_path = Path.join(["test", "cases", "real", test_name])
+    test_path = Path.join([base_path, "data.json"])
+    model_path = Path.join([base_path, "model.onnx"])
+
+    if File.exists?(model_path) do
+      check_onnx_test_case!("real", test_name)
+    else
+      data =
+        test_path
+        |> File.read!()
+        |> Jason.decode!()
+
+      Logger.info("Downloading #{model_name} from #{data["url"]}")
+
+      {:ok, files} =
+        :erl_tar.extract({:binary, Req.get!(data["url"]).body}, [:compressed, :memory])
+
+      files
+      |> Enum.map(fn {fname, data} ->
+        [_ | rest] = Path.split(fname)
+        path = Path.join([base_path | rest])
+
+        if File.exists?(path) do
+          :ok
+        else
+          File.mkdir_p!(Path.dirname(path))
+          File.write!(path, data)
+        end
+      end)
+
+      check_onnx_test_case!("real", test_name)
+    end
+  end
+
   defp assert_all_close!(x, y) do
-    unless Nx.all_close(x, y) == Nx.tensor(1, type: {:u, 8}) do
+    unless Nx.all_close(x, y, atol: 1.0e-3) == Nx.tensor(1, type: {:u, 8}) do
       raise "expected #{inspect(x)} to be within tolerance of #{inspect(y)}"
     end
 
@@ -223,6 +262,3 @@ if not File.exists?(cases_path) do
 end
 
 Logger.info("Finished generating test cases")
-
-# Set EXLA as default compiler
-Nx.Defn.default_options(compiler: EXLA)
