@@ -159,9 +159,13 @@ defmodule HelperText do
     def create_graph() do
       Helper.make_graph(
         [Helper.make_node("Relu", ["X"], ["Y"])],
-        "test",
+        "input_test",
         [Helper.make_tensor_value_info("X", :FLOAT, [1, 2])],
-        [Helper.make_tensor_value_info("Y", :FLOAT, [1, 2])]
+        [Helper.make_tensor_value_info("Y", :FLOAT, [1, 2])],
+        [
+          Helper.make_tensor("init_test", :FLOAT, {1}, [1]),
+          Helper.make_tensor("X", :FLOAT, {2}, [1, 2]),
+        ]
       )
     end
 
@@ -171,6 +175,14 @@ defmodule HelperText do
       assert %Model{
                producer_name: "test"
              } = Helper.make_model(graph_def, producer_name: "test")
+    end
+
+    test "Remove input layers from initializer" do
+      graph_def = create_graph()
+      m = Helper.make_model(graph_def, producer_name: "optimizer_test")
+      opt_model = Helper.remove_initializer_from_input(m)
+      assert opt_model.graph.input === []
+      assert m.graph.initializer === opt_model.graph.initializer
     end
 
     test "Save the new model and check if the file has been saved" do

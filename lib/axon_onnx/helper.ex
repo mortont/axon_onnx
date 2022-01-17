@@ -57,20 +57,21 @@ defmodule AxonOnnx.Helper do
 
         is_number(data_type) ->
           # Check for an existing type identified by the number
-          Enum.fetch!(Placeholder.DataType.constants(), data_type)
+          Enum.fetch(Placeholder.DataType.constants(), data_type)
 
         true ->
           nil
       end
 
-    if parsed_data_type == nil or parsed_data_type == :error do
-      max_data_type_id = Enum.count(Placeholder.DataType.constants()) - 1
+    case parsed_data_type do
+      {:ok, dt} -> dt
 
-      raise ArgumentError,
-            "Wrong data_type format. Expected atom or number<#{max_data_type_id}, got: #{data_type}"
+      {n, a} when is_number(n) and is_atom(a) -> parsed_data_type
+
+      _ ->
+        max_data_type_id = Enum.count(Placeholder.DataType.constants)-1
+        raise ArgumentError, "Wrong data_type format. Expected atom or number<#{max_data_type_id}, got: #{data_type}"
     end
-
-    parsed_data_type
   end
 
   @doc """
@@ -404,4 +405,11 @@ defmodule AxonOnnx.Helper do
       attribute: make_attribute(kwargs)
     }
   end
+
+  def remove_initializer_from_input(%Model{graph: graph} = model) do
+    %{model | graph: %Graph{graph | input: Enum.reject(model.graph.input, fn input ->
+      Enum.find(model.graph.initializer, fn init -> input.name === init.name end)
+    end)}}
+  end
+
 end
