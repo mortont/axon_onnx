@@ -164,7 +164,7 @@ defmodule HelperText do
         [Helper.make_tensor_value_info("Y", :FLOAT, [1, 2])],
         [
           Helper.make_tensor("init_test", :FLOAT, {1}, [1]),
-          Helper.make_tensor("X", :FLOAT, {2}, [1, 2]),
+          Helper.make_tensor("X", :FLOAT, {2}, [1, 2])
         ]
       )
     end
