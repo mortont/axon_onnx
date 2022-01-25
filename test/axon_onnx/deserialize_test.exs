@@ -538,10 +538,6 @@ defmodule DeserializeTest do
       check_onnx_test_case!("node", "test_transpose_all_permutations_5")
     end
 
-    test "Upsample" do
-      check_onnx_test_case!("node", "test_upsample_nearest")
-    end
-
     test "Xor" do
       check_onnx_test_case!("node", "test_xor2d")
       check_onnx_test_case!("node", "test_xor3d")
