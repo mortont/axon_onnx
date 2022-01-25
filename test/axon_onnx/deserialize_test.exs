@@ -558,10 +558,10 @@ defmodule DeserializeTest do
   describe "pytorch converted tests" do
     test "BatchNorm" do
       check_onnx_test_case!("pytorch-converted", "test_BatchNorm1d_3d_input_eval")
-      check_onnx_test_case!("pytorch-converted", "test_BatchNorm2d_eval")      
+      check_onnx_test_case!("pytorch-converted", "test_BatchNorm2d_eval")
       # check_onnx_test_case!("pytorch-converted", "test_BatchNorm2d_momentum_eval")
-      check_onnx_test_case!("pytorch-converted", "test_BatchNorm3d_eval")      
-      check_onnx_test_case!("pytorch-converted", "test_BatchNorm3d_momentum_eval")      
+      check_onnx_test_case!("pytorch-converted", "test_BatchNorm3d_eval")
+      check_onnx_test_case!("pytorch-converted", "test_BatchNorm3d_momentum_eval")
     end
 
     test "Conv" do

@@ -243,7 +243,8 @@ defmodule AxonOnnx.Deserialize do
           to_axon_cond(op_node, axon, params, used_params)
 
         "LeakyRelu" ->
-          IO.inspect op_node
+          IO.inspect(op_node)
+
           to_axon_activation(op_node, axon, params, used_params, :leaky_relu,
             alpha: {"alpha", 0.01}
           )
@@ -852,7 +853,7 @@ defmodule AxonOnnx.Deserialize do
          params,
          used_params
        ) do
-    conv_options = options!(attrs) |> IO.inspect
+    conv_options = options!(attrs) |> IO.inspect()
 
     kernel_shape = conv_options["kernel_shape"]
     auto_pad = conv_options["auto_pad"] || "NOTSET"
@@ -865,7 +866,7 @@ defmodule AxonOnnx.Deserialize do
     kernel_size = List.to_tuple(kernel_shape)
 
     [inp, kernel | maybe_bias] = input
-    
+
     %Axon{output_shape: shape} = axon_inp = axon!(inp, axon)
 
     padding_config = padding!(auto_pad, pads, shape, kernel_size, strides)
@@ -998,7 +999,12 @@ defmodule AxonOnnx.Deserialize do
     mean = param!(mean, params)
     var = param!(var, params)
 
-    updated_axon = Map.put(axon, output_name, Axon.batch_norm(inp, name: output_name, momentum: momentum, epsilon: epsilon))
+    updated_axon =
+      Map.put(
+        axon,
+        output_name,
+        Axon.batch_norm(inp, name: output_name, momentum: momentum, epsilon: epsilon)
+      )
 
     updated_params =
       Map.put(used_params, output_name, %{
