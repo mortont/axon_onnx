@@ -243,8 +243,6 @@ defmodule AxonOnnx.Deserialize do
           to_axon_cond(op_node, axon, params, used_params)
 
         "LeakyRelu" ->
-          IO.inspect(op_node)
-
           to_axon_activation(op_node, axon, params, used_params, :leaky_relu,
             alpha: {"alpha", 0.01}
           )
@@ -853,7 +851,7 @@ defmodule AxonOnnx.Deserialize do
          params,
          used_params
        ) do
-    conv_options = options!(attrs) |> IO.inspect()
+    conv_options = options!(attrs)
 
     kernel_shape = conv_options["kernel_shape"]
     auto_pad = conv_options["auto_pad"] || "NOTSET"
