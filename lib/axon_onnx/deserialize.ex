@@ -143,10 +143,10 @@ defmodule AxonOnnx.Deserialize do
 
             case shift_options["direction"] do
               "LEFT" ->
-                Nx.left_shift(x, y)
+                Nx.left_shift(Nx.as_type(x, {:s, 64}), Nx.as_type(y, {:s, 64}))
 
               "RIGHT" ->
-                Nx.right_shift(x, y)
+                Nx.right_shift(Nx.as_type(x, {:s, 64}), Nx.as_type(y, {:s, 64}))
             end
           end)
 
@@ -530,7 +530,7 @@ defmodule AxonOnnx.Deserialize do
     output_shape = Nx.Shape.take(shape, inp_names, indices_shape, ind_names, axis)
 
     fun = fn x, indices ->
-      Nx.take(x, indices, axis: axis)
+      Nx.take(x, Nx.as_type(indices, {:s, 64}), axis: axis)
     end
 
     layer = Axon.layer([inp, indices], fun, output_shape, %{}, output_name)
