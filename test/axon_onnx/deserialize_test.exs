@@ -649,24 +649,25 @@ defmodule DeserializeTest do
   end
 
   describe "real tests" do
-    test "bvlc alexnet" do
-      Nx.Defn.default_options(compiler: EXLA)
-      check_onnx_model!("bvlc_alexnet")
-    end
+    # TODO: Add these back in
+    # test "bvlc alexnet" do
+    #   Nx.Defn.default_options(compiler: EXLA)
+    #   check_onnx_model!("bvlc_alexnet")
+    # end
 
-    test "resnet50" do
-      Nx.Defn.default_options(compiler: EXLA)
-      check_onnx_model!("resnet50")
-    end
+    # test "resnet50" do
+    #   Nx.Defn.default_options(compiler: EXLA)
+    #   check_onnx_model!("resnet50")
+    # end
 
-    test "shufflenet" do
-      Nx.Defn.default_options(compiler: EXLA)
-      check_onnx_model!("shufflenet")
-    end
+    # test "shufflenet" do
+    #   Nx.Defn.default_options(compiler: EXLA)
+    #   check_onnx_model!("shufflenet")
+    # end
 
-    test "vgg19" do
-      Nx.Defn.default_options(compiler: EXLA)
-      check_onnx_model!("vgg19")
-    end
+    # test "vgg19" do
+    #   Nx.Defn.default_options(compiler: EXLA)
+    #   check_onnx_model!("vgg19")
+    # end
   end
 end
