@@ -143,10 +143,10 @@ defmodule AxonOnnx.Deserialize do
 
             case shift_options["direction"] do
               "LEFT" ->
-                Nx.left_shift(x, y)
+                Nx.left_shift(Nx.as_type(x, {:s, 64}), Nx.as_type(y, {:s, 64}))
 
               "RIGHT" ->
-                Nx.right_shift(x, y)
+                Nx.right_shift(Nx.as_type(x, {:s, 64}), Nx.as_type(y, {:s, 64}))
             end
           end)
 
@@ -530,7 +530,7 @@ defmodule AxonOnnx.Deserialize do
     output_shape = Nx.Shape.take(shape, inp_names, indices_shape, ind_names, axis)
 
     fun = fn x, indices ->
-      Nx.take(x, indices, axis: axis)
+      Nx.take(x, Nx.as_type(indices, {:s, 64}), axis: axis)
     end
 
     layer = Axon.layer([inp, indices], fun, output_shape, %{}, output_name)
@@ -627,7 +627,7 @@ defmodule AxonOnnx.Deserialize do
             Axon.dense(input, units, use_bias: false, name: output_name)
           )
 
-        updated_params = Map.put(used_params, output_name <> "_kernel", weight)
+        updated_params = Map.put(used_params, output_name, %{"kernel" => weight})
         {updated_axon, updated_params}
 
       "Gemm" ->
@@ -665,14 +665,13 @@ defmodule AxonOnnx.Deserialize do
 
         updated_params =
           if maybe_bias == [] do
-            Map.put(used_params, output_name <> "_kernel", weight)
+            Map.put(used_params, output_name, %{"kernel" => weight})
           else
             [bias] = maybe_bias
             bias = param!(bias, params)
 
             used_params
-            |> Map.put(output_name <> "_kernel", weight)
-            |> Map.put(output_name <> "_bias", bias)
+            |> Map.put(output_name, %{"kernel" => weight, "bias" => bias})
           end
 
         {updated_axon, updated_params}
@@ -763,10 +762,10 @@ defmodule AxonOnnx.Deserialize do
         List.duplicate(1, tuple_size(kernel_size))
       end
 
-    # Compute padding from auto_pad and pads attributes
-    padding_config = padding!(auto_pad, pads)
+    %Axon{output_shape: shape} = inp = axon!(inp, axon)
 
-    inp = axon!(inp, axon)
+    # Compute padding from auto_pad and pads attributes
+    padding_config = padding!(auto_pad, pads, shape, kernel_size, strides)
 
     updated_axon =
       Map.put(
@@ -825,10 +824,10 @@ defmodule AxonOnnx.Deserialize do
         List.duplicate(1, tuple_size(kernel_size))
       end
 
-    # Compute padding from auto_pad and pads attributes
-    padding_config = padding!(auto_pad, pads)
+    %Axon{output_shape: shape} = inp = axon!(inp, axon)
 
-    inp = axon!(inp, axon)
+    # Compute padding from auto_pad and pads attributes
+    padding_config = padding!(auto_pad, pads, shape, kernel_size, strides)
 
     updated_axon =
       Map.put(
@@ -861,11 +860,15 @@ defmodule AxonOnnx.Deserialize do
     pads = conv_options["pads"]
     strides = conv_options["strides"]
 
-    padding_config = padding!(auto_pad, pads)
+    # Kernel size is a list of integers
+    kernel_size = List.to_tuple(kernel_shape)
 
     [inp, kernel | maybe_bias] = input
 
-    axon_inp = axon!(inp, axon)
+    %Axon{output_shape: shape} = axon_inp = axon!(inp, axon)
+
+    padding_config = padding!(auto_pad, pads, shape, kernel_size, strides)
+
     kernel = param!(kernel, params)
 
     {units, kernel_size} =
@@ -966,25 +969,48 @@ defmodule AxonOnnx.Deserialize do
     {updated_axon, used_params}
   end
 
-  # TODO(seanmor5): Mean and variance
   defp to_axon_batch_norm(
          %Node{
            op_type: "BatchNormalization",
-           input: [inp, gamma, beta, _mean, _var],
-           output: [output_name]
+           input: [inp, gamma, beta, mean, var],
+           output: [output_name],
+           attribute: attrs
          },
          axon,
          params,
          used_params
        ) do
+    options = options!(attrs)
+
+    mode = options["training_mode"] || 0
+    epsilon = options["epsilon"] || 1.0e-5
+    momentum = options["momenutm"] || 0.9
+
+    if mode == 1 do
+      Logger.warn("Training mode in batch norm has no effect")
+    end
+
     inp = axon!(inp, axon)
 
     gamma = param!(gamma, params)
     beta = param!(beta, params)
+    mean = param!(mean, params)
+    var = param!(var, params)
 
-    updated_axon = Map.put(axon, output_name, Axon.batch_norm(inp, name: output_name))
+    updated_axon =
+      Map.put(
+        axon,
+        output_name,
+        Axon.batch_norm(inp, name: output_name, momentum: momentum, epsilon: epsilon)
+      )
 
-    updated_params = Map.put(used_params, output_name, %{"gamma" => gamma, "beta" => beta})
+    updated_params =
+      Map.put(used_params, output_name, %{
+        "gamma" => gamma,
+        "beta" => beta,
+        "mean" => mean,
+        "var" => var
+      })
 
     {updated_axon, updated_params}
   end
@@ -1046,7 +1072,7 @@ defmodule AxonOnnx.Deserialize do
        ) do
     %Axon{output_shape: shape} = inp = axon!(inp, axon)
     %{"mode" => mode} = options!(attrs)
-    scale = param!(scale, params)
+    scale = constant!(scale, axon, params)
 
     # Ignoring the first two 1.0 values to obtain the same dimension of scale_values 
     [_, _ | shape] = Tuple.to_list(shape)
@@ -1444,24 +1470,30 @@ defmodule AxonOnnx.Deserialize do
     end
   end
 
-  defp padding!(auto_pad, pads) do
+  defp padding!(auto_pad, pads, shape, kernel_size, strides) do
     case auto_pad do
       val when val == "NOTSET" or val == nil ->
         case pads do
-          [l1, u1] ->
-            [{l1, u1}]
-
           pads when is_list(pads) ->
             pads
-            |> Enum.chunk_every(2)
+            |> Enum.count()
+            |> then(&Enum.chunk_every(pads, div(&1, 2)))
             |> Enum.zip()
 
           nil ->
             :valid
         end
 
-      val when val == "SAME_UPPER" or val == "SAME_LOWER" ->
+      val when val == "SAME_UPPER" ->
         :same
+
+      val when val == "SAME_LOWER" ->
+        Enum.zip_with([Tuple.to_list(shape), Tuple.to_list(kernel_size), strides], fn [dim, k, s] ->
+          padding_size = max((dim - 1) * s + k - dim, 0)
+          hi = floor(padding_size / 2)
+          lo = ceil(padding_size / 2)
+          {lo, hi}
+        end)
 
       "VALID" ->
         :valid

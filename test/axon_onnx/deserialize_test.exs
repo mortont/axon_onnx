@@ -311,7 +311,7 @@ defmodule DeserializeTest do
       # check_onnx_test_case!("node", "test_maxpool_2d_dilations")
       check_onnx_test_case!("node", "test_maxpool_2d_pads")
       # TODO: Adjust pads for same lower behavior
-      # check_onnx_test_case!("node", "test_maxpool_2d_same_lower")
+      check_onnx_test_case!("node", "test_maxpool_2d_same_lower")
       check_onnx_test_case!("node", "test_maxpool_2d_same_upper")
       check_onnx_test_case!("node", "test_maxpool_2d_strides")
       check_onnx_test_case!("node", "test_maxpool_2d_uint8")
@@ -552,6 +552,43 @@ defmodule DeserializeTest do
   end
 
   describe "pytorch converted tests" do
+    test "BatchNorm" do
+      check_onnx_test_case!("pytorch-converted", "test_BatchNorm1d_3d_input_eval")
+      check_onnx_test_case!("pytorch-converted", "test_BatchNorm2d_eval")
+      # check_onnx_test_case!("pytorch-converted", "test_BatchNorm2d_momentum_eval")
+      check_onnx_test_case!("pytorch-converted", "test_BatchNorm3d_eval")
+      check_onnx_test_case!("pytorch-converted", "test_BatchNorm3d_momentum_eval")
+    end
+
+    test "Conv" do
+      check_onnx_test_case!("pytorch-converted", "test_Conv1d")
+      check_onnx_test_case!("pytorch-converted", "test_Conv1d_dilated")
+      # check_onnx_test_case!("pytorch-converted", "test_Conv1d_groups")
+      check_onnx_test_case!("pytorch-converted", "test_Conv1d_pad1")
+      check_onnx_test_case!("pytorch-converted", "test_Conv1d_pad1size1")
+      check_onnx_test_case!("pytorch-converted", "test_Conv1d_pad2")
+      check_onnx_test_case!("pytorch-converted", "test_Conv1d_pad2size1")
+      check_onnx_test_case!("pytorch-converted", "test_Conv1d_stride")
+      check_onnx_test_case!("pytorch-converted", "test_Conv2d")
+      # check_onnx_test_case!("pytorch-converted", "test_Conv2d_depthwise")
+      # check_onnx_test_case!("pytorch-converted", "test_Conv2d_depthwise_padding")
+      # check_onnx_test_case!("pytorch-converted", "test_Conv2d_depthwise_stride")
+      # check_onnx_test_case!("pytorch-converted", "test_Conv2d_depthwise_with_multiplier")
+      check_onnx_test_case!("pytorch-converted", "test_Conv2d_dilated")
+      # check_onnx_test_case!("pytorch-converted", "test_Conv2d_groups")
+      # check_onnx_test_case!("pytorch-converted", "test_Conv2d_groups_thnn")
+      check_onnx_test_case!("pytorch-converted", "test_Conv2d_no_bias")
+      check_onnx_test_case!("pytorch-converted", "test_Conv2d_padding")
+      check_onnx_test_case!("pytorch-converted", "test_Conv2d_strided")
+      check_onnx_test_case!("pytorch-converted", "test_Conv3d")
+      check_onnx_test_case!("pytorch-converted", "test_Conv3d_dilated")
+      check_onnx_test_case!("pytorch-converted", "test_Conv3d_dilated_strided")
+      # check_onnx_test_case!("pytorch-converted", "test_Conv3d_groups")
+      check_onnx_test_case!("pytorch-converted", "test_Conv3d_no_bias")
+      check_onnx_test_case!("pytorch-converted", "test_Conv3d_stride")
+      check_onnx_test_case!("pytorch-converted", "test_Conv3d_stride_padding")
+    end
+
     test "ELU" do
       check_onnx_test_case!("pytorch-converted", "test_ELU")
     end
@@ -565,6 +602,16 @@ defmodule DeserializeTest do
       check_onnx_test_case!("pytorch-converted", "test_log_softmax_lastdim")
       check_onnx_test_case!("pytorch-converted", "test_log_softmax_dim3")
       check_onnx_test_case!("pytorch-converted", "test_LogSoftmax")
+    end
+
+    test "MaxPool" do
+      check_onnx_test_case!("pytorch-converted", "test_MaxPool1d")
+      check_onnx_test_case!("pytorch-converted", "test_MaxPool1d_stride")
+      # check_onnx_test_case!("pytorch-converted", "test_MaxPool1d_stride_padding_dilation")
+      check_onnx_test_case!("pytorch-converted", "test_MaxPool2d")
+      # check_onnx_test_case!("pytorch-converted", "test_MaxPool2d_stride_padding_dilation")
+      check_onnx_test_case!("pytorch-converted", "test_MaxPool3d")
+      # check_onnx_test_case!("pytorch-converted", "test_MaxPool3d_stride_padding_dilation")
     end
 
     test "ReLU" do
@@ -649,24 +696,25 @@ defmodule DeserializeTest do
   end
 
   describe "real tests" do
-    test "bvlc alexnet" do
-      Nx.Defn.default_options(compiler: EXLA)
-      check_onnx_model!("bvlc_alexnet")
-    end
+    # TODO: Add these back in
+    # test "bvlc alexnet" do
+    #   Nx.Defn.default_options(compiler: EXLA)
+    #   check_onnx_model!("bvlc_alexnet")
+    # end
 
-    test "resnet50" do
-      Nx.Defn.default_options(compiler: EXLA)
-      check_onnx_model!("resnet50")
-    end
+    # test "resnet50" do
+    #   Nx.Defn.default_options(compiler: EXLA)
+    #   check_onnx_model!("resnet50")
+    # end
 
-    test "shufflenet" do
-      Nx.Defn.default_options(compiler: EXLA)
-      check_onnx_model!("shufflenet")
-    end
+    # test "shufflenet" do
+    #   Nx.Defn.default_options(compiler: EXLA)
+    #   check_onnx_model!("shufflenet")
+    # end
 
-    test "vgg19" do
-      Nx.Defn.default_options(compiler: EXLA)
-      check_onnx_model!("vgg19")
-    end
+    # test "vgg19" do
+    #   Nx.Defn.default_options(compiler: EXLA)
+    #   check_onnx_model!("vgg19")
+    # end
   end
 end
