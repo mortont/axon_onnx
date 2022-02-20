@@ -1,11 +1,10 @@
-# AxonOnnx
+# AxonONNX
 
-**TODO: Add description**
+Easily convert models between ONNX and Axon.
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `axon_onnx` to your list of dependencies in `mix.exs`:
+AxonONNX is currently in development. You can use it as a `git` dependency:
 
 ```elixir
 def deps do
@@ -15,13 +14,11 @@ def deps do
 end
 ```
 
-Additionally, axon_onnx uses [protox](https://github.com/ahamez/protox) for the protocol buffers used in ONNX file format.
-The requirements for protox includes the following:
-- protoc >= 3.0 *This dependency is only required at compile-time*
-  `protox` uses Google's `protoc` (>= 3.0) to parse `.proto` files. It must be available in `$PATH`.
-  👉 You can download it [here](https://github.com/google/protobuf) or you can install it with your favorite package manager (`brew install protobuf`, `apt install protobuf-compiler`, etc.).
+Additionally, AxonONNX uses [protox](https://github.com/ahamez/protox) for
+parsing protocol buffers files (.proto) within ONNX. You'll also need:
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/axon_onnx](https://hexdocs.pm/axon_onnx).
-
+- `protoc >= 3.0`. It must be installed in your system and available in your
+  `$PATH`. *This dependency is only required at compile-time*.
+  👉 You can download it [here](https://github.com/google/protobuf) or you can
+  install it with your favorite package manager (`brew install protobuf`,
+  `apt install protobuf-compiler`, etc.).
