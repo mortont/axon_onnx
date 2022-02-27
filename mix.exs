@@ -43,7 +43,7 @@ defmodule AxonOnnx.MixProject do
   defp aliases() do
     [
       generate_protobuf:
-        "protox.generate --generate-defs-funs=false --keep-unknown-fields=false --multiple-files --output-path=./lib/onnx ./priv/onnx.proto"
+        "protox.generate --generate-defs-funs=false --keep-unknown-fields=false --multiple-files --output-path=./lib/onnx ./scripts/onnx.proto"
     ]
   end
 end
