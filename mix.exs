@@ -7,7 +7,8 @@ defmodule AxonOnnx.MixProject do
       version: "0.1.0",
       elixir: "~> 1.12",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      aliases: aliases()
     ]
   end
 
@@ -21,7 +22,7 @@ defmodule AxonOnnx.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:protox, "~> 1.4.0"},
+      {:protox, "~> 1.6.0"},
       {:nx, "~> 0.1.0-dev", github: "elixir-nx/nx", sparse: "nx", override: true},
       {:exla, "~> 0.1.0-dev",
        github: "elixir-nx/nx", sparse: "exla", override: true, only: :test},
@@ -37,5 +38,12 @@ defmodule AxonOnnx.MixProject do
     else
       [github: "elixir-nx/axon", branch: "sm-batch-norm"]
     end
+  end
+
+  defp aliases() do
+    [
+      generate_protobuf:
+        "protox.generate --generate-defs-funs=false --keep-unknown-fields=false --multiple-files --output-path=./lib/onnx ./scripts/onnx.proto"
+    ]
   end
 end

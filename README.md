@@ -14,11 +14,14 @@ def deps do
 end
 ```
 
-Additionally, AxonONNX uses [protox](https://github.com/ahamez/protox) for
-parsing protocol buffers files (.proto) within ONNX. You'll also need:
+### Protobuf
 
-- `protoc >= 3.0`. It must be installed in your system and available in your
-  `$PATH`. *This dependency is only required at compile-time*.
-  👉 You can download it [here](https://github.com/google/protobuf) or you can
-  install it with your favorite package manager (`brew install protobuf`,
-  `apt install protobuf-compiler`, etc.).
+Additionally, AxonONNX uses [protox](https://github.com/ahamez/protox) to generate code for parsing protocol buffers data within ONNX.
+
+If you want to regenerate this code, you can invoke the following command:
+
+```sh
+mix generate_protobuf
+```
+
+Note that you'll need to install `protoc` (>= 3.0). It must available in `$PATH`. You can download it [here](https://github.com/google/protobuf) or you can install it with your favorite package manager (`brew install protobuf`, `apt install protobuf-compiler`, etc.).
