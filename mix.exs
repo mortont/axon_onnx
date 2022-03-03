@@ -22,7 +22,7 @@ defmodule AxonOnnx.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:protox, "~> 1.6.0"},
+      {:protox, "~> 1.6.10"},
       {:nx, "~> 0.1.0-dev", github: "elixir-nx/nx", sparse: "nx", override: true},
       {:exla, "~> 0.1.0-dev",
        github: "elixir-nx/nx", sparse: "exla", override: true, only: :test},
