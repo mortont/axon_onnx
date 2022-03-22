@@ -36,7 +36,7 @@ defmodule AxonOnnx.MixProject do
     if path = System.get_env("AXON_PATH") do
       [path: path]
     else
-      [github: "elixir-nx/axon", branch: "sm-batch-norm"]
+      [github: "elixir-nx/axon", branch: "main"]
     end
   end
 
