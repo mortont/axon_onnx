@@ -496,7 +496,7 @@ defmodule AxonOnnx.Serialize do
     end)
   end
 
-  defp to_value_info(%Axon{id: id, op: op, name: name_fn, output_shape: shape}, cache, op_counts) do
+  defp to_value_info(%Axon{id: id, op: op, name: name_fn, output_shape: shape}, op_counts, cache) do
     {name, op_counts, cache} =
       case cache do
         %{^id => name} ->
