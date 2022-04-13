@@ -77,20 +77,17 @@ defmodule OnnxTestHelper do
       input_paths = Path.wildcard(Path.join([data_path, "input_*.pb"]))
       output_paths = Path.wildcard(Path.join([data_path, "output_*.pb"]))
 
-      inp_tensors = Enum.map(input_paths, &pb_to_tensor/1)
-      out_tensors = Enum.map(output_paths, &pb_to_tensor/1)
+      inp_tensors = Map.new(input_paths, &pb_to_tensor/1)
+      out_tensors = Enum.map(output_paths, &elem(pb_to_tensor(&1), 1))
 
-      # TODO: Update with better container support
+      # Annoyingly some of the pb_to_tensors don't give a legit name
+      # for the inputs
       actual_outputs =
-        case inp_tensors do
-          [] ->
-            Axon.predict(model, params, {})
-
-          [input] ->
-            Axon.predict(model, params, input)
-
-          [_ | _] = inputs ->
-            Axon.predict(model, params, List.to_tuple(inputs))
+        if Enum.count(inp_tensors) == 1 do
+          [inp_tensor] = Map.values(inp_tensors)
+          Axon.predict(model, params, inp_tensor)
+        else
+          Axon.predict(model, params, inp_tensors)
         end
 
       case out_tensors do
@@ -158,60 +155,63 @@ defmodule OnnxTestHelper do
     |> tensor!()
   end
 
-  defp tensor!(%Onnx.TensorProto{data_type: dtype, dims: dims} = tensor) do
+  defp tensor!(%Onnx.TensorProto{data_type: dtype, dims: dims, name: name} = tensor) do
     shape = List.to_tuple(dims)
 
-    case dtype do
-      1 ->
-        to_nx_tensor(tensor.float_data, tensor.raw_data, {:f, 32}, shape)
+    nx_tensor =
+      case dtype do
+        1 ->
+          to_nx_tensor(tensor.float_data, tensor.raw_data, {:f, 32}, shape)
 
-      2 ->
-        to_nx_tensor(tensor.int32_data, tensor.raw_data, {:u, 8}, shape)
+        2 ->
+          to_nx_tensor(tensor.int32_data, tensor.raw_data, {:u, 8}, shape)
 
-      3 ->
-        to_nx_tensor(tensor.int32_data, tensor.raw_data, {:s, 8}, shape)
+        3 ->
+          to_nx_tensor(tensor.int32_data, tensor.raw_data, {:s, 8}, shape)
 
-      4 ->
-        to_nx_tensor(tensor.int32_data, tensor.raw_data, {:u, 16}, shape)
+        4 ->
+          to_nx_tensor(tensor.int32_data, tensor.raw_data, {:u, 16}, shape)
 
-      5 ->
-        to_nx_tensor(tensor.int32_data, tensor.raw_data, {:s, 16}, shape)
+        5 ->
+          to_nx_tensor(tensor.int32_data, tensor.raw_data, {:s, 16}, shape)
 
-      6 ->
-        to_nx_tensor(tensor.int32_data, tensor.raw_data, {:s, 32}, shape)
+        6 ->
+          to_nx_tensor(tensor.int32_data, tensor.raw_data, {:s, 32}, shape)
 
-      7 ->
-        to_nx_tensor(tensor.int64_data, tensor.raw_data, {:s, 64}, shape)
+        7 ->
+          to_nx_tensor(tensor.int64_data, tensor.raw_data, {:s, 64}, shape)
 
-      8 ->
-        raise "unsupported Nx tensor type: string"
+        8 ->
+          raise "unsupported Nx tensor type: string"
 
-      9 ->
-        to_nx_tensor(tensor.int32_data, tensor.raw_data, {:u, 8}, shape)
+        9 ->
+          to_nx_tensor(tensor.int32_data, tensor.raw_data, {:u, 8}, shape)
 
-      10 ->
-        to_nx_tensor(tensor.int32_data, tensor.raw_data, {:f, 16}, shape)
+        10 ->
+          to_nx_tensor(tensor.int32_data, tensor.raw_data, {:f, 16}, shape)
 
-      11 ->
-        to_nx_tensor(tensor.double_data, tensor.raw_data, {:f, 64}, shape)
+        11 ->
+          to_nx_tensor(tensor.double_data, tensor.raw_data, {:f, 64}, shape)
 
-      12 ->
-        to_nx_tensor(tensor.uint64_data, tensor.raw_data, {:u, 32}, shape)
+        12 ->
+          to_nx_tensor(tensor.uint64_data, tensor.raw_data, {:u, 32}, shape)
 
-      13 ->
-        to_nx_tensor(tensor.uint64_data, tensor.raw_data, {:u, 64}, shape)
+        13 ->
+          to_nx_tensor(tensor.uint64_data, tensor.raw_data, {:u, 64}, shape)
 
-      14 ->
-        # TODO(seanmor5): When complex is supported, tensor.float_data
-        raise "unsupported Nx tensor type: C64"
+        14 ->
+          # TODO(seanmor5): When complex is supported, tensor.float_data
+          raise "unsupported Nx tensor type: C64"
 
-      15 ->
-        # TODO(seanmor5): When complex is supported, tensor.double_data
-        raise "unsupported Nx tensor type: C128"
+        15 ->
+          # TODO(seanmor5): When complex is supported, tensor.double_data
+          raise "unsupported Nx tensor type: C128"
 
-      16 ->
-        to_nx_tensor([], tensor.raw_data, {:bf, 16}, shape)
-    end
+        16 ->
+          to_nx_tensor([], tensor.raw_data, {:bf, 16}, shape)
+      end
+
+    {name, nx_tensor}
   end
 
   defp to_nx_tensor([], <<>>, _, _) do
