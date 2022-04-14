@@ -77,17 +77,17 @@ defmodule OnnxTestHelper do
       input_paths = Path.wildcard(Path.join([data_path, "input_*.pb"]))
       output_paths = Path.wildcard(Path.join([data_path, "output_*.pb"]))
 
-
       inp_tensors =
         input_paths
         |> Enum.map_reduce(0, &pb_to_tensor/2)
         |> elem(0)
         |> Map.new()
 
-      out_tensors = Enum.map(output_paths, fn x ->
-        {{_, tensor}, _} = pb_to_tensor(x, 0)
-        tensor
-      end)
+      out_tensors =
+        Enum.map(output_paths, fn x ->
+          {{_, tensor}, _} = pb_to_tensor(x, 0)
+          tensor
+        end)
 
       actual_outputs = Axon.predict(model, params, inp_tensors)
 
