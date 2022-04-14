@@ -77,18 +77,19 @@ defmodule OnnxTestHelper do
       input_paths = Path.wildcard(Path.join([data_path, "input_*.pb"]))
       output_paths = Path.wildcard(Path.join([data_path, "output_*.pb"]))
 
-      inp_tensors = Map.new(input_paths, &pb_to_tensor/1)
-      out_tensors = Enum.map(output_paths, &elem(pb_to_tensor(&1), 1))
 
-      # Annoyingly some of the pb_to_tensors don't give a legit name
-      # for the inputs
-      actual_outputs =
-        if Enum.count(inp_tensors) == 1 do
-          [inp_tensor] = Map.values(inp_tensors)
-          Axon.predict(model, params, inp_tensor)
-        else
-          Axon.predict(model, params, inp_tensors)
-        end
+      inp_tensors =
+        input_paths
+        |> Enum.map_reduce(0, &pb_to_tensor/2)
+        |> elem(0)
+        |> Map.new()
+
+      out_tensors = Enum.map(output_paths, fn x ->
+        {{_, tensor}, _} = pb_to_tensor(x, 0)
+        tensor
+      end)
+
+      actual_outputs = Axon.predict(model, params, inp_tensors)
 
       case out_tensors do
         [expected_output] ->
@@ -148,14 +149,15 @@ defmodule OnnxTestHelper do
   end
 
   # Parses the protobuf file into an Nx tensor.
-  def pb_to_tensor(pb_path) do
+  def pb_to_tensor(pb_path, counter) do
     pb_path
     |> File.read!()
     |> Onnx.TensorProto.decode!()
-    |> tensor!()
+    |> tensor!(counter)
+    |> then(&{&1, counter + 1})
   end
 
-  defp tensor!(%Onnx.TensorProto{data_type: dtype, dims: dims, name: name} = tensor) do
+  defp tensor!(%Onnx.TensorProto{data_type: dtype, dims: dims, name: name} = tensor, counter) do
     shape = List.to_tuple(dims)
 
     nx_tensor =
@@ -211,7 +213,11 @@ defmodule OnnxTestHelper do
           to_nx_tensor([], tensor.raw_data, {:bf, 16}, shape)
       end
 
-    {name, nx_tensor}
+    if name == "" do
+      {Integer.to_string(counter), nx_tensor}
+    else
+      {name, nx_tensor}
+    end
   end
 
   defp to_nx_tensor([], <<>>, _, _) do
