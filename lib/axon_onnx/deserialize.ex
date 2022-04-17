@@ -529,7 +529,7 @@ defmodule AxonOnnx.Deserialize do
     ind_names = List.duplicate(nil, Nx.rank(indices_shape))
     output_shape = Nx.Shape.take(shape, inp_names, indices_shape, ind_names, axis)
 
-    fun = fn x, indices ->
+    fun = fn x, indices, _params ->
       Nx.take(x, Nx.as_type(indices, {:s, 64}), axis: axis)
     end
 
