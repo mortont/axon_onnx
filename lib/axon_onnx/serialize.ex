@@ -109,7 +109,7 @@ defmodule AxonOnnx.Serialize do
            id: id,
            op: :dense,
            name: name_fn,
-           parent: %Axon{id: inp_id} = parent,
+           parent: [%Axon{id: inp_id} = parent],
            params: params,
            opts: [use_bias: use_bias]
          },
@@ -166,7 +166,7 @@ defmodule AxonOnnx.Serialize do
            id: id,
            op: :conv,
            name: name_fn,
-           parent: %Axon{id: inp_id} = parent,
+           parent: [%Axon{id: inp_id} = parent],
            params: params,
            opts: opts
          },
@@ -243,7 +243,7 @@ defmodule AxonOnnx.Serialize do
   @supported_pooling [:max_pool, :avg_pool, :lp_pool]
 
   defp to_onnx(
-         %Axon{id: id, op: pool, name: name_fn, parent: %Axon{id: inp_id} = parent, opts: opts},
+         %Axon{id: id, op: pool, name: name_fn, parent: [%Axon{id: inp_id} = parent], opts: opts},
          inputs,
          param_names,
          nodes,
@@ -326,7 +326,7 @@ defmodule AxonOnnx.Serialize do
            id: id,
            op: pool,
            name: name_fn,
-           parent: %Axon{id: inp_id, output_shape: shape} = parent,
+           parent: [%Axon{id: inp_id, output_shape: shape} = parent],
            opts: opts
          },
          inputs,
@@ -436,7 +436,7 @@ defmodule AxonOnnx.Serialize do
 
   for {op, onnx_op} <- @supported_activations do
     defp to_onnx(
-           %Axon{id: id, op: unquote(op), name: name_fn, parent: %Axon{id: inp_id} = parent},
+           %Axon{id: id, op: unquote(op), name: name_fn, parent: [%Axon{id: inp_id} = parent]},
            inputs,
            param_names,
            nodes,

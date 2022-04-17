@@ -593,7 +593,9 @@ defmodule AxonOnnx.Deserialize do
         List.to_tuple(shape)
       end
 
-    layer = Axon.layer(axon_input, reduce_fun, out_shape, %{}, output_name, opts)
+    layer_fun = fn x, _params, opts -> reduce_fun.(x, opts) end
+
+    layer = Axon.layer(axon_input, layer_fun, out_shape, %{}, output_name, opts)
 
     updated_axon = Map.put(axon, output_name, layer)
 
@@ -702,10 +704,12 @@ defmodule AxonOnnx.Deserialize do
           # TODO: Must fix Axon.layer with no parameters
           out_shape = Axon.Shape.element_wise([s1, s2])
 
+          layer_fun = fn x, y, _params -> fun.(x, y) end
+
           Map.put(
             axon,
             output_name,
-            Axon.layer([inp1, inp2], fun, out_shape, %{}, name: output_name)
+            Axon.layer([inp1, inp2], layer_fun, out_shape, %{}, name: output_name)
           )
       end
 
