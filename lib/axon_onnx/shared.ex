@@ -1,0 +1,141 @@
+defmodule AxonOnnx.Shared do
+  @moduledoc false
+
+  # defn implementations of ONNX operators and shared
+  # helpers for converting between onnx and axon
+
+  import Nx.Defn
+
+  # Numerical helpers
+
+  defn hardswish(x) do
+    alpha = Nx.divide(1, 6)
+    beta = Nx.tensor(0.5)
+
+    alpha
+    |> Nx.multiply(x)
+    |> Nx.add(beta)
+    |> Nx.min(1)
+    |> Nx.max(0)
+    |> Nx.multiply(x)
+  end
+
+  defn reciprocal(x) do
+    1 / x
+  end
+
+  defn identity(x), do: x
+
+  defn logsum(x, opts \\ []) do
+    opts = keyword!(opts, [:axes, keep_axes: false])
+
+    x |> Nx.sum(opts) |> Nx.log()
+  end
+
+  defn logsumexp(x, opts \\ []) do
+    opts = keyword!(opts, [:axes, keep_axes: false])
+    
+    x |> Nx.exp() |> Nx.sum(opts) |> Nx.log()
+  end
+
+  defn sumsquare(x, opts \\ []) do
+    opts = keyword!(opts, [:axes, keep_axes: false])
+
+    x |> Nx.power(2) |> Nx.sum(opts)
+  end
+
+  defn l1_norm(x, opts \\ []) do
+    x |> Nx.abs() |> Nx.sum(opts)
+  end
+
+  defn l2_norm(x, opts \\ []) do
+    x |> Nx.power(2) |> Nx.sum(opts)
+  end
+
+  defn lrn(x, opts \\ []) do
+    opts = keyword!(opts, [:size, alpha: 1.0e-4, beta: 0.75, bias: 1.0])
+    size = opts[:size]
+    axes = transform(size, &Enum.to_list(0..(&1 - 1)))
+    alpha = opts[:alpha]
+    beta = opts[:beta]
+    bias = opts[:bias]
+
+    squares = Nx.power(x, 2)
+    sum_squares = Nx.sum(squares, axes: axes, keep_axes: true)
+    denom = Nx.power(Nx.add(bias, Nx.divide(alpha, Nx.multiply(size, sum_squares))), beta)
+    Nx.divide(x, denom)
+  end
+
+  # Layer helpers
+
+  def trainable_binary_layer(%Axon{output_shape: shape} = input, %Nx.Tensor{} = param, op, name) do
+    param_shape = Nx.shape(param)
+
+    kernel = Axon.param("kernel", param_shape)
+    fun = fn x, params ->
+      if is_atom(op) do
+        apply(Nx, op, [x, params["kernel"]])
+      else
+        apply(op, [x, params["kernel"]])
+      end
+    end
+
+    Axon.layer([input], fun, shape, %{"kernel" => kernel}, name)
+  end
+
+  def numpy_matmul_layer(%Axon{output_shape: a_shape} = a, %Axon{output_shape: b_shape} = b, output_name) do
+    a_names = List.duplicate(nil, Nx.rank(a_shape))
+    b_names = List.duplicate(nil, Nx.rank(b_shape))
+
+    {c1_dims, b1_dims, c2_dims, b2_dims} =
+      case {a_shape, b_shape} do
+        {{}, {}} ->
+          {[], [], [], []}
+
+        {{_}, {_}} ->
+          {[0], [], [0], []}
+
+        {{_, _}, {_, _}} ->
+          {[1], [], [0], []}
+
+        {a_shape, b_shape} ->
+          batch_dims = Enum.to_list(0..(Nx.rank(a_shape) - 3))
+          {[Nx.rank(a_shape) - 1], batch_dims, [Nx.rank(b_shape) - 2], batch_dims}
+      end
+
+    fun = fn x, y, _params -> Nx.dot(x, c1_dims, b1_dims, y, c2_dims, b2_dims) end
+
+    {output_shape, _} =
+      Nx.Shape.dot(
+        a_shape,
+        c1_dims,
+        a_names,
+        b1_dims,
+        b_shape,
+        c2_dims,
+        b_names,
+        b2_dims
+      )
+
+    Axon.layer([a, b], fun, output_shape, %{}, output_name)
+  end
+
+  # Conversion helpers
+
+  def onnx_type_to_nx_type(1), do: {:f, 32}
+  def onnx_type_to_nx_type(2), do: {:u, 8}
+  def onnx_type_to_nx_type(3), do: {:s, 8}
+  def onnx_type_to_nx_type(4), do: {:u, 16}
+  def onnx_type_to_nx_type(5), do: {:s, 16}
+  def onnx_type_to_nx_type(6), do: {:s, 32}
+  def onnx_type_to_nx_type(7), do: {:s, 64}
+  def onnx_type_to_nx_type(8), do: raise ArgumentError, "unsupported STRING type"
+  def onnx_type_to_nx_type(9), do: {:u, 8}
+  def onnx_type_to_nx_type(10), do: {:f, 16}
+  def onnx_type_to_nx_type(11), do: {:f, 64}
+  def onnx_type_to_nx_type(12), do: {:u, 32}
+  def onnx_type_to_nx_type(13), do: {:u, 64}
+  def onnx_type_to_nx_type(14), do: {:c, 64}
+  def onnx_type_to_nx_type(15), do: {:c, 128}
+  def onnx_type_to_nx_type(16), do: {:bf, 16}
+end

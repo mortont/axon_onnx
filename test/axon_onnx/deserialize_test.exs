@@ -19,8 +19,7 @@ defmodule DeserializeTest do
 
     test "Add" do
       check_onnx_test_case!("node", "test_add")
-      # TODO: Update Axon broadcasting semantics
-      # check_onnx_test_case!("node", "test_add_bcast")
+      check_onnx_test_case!("node", "test_add_bcast")
       check_onnx_test_case!("node", "test_add_uint8")
     end
 
@@ -28,8 +27,7 @@ defmodule DeserializeTest do
       check_onnx_test_case!("node", "test_and2d")
       check_onnx_test_case!("node", "test_and3d")
       check_onnx_test_case!("node", "test_and4d")
-      # TODO: Update Axon broadcasting semantics
-      # check_onnx_test_case!("node", "test_and_bcast3v1d")
+      check_onnx_test_case!("node", "test_and_bcast3v1d")
       check_onnx_test_case!("node", "test_and_bcast3v2d")
       check_onnx_test_case!("node", "test_and_bcast4v2d")
       check_onnx_test_case!("node", "test_and_bcast4v3d")
@@ -112,16 +110,23 @@ defmodule DeserializeTest do
       # check_onnx_test_case!("node", "test_averagepool_2d_ceil")
     end
 
-    test "BitShift" do
-      check_onnx_test_case!("node", "test_bitshift_left_uint8")
-      check_onnx_test_case!("node", "test_bitshift_left_uint16")
-      check_onnx_test_case!("node", "test_bitshift_left_uint32")
-      check_onnx_test_case!("node", "test_bitshift_left_uint64")
-      check_onnx_test_case!("node", "test_bitshift_right_uint8")
-      check_onnx_test_case!("node", "test_bitshift_right_uint16")
-      check_onnx_test_case!("node", "test_bitshift_right_uint32")
-      check_onnx_test_case!("node", "test_bitshift_right_uint64")
-    end
+    # test "BatchNormalization" do
+    #   check_onnx_test_case!("node", "test_batchnorm_epsilon")
+    #   check_onnx_test_case!("node", "test_batchnorm_epsilon_training_mode")
+    #   check_onnx_test_case!("node", "test_batchnorm_example")
+    #   check_onnx_test_case!("node", "test_batchnorm_example_training_mode")
+    # end
+
+    # test "BitShift" do
+    #   check_onnx_test_case!("node", "test_bitshift_left_uint8")
+    #   check_onnx_test_case!("node", "test_bitshift_left_uint16")
+    #   check_onnx_test_case!("node", "test_bitshift_left_uint32")
+    #   check_onnx_test_case!("node", "test_bitshift_left_uint64")
+    #   check_onnx_test_case!("node", "test_bitshift_right_uint8")
+    #   check_onnx_test_case!("node", "test_bitshift_right_uint16")
+    #   check_onnx_test_case!("node", "test_bitshift_right_uint32")
+    #   check_onnx_test_case!("node", "test_bitshift_right_uint64")
+    # end
 
     test "Cast" do
       # check_onnx_test_case!("node", "test_cast_BFLOAT16_to_FLOAT")
@@ -166,6 +171,37 @@ defmodule DeserializeTest do
       # check_onnx_test_case!("node", "test_constant_pad")
     end
 
+    # test "ConstantOfShape" do
+    #   check_onnx_test_case!("node", "test_constantofshape_float_ones")
+    #   check_onnx_test_case!("node", "test_constantofshape_int_shape_zero")
+    #   check_onnx_test_case!("node", "test_constantofshape_int_zeros")
+    # end
+
+    # test "Conv" do
+    #   check_onnx_test_case!("node", "test_conv_with_autopad_same")
+    #   check_onnx_test_case!("node", "test_conv_with_strides_and_asymmetric_padding")
+    #   check_onnx_test_case!("node", "test_conv_with_strides_no_padding")
+    #   check_onnx_test_case!("node", "test_conv_with_strides_padding")
+    # end
+
+    # test "ConvInteger" do
+    #   check_onnx_test_case!("node", "test_convinteger_with_padding")
+    #   check_onnx_test_case!("node", "test_convinteger_without_padding")
+    # end
+
+    # test "ConvTranspose" do
+    #   check_onnx_test_case!("node", "test_convtranspose")
+    #   check_onnx_test_case!("node", "test_convtranspose_1d")
+    #   check_onnx_test_case!("node", "test_convtranspose_3d")
+    #   check_onnx_test_case!("node", "test_convtranspose_autopad_same")
+    #   check_onnx_test_case!("node", "test_convtranspose_dilations")
+    #   check_onnx_test_case!("node", "test_convtranspose_kernel_shape")
+    #   check_onnx_test_case!("node", "test_convtranspose_output_shape")
+    #   check_onnx_test_case!("node", "test_convtranspose_pad")
+    #   check_onnx_test_case!("node", "test_convtranspose_pads")
+    #   check_onnx_test_case!("node", "test_convtranspose_with_kernel")
+    # end
+
     test "Cos" do
       check_onnx_test_case!("node", "test_cos")
       check_onnx_test_case!("node", "test_cos_example")
@@ -176,19 +212,33 @@ defmodule DeserializeTest do
       check_onnx_test_case!("node", "test_cosh_example")
     end
 
+    # test "CumSum" do
+    #   check_onnx_test_case!("node", "test_cumsum_1d")
+    #   check_onnx_test_case!("node", "test_cumsum_1d_exclusive")
+    #   check_onnx_test_case!("node", "test_cumsum_1d_reverse")
+    #   check_onnx_test_case!("node", "test_cumsum_1d_reverse_exclusive")
+    #   check_onnx_test_case!("node", "test_cumsum_2d_axis_0")
+    #   check_onnx_test_case!("node", "test_cumsum_2d_axis_1")
+    #   check_onnx_test_case!("node", "test_cumsum_2d_negative_axis")
+    # end
+
     test "Div" do
       check_onnx_test_case!("node", "test_div")
-      # TODO: Update Axon broadcasting semantics
-      # check_onnx_test_case!("node", "test_div_bcast")
-      # check_onnx_test_case!("node", "test_div_example")
+      check_onnx_test_case!("node", "test_div_bcast")
+      check_onnx_test_case!("node", "test_div_example")
       # TODO: Cast?
       # check_onnx_test_case!("node", "test_div_uint8")
     end
 
     test "Equal" do
       check_onnx_test_case!("node", "test_equal")
-      # TODO: Update Axon broadcasting semantics
-      # check_onnx_test_case!("node", "test_equal_bcast")
+      check_onnx_test_case!("node", "test_equal_bcast")
+    end
+
+    test "Elu" do
+      check_onnx_test_case!("node", "test_elu")      
+      check_onnx_test_case!("node", "test_elu_default")      
+      check_onnx_test_case!("node", "test_elu_example")      
     end
 
     test "Erf" do
@@ -199,6 +249,23 @@ defmodule DeserializeTest do
       check_onnx_test_case!("node", "test_exp")
       check_onnx_test_case!("node", "test_exp_example")
     end
+
+    # test "Expand" do
+    #   check_onnx_test_case!("node", "test_expand_dim_changed")
+    #   check_onnx_test_case!("node", "test_expand_dim_unchanged")
+    # end
+
+    # test "Flatten" do
+      # check_onnx_test_case!("node", "test_flatten_axis0") 
+      # check_onnx_test_case!("node", "test_flatten_axis1")    
+      # check_onnx_test_case!("node", "test_flatten_axis2")    
+      # check_onnx_test_case!("node", "test_flatten_axis3")    
+      # check_onnx_test_case!("node", "test_flatten_default_axis")
+      # check_onnx_test_case!("node", "test_flatten_negative_axis1")      
+      # check_onnx_test_case!("node", "test_flatten_negative_axis2")    
+      # check_onnx_test_case!("node", "test_flatten_negative_axis3") 
+      # check_onnx_test_case!("node", "test_flatten_negative_axis4") 
+    # end
 
     test "Floor" do
       check_onnx_test_case!("node", "test_floor")
@@ -211,10 +278,28 @@ defmodule DeserializeTest do
       check_onnx_test_case!("node", "test_gather_2d_indices")
     end
 
+    test "Gemm" do
+      # check_onnx_test_case!("node", "test_gemm_all_attributes")
+      # check_onnx_test_case!("node", "test_gemm_alpha")
+      # check_onnx_test_case!("node", "test_gemm_beta")
+      # check_onnx_test_case!("node", "test_gemm_default_matrix_bias")
+      check_onnx_test_case!("node", "test_gemm_default_no_bias")
+      # check_onnx_test_case!("node", "test_gemm_default_scalar_bias")
+      # check_onnx_test_case!("node", "test_gemm_default_single_elem_vector_bias")
+      # check_onnx_test_case!("node", "test_gemm_default_vector_bias")
+      check_onnx_test_case!("node", "test_gemm_default_zero_bias")
+      # check_onnx_test_case!("node", "test_gemm_transposeA")
+      # check_onnx_test_case!("node", "test_gemm_transposeB")
+    end
+
     test "GlobalAveragePool" do
       check_onnx_test_case!("node", "test_globalaveragepool")
       check_onnx_test_case!("node", "test_globalaveragepool_precomputed")
     end
+
+    # No tests?
+    # test "GlobalLpPool" do
+    # end
 
     test "GlobalMaxPool" do
       check_onnx_test_case!("node", "test_globalmaxpool")
@@ -223,20 +308,19 @@ defmodule DeserializeTest do
 
     test "Greater" do
       check_onnx_test_case!("node", "test_greater")
-      # TODO: Update Axon broadcasting semantics
-      # check_onnx_test_case!("node", "test_greater_bcast")
+      check_onnx_test_case!("node", "test_greater_bcast")
     end
 
     test "GreaterOrEqual" do
       check_onnx_test_case!("node", "test_greater_equal")
       check_onnx_test_case!("node", "test_greater_equal_expanded")
-      # TODO: Update Axon broadcasting semantics
-      # check_onnx_test_case!("node", "test_greater_equal_bcast")
-      # check_onnx_test_case!("node", "test_greater_equal_bcast_expanded")
+      check_onnx_test_case!("node", "test_greater_equal_bcast")
+      check_onnx_test_case!("node", "test_greater_equal_bcast_expanded")
     end
 
     test "HardSigmoid" do
       check_onnx_test_case!("node", "test_hardsigmoid")
+      check_onnx_test_case!("node", "test_hardsigmoid_example")
       check_onnx_test_case!("node", "test_hardsigmoid_default")
     end
 
@@ -253,7 +337,14 @@ defmodule DeserializeTest do
 
     test "If" do
       check_onnx_test_case!("node", "test_if")
+      # TODO: Sequence types
+      # check_onnx_test_case!("node", "test_if_seq")
     end
+
+    # test "InstanceNormalization" do
+    #   check_onnx_test_case!("node", "test_instancenorm_epsilon")
+    #   check_onnx_test_case!("node", "test_instancenorm_example")
+    # end
 
     test "LeakyRelu" do
       check_onnx_test_case!("node", "test_leakyrelu")
@@ -263,16 +354,14 @@ defmodule DeserializeTest do
 
     test "Less" do
       check_onnx_test_case!("node", "test_less")
-      # TODO: Update Axon broadcasting semantics
-      # check_onnx_test_case!("node", "test_less_bcast")
+      check_onnx_test_case!("node", "test_less_bcast")
     end
 
     test "LessOrEqual" do
       check_onnx_test_case!("node", "test_less_equal")
       check_onnx_test_case!("node", "test_less_equal_expanded")
-      # TODO: Update Axon broadcasting semantics
-      # check_onnx_test_case!("node", "test_less_equal_bcast")
-      # check_onnx_test_case!("node", "test_less_equal_bcast_expanded")
+      check_onnx_test_case!("node", "test_less_equal_bcast")
+      check_onnx_test_case!("node", "test_less_equal_bcast_expanded")
     end
 
     test "Log" do
@@ -304,6 +393,17 @@ defmodule DeserializeTest do
       # check_onnx_test_case!("node", "test_logsoftmax_example_1_expanded")
     end
 
+    test "LRN" do
+      check_onnx_test_case!("node", "test_lrn")
+      check_onnx_test_case!("node", "test_lrn_default")
+    end
+
+    test "MatMul" do
+      check_onnx_test_case!("node", "test_matmul_2d")
+      check_onnx_test_case!("node", "test_matmul_3d")
+      check_onnx_test_case!("node", "test_matmul_4d")
+    end
+
     test "MaxPool" do
       check_onnx_test_case!("node", "test_maxpool_1d_default")
       check_onnx_test_case!("node", "test_maxpool_2d_default")
@@ -329,14 +429,33 @@ defmodule DeserializeTest do
       end
     end
 
+    test "Mod" do
+      check_onnx_test_case!("node", "test_mod_broadcast")
+      check_onnx_test_case!("node", "test_mod_int64_fmod")
+      check_onnx_test_case!("node", "test_mod_mixed_sign_float16")
+      check_onnx_test_case!("node", "test_mod_mixed_sign_float32")
+      check_onnx_test_case!("node", "test_mod_mixed_sign_float64")
+      # TODO: Somethings wrong here...
+      # check_onnx_test_case!("node", "test_mod_mixed_sign_int8")
+      # check_onnx_test_case!("node", "test_mod_mixed_sign_int16")
+      # check_onnx_test_case!("node", "test_mod_mixed_sign_int32")
+      # check_onnx_test_case!("node", "test_mod_mixed_sign_int64")
+      check_onnx_test_case!("node", "test_mod_uint8")
+      check_onnx_test_case!("node", "test_mod_uint16")
+      check_onnx_test_case!("node", "test_mod_uint32")
+      check_onnx_test_case!("node", "test_mod_uint64")
+    end
+
+    test "Mul" do
+      check_onnx_test_case!("node", "test_mul")
+      check_onnx_test_case!("node", "test_mul_bcast")
+      check_onnx_test_case!("node", "test_mul_example")
+      check_onnx_test_case!("node", "test_mul_uint8")
+    end
+
     test "Neg" do
       check_onnx_test_case!("node", "test_neg")
       check_onnx_test_case!("node", "test_neg_example")
-    end
-
-    test "LRN" do
-      check_onnx_test_case!("node", "test_lrn")
-      check_onnx_test_case!("node", "test_lrn_default")
     end
 
     test "Not" do
@@ -349,18 +468,20 @@ defmodule DeserializeTest do
       check_onnx_test_case!("node", "test_or2d")
       check_onnx_test_case!("node", "test_or3d")
       check_onnx_test_case!("node", "test_or4d")
-      # TODO: Update Axon broadcasting semantics
-      # check_onnx_test_case!("node", "test_or_bcast3v1d")
+      check_onnx_test_case!("node", "test_or_bcast3v1d")
       check_onnx_test_case!("node", "test_or_bcast3v2d")
       check_onnx_test_case!("node", "test_or_bcast4v2d")
       check_onnx_test_case!("node", "test_or_bcast4v3d")
       check_onnx_test_case!("node", "test_or_bcast4v4d")
     end
 
+    # No tests?
+    # test "Pad" do        
+    # end
+
     test "Pow" do
       check_onnx_test_case!("node", "test_pow")
-      # TODO: Update Axon broadcasting semantics
-      # check_onnx_test_case!("node", "test_pow_bcast_array")
+      check_onnx_test_case!("node", "test_pow_bcast_array")
       check_onnx_test_case!("node", "test_pow_bcast_scalar")
       check_onnx_test_case!("node", "test_pow_example")
       check_onnx_test_case!("node", "test_pow_types_float")
@@ -373,6 +494,11 @@ defmodule DeserializeTest do
       check_onnx_test_case!("node", "test_pow_types_int32_int32")
       check_onnx_test_case!("node", "test_pow_types_int64_float32")
       check_onnx_test_case!("node", "test_pow_types_int64_int64")
+    end
+
+    test "Reciprocal" do
+      check_onnx_test_case!("node", "test_reciprocal")
+      check_onnx_test_case!("node", "test_reciprocal_example")
     end
 
     test "ReduceLogSum" do
@@ -393,6 +519,28 @@ defmodule DeserializeTest do
       check_onnx_test_case!("node", "test_reduce_log_sum_exp_negative_axes_keepdims_example")
       check_onnx_test_case!("node", "test_reduce_log_sum_exp_negative_axes_keepdims_random")
     end
+
+    test "ReduceL1" do
+      check_onnx_test_case!("node", "test_reduce_l1_default_axes_keepdims_example")
+      check_onnx_test_case!("node", "test_reduce_l1_default_axes_keepdims_random")
+      check_onnx_test_case!("node", "test_reduce_l1_do_not_keepdims_example")
+      check_onnx_test_case!("node", "test_reduce_l1_do_not_keepdims_random")
+      check_onnx_test_case!("node", "test_reduce_l1_keep_dims_example")
+      check_onnx_test_case!("node", "test_reduce_l1_keep_dims_random")
+      check_onnx_test_case!("node", "test_reduce_l1_negative_axes_keep_dims_example")
+      check_onnx_test_case!("node", "test_reduce_l1_negative_axes_keep_dims_random")
+    end
+
+    # test "ReduceL2" do
+    #   check_onnx_test_case!("node", "test_reduce_l2_default_axes_keepdims_example")
+    #   check_onnx_test_case!("node", "test_reduce_l2_default_axes_keepdims_random")
+    #   check_onnx_test_case!("node", "test_reduce_l2_do_not_keepdims_example")
+    #   check_onnx_test_case!("node", "test_reduce_l2_do_not_keepdims_random")
+    #   check_onnx_test_case!("node", "test_reduce_l2_keepdims_example")
+    #   check_onnx_test_case!("node", "test_reduce_l2_keepdims_random")
+    #   check_onnx_test_case!("node", "test_reduce_l2_negative_axes_keep_dims_example")
+    #   check_onnx_test_case!("node", "test_reduce_l2_negative_axes_keep_dims_random")
+    # end
 
     test "ReduceMax" do
       check_onnx_test_case!("node", "test_reduce_max_default_axes_keepdim_example")
@@ -453,10 +601,65 @@ defmodule DeserializeTest do
       check_onnx_test_case!("node", "test_relu")
     end
 
+    # TODO: Dynamic Shapes :(
+    # test "Reshape" do
+      # check_onnx_test_case!("node", "test_reshape_allowzero_reordered")
+      # check_onnx_test_case!("node", "test_reshape_extended_dims")
+      # check_onnx_test_case!("node", "test_reshape_negative_dims")
+      # check_onnx_test_case!("node", "test_reshape_negative_extended_dims")
+      # check_onnx_test_case!("node", "test_reshape_one_dim")
+      # check_onnx_test_case!("node", "test_reshape_reduced_dims")
+      # check_onnx_test_case!("node", "test_reshape_reordered_all_dims")
+      # check_onnx_test_case!("node", "test_reshape_reordered_last_dims")
+      # check_onnx_test_case!("node", "test_reshape_zero_and_negative_dims")
+      # check_onnx_test_case!("node", "test_reshape_zero_dim")
+    # end
+
+    # test "Resize" do
+    #   check_onnx_test_case!("node", "test_resize_downsample_scales_cubic")
+    #   check_onnx_test_case!("node", "test_resize_downsample_scales_cubic_A_n0p5_exclude_outside")
+    #   check_onnx_test_case!("node", "test_resize_downsample_scales_cubic_align_corners")
+    #   check_onnx_test_case!("node", "test_resize_downsample_scales_linear")
+    #   check_onnx_test_case!("node", "test_resize_downsample_scales_linear_align_corners")
+    #   check_onnx_test_case!("node", "test_resize_downsample_scales_nearest")
+    #   check_onnx_test_case!("node", "test_resize_downsample_sizes_cubic")
+    #   check_onnx_test_case!("node", "test_resize_downsample_sizes_linear_pytorch_half_pixel")
+    #   check_onnx_test_case!("node", "test_resize_downsample_sizes_nearest")
+    #   check_onnx_test_case!("node", "test_resize_downsample_sizes_nearest_tf_half_pixel_for_nn")
+    #   check_onnx_test_case!("node", "test_resize_tf_crop_and_resize")
+    #   check_onnx_test_case!("node", "test_resize_upsample_scales_cubic")
+    #   check_onnx_test_case!("node", "test_resize_upsample_scales_cubic_A_n0p5_exclude_outside")
+    #   check_onnx_test_case!("node", "test_resize_upsample_scales_cubic_align_corners")
+    #   check_onnx_test_case!("node", "test_resize_upsample_scales_cubic_asymmetric")
+    #   check_onnx_test_case!("node", "test_resize_upsample_scales_linear")
+    #   check_onnx_test_case!("node", "test_resize_upsample_scales_linear_align_corners")
+    #   check_onnx_test_case!("node", "test_resize_upsample_scales_nearest")
+    #   check_onnx_test_case!("node", "test_resize_upsample_scales_nearest_ceil_half_pixel")
+    #   check_onnx_test_case!("node", "test_resize_upsample_scales_nearest_floor_align_corners")
+    #   check_onnx_test_case!("node", "test_resize_upsample_scales_nearest_round_prefer_ceil_asymmetric")
+    # end
+
+    # test "Round" do
+    #   check_onnx_test_case!("node", "test_round")
+    # end
+
     test "Selu" do
       check_onnx_test_case!("node", "test_selu")
       check_onnx_test_case!("node", "test_selu_default")
       check_onnx_test_case!("node", "test_selu_example")
+    end
+
+    test "Shape" do
+      check_onnx_test_case!("node", "test_shape")
+      check_onnx_test_case!("node", "test_shape_clip_end")
+      check_onnx_test_case!("node", "test_shape_clip_start")
+      check_onnx_test_case!("node", "test_shape_end_1")
+      check_onnx_test_case!("node", "test_shape_end_negative_1")
+      check_onnx_test_case!("node", "test_shape_example")
+      check_onnx_test_case!("node", "test_shape_start_1")
+      check_onnx_test_case!("node", "test_shape_start_1_end_2")
+      check_onnx_test_case!("node", "test_shape_start_1_end_negative_1")
+      check_onnx_test_case!("node", "test_shape_start_negative_1")
     end
 
     test "Sigmoid" do
@@ -502,6 +705,11 @@ defmodule DeserializeTest do
       # check_onnx_test_case!("node", "test_softmax_example_expanded")
     end
 
+    test "Softplus" do
+      check_onnx_test_case!("node", "test_softplus")
+      check_onnx_test_case!("node", "test_softplus_example")
+    end
+
     test "Softsign" do
       check_onnx_test_case!("node", "test_softsign")
       check_onnx_test_case!("node", "test_softsign_example")
@@ -512,11 +720,17 @@ defmodule DeserializeTest do
       check_onnx_test_case!("node", "test_sqrt_example")
     end
 
-    test "Sum" do
-      check_onnx_test_case!("node", "test_sum_example")
-      check_onnx_test_case!("node", "test_sum_one_input")
-      check_onnx_test_case!("node", "test_sum_two_inputs")
+    test "Sub" do
+      check_onnx_test_case!("node", "test_sub")
+      check_onnx_test_case!("node", "test_sub_bcast")
+      check_onnx_test_case!("node", "test_sub_uint8")
     end
+
+    # test "Sum" do
+    #   check_onnx_test_case!("node", "test_sum_example")
+    #   check_onnx_test_case!("node", "test_sum_one_input")
+    #   check_onnx_test_case!("node", "test_sum_two_inputs")
+    # end
 
     test "Tan" do
       check_onnx_test_case!("node", "test_tan")
@@ -538,20 +752,46 @@ defmodule DeserializeTest do
       check_onnx_test_case!("node", "test_transpose_all_permutations_5")
     end
 
+    # TODO: Dynamic Shapes :(
+    # test "Unsqueeze" do
+    #   check_onnx_test_case!("node", "test_unsqueeze_axis_0")
+    #   check_onnx_test_case!("node", "test_unsqueeze_axis_1")
+    #   check_onnx_test_case!("node", "test_unsqueeze_axis_2")
+    #   check_onnx_test_case!("node", "test_unsqueeze_axis_3")
+    #   check_onnx_test_case!("node", "test_unsqueeze_negative_axes")
+    #   check_onnx_test_case!("node", "test_unsqueeze_two_axes")
+    #   check_onnx_test_case!("node", "test_unsqueeze_three_axes")
+    #   check_onnx_test_case!("node", "test_unsqueeze_unsorted_axes")
+    # end
+
     test "Xor" do
       check_onnx_test_case!("node", "test_xor2d")
       check_onnx_test_case!("node", "test_xor3d")
       check_onnx_test_case!("node", "test_xor4d")
-      # TODO: Update Axon broadcasting semantics
-      # check_onnx_test_case!("node", "test_xor_bcast3v1d")
+      check_onnx_test_case!("node", "test_xor_bcast3v1d")
       check_onnx_test_case!("node", "test_xor_bcast3v2d")
       check_onnx_test_case!("node", "test_xor_bcast4v2d")
       check_onnx_test_case!("node", "test_xor_bcast4v3d")
       check_onnx_test_case!("node", "test_xor_bcast4v4d")
     end
+
+    test "Where" do
+      check_onnx_test_case!("node", "test_where_example")
+      check_onnx_test_case!("node", "test_where_long_example")
+    end
   end
 
   describe "pytorch converted tests" do
+    # test "AvgPool" do
+    #   check_onnx_test_case!("pytorch-converted", "test_AvgPool1d") 
+    #   check_onnx_test_case!("pytorch-converted", "test_AvgPool1d_stride") 
+    #   check_onnx_test_case!("pytorch-converted", "test_AvgPool2d")
+    #   check_onnx_test_case!("pytorch-converted", "test_AvgPool2d_stride")
+    #   check_onnx_test_case!("pytorch-converted", "test_AvgPool3d")
+    #   check_onnx_test_case!("pytorch-converted", "test_AvgPool3d_stride")
+    #   check_onnx_test_case!("pytorch-converted", "test_AvgPool3d_strid1_pad0_gpu_input")
+    # end
+
     test "BatchNorm" do
       check_onnx_test_case!("pytorch-converted", "test_BatchNorm1d_3d_input_eval")
       check_onnx_test_case!("pytorch-converted", "test_BatchNorm2d_eval")
@@ -559,6 +799,10 @@ defmodule DeserializeTest do
       check_onnx_test_case!("pytorch-converted", "test_BatchNorm3d_eval")
       check_onnx_test_case!("pytorch-converted", "test_BatchNorm3d_momentum_eval")
     end
+
+    # test "ConstantPad2d" do
+    #   check_onnx_test_case!("pytorch-converted", "test_ConstantPad2d")
+    # end
 
     test "Conv" do
       check_onnx_test_case!("pytorch-converted", "test_Conv1d")
@@ -589,14 +833,34 @@ defmodule DeserializeTest do
       check_onnx_test_case!("pytorch-converted", "test_Conv3d_stride_padding")
     end
 
+    # test "ConvTranspose" do
+    #   check_onnx_test_case!("pytorch-converted", "test_ConvTranspose2d")
+    #   check_onnx_test_case!("pytorch-converted", "test_ConvTranspose2d_no_bias")
+    # end
+
     test "ELU" do
       check_onnx_test_case!("pytorch-converted", "test_ELU")
     end
+
+    test "Embedding" do
+      check_onnx_test_case!("pytorch-converted", "test_Embedding")
+      check_onnx_test_case!("pytorch-converted", "test_Embedding_sparse")
+    end
+
+    # test "GLU" do
+    #   check_onnx_test_case!("pytorch-converted", "test_GLU")      
+    #   check_onnx_test_case!("pytorch-converted", "test_GLU_dim")      
+    # end
 
     test "LeakyReLU" do
       check_onnx_test_case!("pytorch-converted", "test_LeakyReLU")
       check_onnx_test_case!("pytorch-converted", "test_LeakyReLU_with_negval")
     end
+
+    # test "Linear" do
+    #   check_onnx_test_case!("pytorch-converted", "test_Linear")
+    #   check_onnx_test_case!("pytorch-converted", "test_Linear_no_bias")
+    # end
 
     test "LogSoftmax" do
       check_onnx_test_case!("pytorch-converted", "test_log_softmax_lastdim")
@@ -611,13 +875,39 @@ defmodule DeserializeTest do
       check_onnx_test_case!("pytorch-converted", "test_MaxPool2d")
       # check_onnx_test_case!("pytorch-converted", "test_MaxPool2d_stride_padding_dilation")
       check_onnx_test_case!("pytorch-converted", "test_MaxPool3d")
+      check_onnx_test_case!("pytorch-converted", "test_MaxPool3d_stride")
       # check_onnx_test_case!("pytorch-converted", "test_MaxPool3d_stride_padding_dilation")
+    end
+
+    # test "PReLU" do
+    #   check_onnx_test_case!("pytorch-converted", "test_PReLU_1d")
+    #   check_onnx_test_case!("pytorch-converted", "test_PReLU_1d_multiparam")
+    #   check_onnx_test_case!("pytorch-converted", "test_PReLU_2d")
+    #   check_onnx_test_case!("pytorch-converted", "test_PReLU_2d_multiparam")
+    #   check_onnx_test_case!("pytorch-converted", "test_PReLU_3d")
+    #   check_onnx_test_case!("pytorch-converted", "test_PReLU_3d_multiparam")
+    # end
+
+    test "PixelShuffle" do
+      check_onnx_test_case!("pytorch-converted", "test_PixelShuffle")
+    end
+
+    test "PoissonNLLLLoss" do
+      check_onnx_test_case!("pytorch-converted", "test_PoissonNLLLLoss_no_reduce")
     end
 
     test "ReLU" do
       check_onnx_test_case!("pytorch-converted", "test_ReLU")
     end
 
+    # test "ReflectionPad2d" do
+    #   check_onnx_test_case!("pytorch-converted", "test_ReflectionPad2d")
+    # end
+
+    # test "ReplicationPad2d" do
+    #   check_onnx_test_case!("pytorch-converted", "test_ReplicationPad2d")
+    # end
+  
     test "SELU" do
       check_onnx_test_case!("pytorch-converted", "test_SELU")
     end
@@ -647,17 +937,59 @@ defmodule DeserializeTest do
     test "Tanh" do
       check_onnx_test_case!("pytorch-converted", "test_Tanh")
     end
+
+    # test "ZeroPad2d" do
+    #   check_onnx_test_case!("pytorch-converted", "test_ZeroPad2d")
+    # end
   end
 
   describe "pytorch operator tests" do
+    # test "add_broadcast" do
+    #   check_onnx_test_case!("pytorch-operator", "test_operator_add_broadcast")
+    # end
+
+    # test "add_size1_broadcast" do
+    #   check_onnx_test_case!("pytorch-operator", "test_operator_add_size1_broadcast")
+    # end
+
+    # test "add_size1_right_broadcast" do
+    #   check_onnx_test_case!("pytorch-operator", "test_operator_add_size1_right_broadcast")
+    # end
+
+    # test "add_size1_singleton_broadcast" do
+    #   check_onnx_test_case!("pytorch-operator", "test_operator_add_size1_singleton_broadcast")
+    # end
+
+    # test "addconstant" do
+    #   check_onnx_test_case!("pytorch-operator", "test_operator_addconstant")
+    # end
+
+    # test "addmm" do
+    #   check_onnx_test_case!("pytorch-operator", "test_operator_addmm")
+    # end
+
     test "basic" do
       check_onnx_test_case!("pytorch-operator", "test_operator_basic")
+    end
+
+    # test "chunk" do
+    #   check_onnx_test_case!("pytorch-operator", "test_operator_chunk")      
+    # end
+
+    # test "clip" do
+    #   check_onnx_test_case!("pytorch-operator", "test_operator_clip")
+    # end
+
+    test "concat2" do
+      check_onnx_test_case!("pytorch-operator", "test_operator_concat2")
     end
 
     test "conv" do
       Nx.Defn.default_options(compiler: EXLA)
       check_onnx_test_case!("pytorch-operator", "test_operator_conv")
     end
+
+  
 
     test "exp" do
       check_onnx_test_case!("pytorch-operator", "test_operator_exp")
@@ -667,25 +999,107 @@ defmodule DeserializeTest do
       check_onnx_test_case!("pytorch-operator", "test_operator_flatten")
     end
 
+    # test "index" do
+    #   check_onnx_test_case!("pytorch-operator", "test_operator_index")
+    # end
+
+    # test "max" do
+    #   check_onnx_test_case!("pytorch-operator", "test_operator_max")
+    # end
+
     test "maxpool" do
       check_onnx_test_case!("pytorch-operator", "test_operator_maxpool")
+    end
+
+    # test "min" do
+    #   check_onnx_test_case!("pytorch-operator", "test_operator_min")
+    # end
+
+    test "mm" do
+      check_onnx_test_case!("pytorch-operator", "test_operator_mm")
+    end
+
+    test "non_float_params" do
+      check_onnx_test_case!("pytorch-operator", "test_operator_non_float_params")
+    end
+
+    # test "pad" do
+    #   check_onnx_test_case!("pytorch-operator", "test_operator_pad")      
+    # end
+
+    test "params" do
+      check_onnx_test_case!("pytorch-operator", "test_operator_params")
     end
 
     test "permute" do
       check_onnx_test_case!("pytorch-operator", "test_operator_permute2")
     end
 
+    # test "pow" do
+    #   check_onnx_test_case!("pytorch-operator", "test_operator_pow")
+    # end
+
     test "reduce_mean" do
       check_onnx_test_case!("pytorch-operator", "test_operator_reduced_mean")
       check_onnx_test_case!("pytorch-operator", "test_operator_reduced_mean_keepdim")
     end
 
+    # test "reduce_sum" do
+    #   check_onnx_test_case!("pytorch-operator", "test_operator_reduced_sum")
+    #   check_onnx_test_case!("pytorch-operator", "test_operator_reduced_sum_keepdim")
+    # end
+
+    # test "repeat" do
+    #   check_onnx_test_case!("pytorch-operator", "test_operator_repeat")
+    #   check_onnx_test_case!("pytorch-operator", "test_operator_repeat_dim_overflow")
+    # end
+
     test "selu" do
       check_onnx_test_case!("pytorch-operator", "test_operator_selu")
+    end
+
+    # test "sqrt" do
+    #   check_onnx_test_case!("pytorch-operator", "test_operator_sqrt")
+    # end
+
+    # test "symbolic" do
+    #   check_onnx_test_case!("pytorch-operator", "test_operator_symbolic_override")
+    #   check_onnx_test_case!("pytorch-operator", "test_operator_symbolic_override_nested")
+    # end
+
+    test "view" do
+      check_onnx_test_case!("pytorch-operator", "test_operator_view")
     end
   end
 
   describe "simple tests" do
+    # test "expand shape model" do
+    #   check_onnx_test_case!("simple", "test_expand_shape_model1")      
+    #   check_onnx_test_case!("simple", "test_expand_shape_model2")      
+    #   check_onnx_test_case!("simple", "test_expand_shape_model3")      
+    #   check_onnx_test_case!("simple", "test_expand_shape_model4")      
+    # end
+
+    # test "gradient model" do
+    #   check_onnx_test_case!("simple", "test_gradient_of_add")
+    #   check_onnx_test_case!("simple", "test_gradient_of_add_mul")
+    # end
+
+    # test "sequence model" do
+    #   check_onnx_test_case!("simple", "test_sequence_model1")
+    #   check_onnx_test_case!("simple", "test_sequence_model2")
+    #   check_onnx_test_case!("simple", "test_sequence_model3")
+    #   check_onnx_test_case!("simple", "test_sequence_model4")
+    #   check_onnx_test_case!("simple", "test_sequence_model5")
+    #   check_onnx_test_case!("simple", "test_sequence_model6")
+    #   check_onnx_test_case!("simple", "test_sequence_model7")
+    #   check_onnx_test_case!("simple", "test_sequence_model8")
+    # end
+
+    # test "shrink model" do
+    #   check_onnx_test_case!("simple", "test_shrink")
+    # end
+
     test "sign model" do
       check_onnx_test_case!("simple", "test_sign_model")
     end
@@ -693,13 +1107,36 @@ defmodule DeserializeTest do
     test "single relu model" do
       check_onnx_test_case!("simple", "test_single_relu_model")
     end
+
+    # test "strnorm model" do
+    #   check_onnx_test_case!("simple", "test_strnorm_model_monday_casesensintive_lower")
+    #   check_onnx_test_case!("simple", "test_strnorm_model_monday_casesensintive_nochangecase")
+    #   check_onnx_test_case!("simple", "test_strnorm_model_monday_casesensintive_upper")
+    #   check_onnx_test_case!("simple", "test_strnorm_model_monday_empty_output")
+    #   check_onnx_test_case!("simple", "test_strnorm_model_monday_insensitive_upper_twodim")
+    #   check_onnx_test_case!("simple", "test_strnorm_model_nostopwords_nochangecase")
+    # end
   end
 
   describe "real tests" do
-    # TODO: Add these back in
     # test "bvlc alexnet" do
     #   Nx.Defn.default_options(compiler: EXLA)
     #   check_onnx_model!("bvlc_alexnet")
+    # end
+
+    # test "densenet121" do
+    #   Nx.Defn.default_options(compiler: EXLA)
+    #   check_onnx_model!("densenet121")
+    # end
+
+    # test "inception_v1" do
+    #   Nx.Defn.default_options(compiler: EXLA)
+    #   check_onnx_model!("inception_v1")
+    # end
+
+    # test "inception_v2" do
+    #   Nx.Defn.default_options(compiler: EXLA)
+    #   check_onnx_model!("inception_v2")
     # end
 
     # test "resnet50" do
@@ -712,9 +1149,19 @@ defmodule DeserializeTest do
     #   check_onnx_model!("shufflenet")
     # end
 
+    # test "squeezenet" do
+    #   Nx.Defn.default_options(compiler: EXLA)
+    #   check_onnx_model!("squeezenet")
+    # end
+
     # test "vgg19" do
     #   Nx.Defn.default_options(compiler: EXLA)
     #   check_onnx_model!("vgg19")
+    # end
+
+    # test "zfnet512" do
+    #   Nx.Defn.default_options(compiler: EXLA)
+    #   check_onnx_model!("zfnet512")
     # end
   end
 end

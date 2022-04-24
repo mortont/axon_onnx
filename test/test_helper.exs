@@ -38,7 +38,7 @@ defmodule OnnxTestHelper do
       nx_to_tensor_proto(out, Path.join([test_path, "output_0.pb"]))
     end)
 
-    AxonOnnx.Serialize.__export__(axon_model, params, filename: model_path)
+    AxonOnnx.export(axon_model, params, filename: model_path)
     # Run check script
     {_, exit_code} =
       System.cmd("python3", ["scripts/check_onnx_model.py", model_path], into: IO.stream())
@@ -70,7 +70,7 @@ defmodule OnnxTestHelper do
     model_path = Path.join([test_path, "model.onnx"])
     data_paths = Path.wildcard(Path.join([test_path, "test_data_set_*"]))
 
-    {model, params} = AxonOnnx.Deserialize.__import__(model_path)
+    {model, params} = AxonOnnx.import(model_path)
 
     data_paths
     |> Enum.map(fn data_path ->

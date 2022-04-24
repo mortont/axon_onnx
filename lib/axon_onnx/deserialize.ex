@@ -12,6 +12,8 @@ defmodule AxonOnnx.Deserialize do
 
   require Logger
 
+  import AxonOnnx.Shared
+
   # TODO(seanmor5): Currently we do a lot of potentially expensive operations
   # eagerly (especially when manipulating parameters), we can potentially make
   # them part of the model or alternatively return an initialization function
@@ -51,7 +53,7 @@ defmodule AxonOnnx.Deserialize do
 
       graph when is_list(graph) ->
         # multi-output
-        {List.to_tuple(graph), params}
+        {Axon.container(List.to_tuple(graph)), params}
     end
   end
 
@@ -59,7 +61,7 @@ defmodule AxonOnnx.Deserialize do
     params = get_params(graph)
     inputs = get_inputs(graph, params, dimensions)
     outputs = get_outputs(graph)
-    {nodes, params} = get_nodes(nodes, inputs, params, %{})
+    {nodes, _, params} = get_nodes(nodes, inputs, params, %{})
     {Enum.map(outputs, fn name -> nodes[name] end), params}
   end
 
@@ -91,455 +93,316 @@ defmodule AxonOnnx.Deserialize do
   end
 
   defp get_nodes(pruned_nodes, inp, params, used_params) do
-    Enum.reduce(pruned_nodes, {inp, used_params}, fn %Node{op_type: op_type} = op_node,
-                                                     {axon, used_params} ->
-      case op_type do
-        "Abs" ->
-          to_axon_nx(op_node, axon, params, used_params, &Nx.abs/1)
-
-        "Acos" ->
-          to_axon_nx(op_node, axon, params, used_params, &Nx.acos/1)
-
-        "Acosh" ->
-          to_axon_nx(op_node, axon, params, used_params, &Nx.acosh/1)
-
-        "Add" ->
-          to_axon_binary_op(op_node, axon, params, used_params, :add)
-
-        "And" ->
-          to_axon_binary_op(op_node, axon, params, used_params, &Nx.logical_and/2)
-
-        "ArgMax" ->
-          to_axon_reduction(op_node, axon, params, used_params, &Nx.argmax/2, :axis)
-
-        "ArgMin" ->
-          to_axon_reduction(op_node, axon, params, used_params, &Nx.argmin/2, :axis)
-
-        "Asin" ->
-          to_axon_nx(op_node, axon, params, used_params, &Nx.asin/1)
-
-        "Asinh" ->
-          to_axon_nx(op_node, axon, params, used_params, &Nx.asinh/1)
-
-        "Atan" ->
-          to_axon_nx(op_node, axon, params, used_params, &Nx.atan/1)
-
-        "Atanh" ->
-          to_axon_nx(op_node, axon, params, used_params, &Nx.atanh/1)
-
-        "AveragePool" ->
-          to_axon_avg_pool(op_node, axon, params, used_params)
-
-        "BatchNormalization" ->
-          to_axon_batch_norm(op_node, axon, params, used_params)
-
-        "BitShift" ->
-          %Node{attribute: attrs} = op_node
-
-          to_axon_binary_op(op_node, axon, params, used_params, fn x, y ->
-            shift_options = options!(attrs)
-
-            case shift_options["direction"] do
-              "LEFT" ->
-                Nx.left_shift(Nx.as_type(x, {:s, 64}), Nx.as_type(y, {:s, 64}))
-
-              "RIGHT" ->
-                Nx.right_shift(Nx.as_type(x, {:s, 64}), Nx.as_type(y, {:s, 64}))
-            end
-          end)
-
-        "Cast" ->
-          to_axon_cast(op_node, axon, params, used_params)
-
-        "Ceil" ->
-          to_axon_nx(op_node, axon, params, used_params, &Nx.ceil/1)
-
-        "Celu" ->
-          to_axon_activation(op_node, axon, params, used_params, :celu, alpha: {"alpha", 1.0})
-
-        "Constant" ->
-          to_axon_constant(op_node, axon, params, used_params)
-
-        "ConstantOfShape" ->
-          to_axon_constant_of_shape(op_node, axon, params, used_params)
-
-        "Concat" ->
-          to_axon_concat(op_node, axon, params, used_params)
-
-        "Conv" ->
-          to_axon_conv(op_node, axon, params, used_params)
-
-        "Cos" ->
-          to_axon_nx(op_node, axon, params, used_params, &Nx.cos/1)
-
-        "Cosh" ->
-          to_axon_nx(op_node, axon, params, used_params, &Nx.cosh/1)
-
-        "CumSum" ->
-          to_axon_cumsum(op_node, axon, params, used_params)
-
-        "Div" ->
-          to_axon_binary_op(op_node, axon, params, used_params, &Nx.divide/2)
-
-        "Elu" ->
-          to_axon_activation(op_node, axon, params, used_params, :elu, alpha: {"alpha", 1.0})
-
-        "Equal" ->
-          to_axon_binary_op(op_node, axon, params, used_params, &Nx.equal/2)
-
-        "Erf" ->
-          to_axon_nx(op_node, axon, params, used_params, &Nx.erf/1)
-
-        "Exp" ->
-          to_axon_activation(op_node, axon, params, used_params, :exp)
-
-        "Expand" ->
-          to_axon_expand(op_node, axon, params, used_params)
-
-        "Flatten" ->
-          to_axon_flatten(op_node, axon, params, used_params)
-
-        "Floor" ->
-          to_axon_nx(op_node, axon, params, used_params, &Nx.floor/1)
-
-        "Gather" ->
-          to_axon_gather(op_node, axon, params, used_params)
-
-        "Gemm" ->
-          to_axon_dense(op_node, axon, params, used_params)
-
-        "GlobalAveragePool" ->
-          to_axon_global_pool(op_node, axon, params, used_params)
-
-        "GlobalLpPool" ->
-          to_axon_global_pool(op_node, axon, params, used_params)
-
-        "GlobalMaxPool" ->
-          to_axon_global_pool(op_node, axon, params, used_params)
-
-        "Greater" ->
-          to_axon_binary_op(op_node, axon, params, used_params, &Nx.greater/2)
-
-        "GreaterOrEqual" ->
-          to_axon_binary_op(op_node, axon, params, used_params, &Nx.greater_equal/2)
-
-        "HardSigmoid" ->
-          to_axon_activation(op_node, axon, params, used_params, :hard_sigmoid,
-            alpha: {"alpha", 0.2},
-            beta: {"beta", 0.5}
-          )
-
-        "HardSwish" ->
-          # TODO: Consider adding to Axon
-          to_axon_nx(op_node, axon, params, used_params, fn x ->
-            alpha = Nx.divide(1, 6)
-            beta = Nx.tensor(0.5)
-
-            alpha
-            |> Nx.multiply(x)
-            |> Nx.add(beta)
-            |> Nx.min(1)
-            |> Nx.max(0)
-            |> Nx.multiply(x)
-          end)
-
-        "Identity" ->
-          to_axon_nx(op_node, axon, params, used_params, & &1)
-
-        "If" ->
-          to_axon_cond(op_node, axon, params, used_params)
-
-        "LeakyRelu" ->
-          to_axon_activation(op_node, axon, params, used_params, :leaky_relu,
-            alpha: {"alpha", 0.01}
-          )
-
-        "Less" ->
-          to_axon_binary_op(op_node, axon, params, used_params, &Nx.less/2)
-
-        "LessOrEqual" ->
-          to_axon_binary_op(op_node, axon, params, used_params, &Nx.less_equal/2)
-
-        "Log" ->
-          to_axon_nx(op_node, axon, params, used_params, &Nx.log/1)
-
-        "LogSoftmax" ->
-          to_axon_activation(op_node, axon, params, used_params, :log_softmax, axis: {"axis", -1})
-
-        "LRN" ->
-          to_axon_lrn(op_node, axon, params, used_params)
-
-        "MatMul" ->
-          to_axon_dense(op_node, axon, params, used_params)
-
-        "Mod" ->
-          # TODO(seanmor5): Support fmod option
-          to_axon_binary_op(op_node, axon, params, used_params, fn {x, y} ->
-            Nx.remainder(x, y)
-          end)
-
-        "Mul" ->
-          to_axon_binary_op(op_node, axon, params, used_params, :multiply)
-
-        "Neg" ->
-          to_axon_nx(op_node, axon, params, used_params, &Nx.negate/1)
-
-        "Not" ->
-          to_axon_nx(op_node, axon, params, used_params, &Nx.logical_not/1)
-
-        "Or" ->
-          to_axon_binary_op(op_node, axon, params, used_params, &Nx.logical_or/2)
-
-        "Pow" ->
-          to_axon_binary_op(op_node, axon, params, used_params, &Nx.power/2)
-
-        "Range" ->
-          to_axon_range(op_node, axon, params, used_params)
-
-        "ReduceMax" ->
-          to_axon_reduction(op_node, axon, params, used_params, &Nx.reduce_max/2, :axes)
-
-        "ReduceMean" ->
-          to_axon_reduction(op_node, axon, params, used_params, &Nx.mean/2, :axes)
-
-        "ReduceMin" ->
-          to_axon_reduction(op_node, axon, params, used_params, &Nx.reduce_min/2, :axes)
-
-        "ReduceProd" ->
-          to_axon_reduction(op_node, axon, params, used_params, &Nx.product/2, :axes)
-
-        "ReduceLogSum" ->
-          # TODO: I think there is a stability problem here
-          to_axon_reduction(op_node, axon, params, used_params, &Nx.log(Nx.sum(&1, &2)), :axes)
-
-        "ReduceLogSumExp" ->
-          # TODO: I think there is a stability problem here
-          to_axon_reduction(
-            op_node,
-            axon,
-            params,
-            used_params,
-            fn x, opts ->
-              x
-              |> Nx.exp()
-              |> Nx.sum(opts)
-              |> Nx.log()
-            end,
-            :axes
-          )
-
-        "ReduceSumSquare" ->
-          to_axon_reduction(
-            op_node,
-            axon,
-            params,
-            used_params,
-            &Nx.sum(Nx.power(&1, 2), &2),
-            :axes
-          )
-
-        "Relu" ->
-          to_axon_activation(op_node, axon, params, used_params, :relu)
-
-        "Reshape" ->
-          to_axon_reshape(op_node, axon, params, used_params)
-
-        "Round" ->
-          to_axon_nx(op_node, axon, params, used_params, &Nx.round/1)
-
-        "Selu" ->
-          to_axon_activation(op_node, axon, params, used_params, :selu,
-            alpha: {"alpha", 1.67326319217681884765625},
-            gamma: {"gamma", 1.05070102214813232421875}
-          )
-
-        "Shape" ->
-          to_axon_shape(op_node, axon, params, used_params)
-
-        "Sigmoid" ->
-          to_axon_activation(op_node, axon, params, used_params, :sigmoid)
-
-        "Sign" ->
-          to_axon_nx(op_node, axon, params, used_params, &Nx.sign/1)
-
-        "Sin" ->
-          to_axon_nx(op_node, axon, params, used_params, &Nx.sin/1)
-
-        "Sinh" ->
-          to_axon_nx(op_node, axon, params, used_params, &Nx.sinh/1)
-
-        "Size" ->
-          to_axon_nx(op_node, axon, params, used_params, fn x ->
-            x
-            |> Nx.size()
-            |> Nx.tensor(backend: Nx.Defn.Expr)
-          end)
-
-        "Slice" ->
-          to_axon_slice(op_node, axon, params, used_params)
-
-        "Softmax" ->
-          to_axon_activation(op_node, axon, params, used_params, :softmax, axis: {"axis", -1})
-
-        "Softplus" ->
-          to_axon_activation(op_node, axon, params, used_params, :softplus)
-
-        "Softsign" ->
-          to_axon_activation(op_node, axon, params, used_params, :softsign)
-
-        "Split" ->
-          to_axon_split(op_node, axon, params, used_params)
-
-        "Sqrt" ->
-          to_axon_nx(op_node, axon, params, used_params, &Nx.sqrt/1)
-
-        "Sub" ->
-          to_axon_binary_op(op_node, axon, params, used_params, :subtract)
-
-        "Sum" ->
-          to_axon_sum(op_node, axon, params, used_params)
-
-        "Tan" ->
-          to_axon_nx(op_node, axon, params, used_params, &Nx.tan/1)
-
-        "Tanh" ->
-          to_axon_activation(op_node, axon, params, used_params, :tanh)
-
-        "Transpose" ->
-          to_axon_transpose(op_node, axon, params, used_params)
-
-        "Unsqueeze" ->
-          to_axon_unsqueeze(op_node, axon, params, used_params)
-
-        "Upsample" ->
-          to_axon_upsample(op_node, axon, params, used_params)
-
-        "Xor" ->
-          to_axon_binary_op(op_node, axon, params, used_params, &Nx.logical_xor/2)
-
-        "MaxPool" ->
-          to_axon_max_pool(op_node, axon, params, used_params)
-
-        "Pad" ->
-          to_axon_pad(op_node, axon, params, used_params)
-
-        "Where" ->
-          to_axon_where(op_node, axon, params, used_params)
-
-        op ->
-          raise "unsupported #{op} op in graph"
-      end
-    end)
+    Enum.reduce(pruned_nodes, {inp, params, used_params}, &recur_nodes/2)
   end
 
-  defp to_axon_cast(
-         %Node{op_type: "Cast", attribute: attrs, input: [input], output: [output_name]},
-         axon,
-         _params,
-         used_params
-       ) do
+  @nx_op_types [
+    {"Abs", &Nx.abs/1},
+    {"Acos", &Nx.acos/1},
+    {"Acosh", &Nx.acosh/1},
+    {"Asin", &Nx.asin/1},
+    {"Asinh", &Nx.asinh/1},
+    {"Atan", &Nx.atan/1},
+    {"Atanh", &Nx.atanh/1},
+    {"Ceil", &Nx.ceil/1},
+    {"Cos", &Nx.cos/1},
+    {"Cosh", &Nx.cosh/1},
+    {"Erf", &Nx.erf/1},
+    {"Floor", &Nx.floor/1},
+    {"HardSwish", &hardswish/1},
+    {"Identity", &identity/1},
+    {"Log", &Nx.log/1},
+    {"Neg", &Nx.negate/1},
+    {"Not", &Nx.logical_not/1},
+    {"Round", &Nx.round/1},
+    {"Reciprocal", &reciprocal/1},
+    {"Sign", &Nx.sign/1},
+    {"Sin", &Nx.sin/1},
+    {"Sinh", &Nx.sinh/1},
+    {"Sqrt", &Nx.sqrt/1},
+    {"Tan", &Nx.tan/1}
+  ]
+
+  for {op, fun} <- @nx_op_types do
+    defp recur_nodes(%Node{op_type: unquote(op), input: [input], output: [output_name]}, {axon, params, used_params}) do
+      axon_input = axon!(input, axon)
+
+      axon_output =
+        case axon_input do
+          %Axon{op: :constant, opts: [value: value]} ->
+            new_value = apply(unquote(fun), [value])
+            Axon.constant(new_value, name: output_name)
+
+          %Axon{} = axon_input ->
+            Axon.nx(axon_input, unquote(fun), name: output_name)
+        end
+
+      updated_axon = Map.put(axon, output_name, axon_output)
+      {updated_axon, params, used_params}
+    end    
+  end
+
+  @activation_op_types [
+    {"Celu", :celu, [alpha: {"alpha", 1.0}]},
+    {"Elu", :elu, [alpha: {"alpha", 1.0}]},
+    {"Exp", :exp, []},
+    {"HardSigmoid", :hard_sigmoid, [alpha: {"alpha", 0.2}, beta: {"beta", 0.5}]},
+    {"LeakyRelu", :leaky_relu, [alpha: {"alpha", 1.0e-2}]},
+    {"LogSoftmax", :log_softmax, [axis: {"axis", -1}]},
+    {"Relu", :relu, []},
+    {"Selu", :selu, [alpha: {"alpha", 1.67326319217681884765625}, gamma: {"gamma", 1.05070102214813232421875}]},
+    {"Sigmoid", :sigmoid, []},
+    {"Softmax", :softmax, [axis: {"axis", -1}]},
+    {"Softplus", :softplus, []},
+    {"Softsign", :softsign, []},
+    {"Tanh", :tanh, []}
+  ]
+
+  for {op, act, act_opts} <- @activation_op_types do
+    defp recur_nodes(%Node{op_type: unquote(op), attribute: attrs, input: [input], output: [output_name]}, {axon, params, used_params}) do
+      axon_input = axon!(input, axon)
+      activation_options = options!(attrs)
+
+      opts =
+        Enum.map(unquote(act_opts), fn {k, {name, default}} ->
+          if activation_options[name] do
+            {k, activation_options[name]}
+          else
+            {k, default}
+          end
+        end)
+
+      axon_output =
+        case axon_input do
+          %Axon{op: :constant, opts: [value: value]} ->
+            new_value = apply(Axon.Activations, unquote(act), [value] ++ opts)
+            Axon.constant(new_value, name: output_name)
+
+          %Axon{} = axon_input ->
+            opts = [name: output_name] ++ opts
+            apply(Axon, unquote(act), [axon_input, opts])
+        end
+
+      updated_axon = Map.put(axon, output_name, axon_output)
+      {updated_axon, params, used_params}
+    end
+  end
+
+  @reduction_op_types [
+    {"ArgMax", &Nx.argmax/2, :axis},
+    {"ArgMin", &Nx.argmin/2, :axis},
+    {"ReduceL1", &l1_norm/2, :axes},
+    {"ReduceL2", &l2_norm/2, :axes},
+    {"ReduceLogSum", &logsum/2, :axes},
+    {"ReduceLogSumExp", &logsumexp/2, :axes},
+    {"ReduceMax", &Nx.reduce_max/2, :axes},
+    {"ReduceMean", &Nx.mean/2, :axes},
+    {"ReduceMin", &Nx.reduce_min/2, :axes},
+    {"ReduceProd", &Nx.product/2, :axes},
+    {"ReduceSumSquare", &sumsquare/2, :axes}
+  ]
+
+  for {op, reduce_fun, axis_or_axes} <- @reduction_op_types do
+    defp recur_nodes(%Node{op_type: unquote(op), attribute: attrs, input: [input], output: [output_name]}, {axon, params, used_params}) do
+      reduce_options = options!(attrs)
+
+      %Axon{output_shape: shape} = axon_input = axon!(input, axon)
+
+      keepdims = reduce_options["keepdims"] || 1
+      keep_axes = if keepdims == 1, do: true, else: false
+
+      axes =
+        if unquote(axis_or_axes) == :axis do
+          axis = reduce_options["axis"] || 0
+          Nx.Shape.normalize_axis(shape, axis, List.duplicate(nil, Nx.rank(shape) - 1))
+        else
+          axes = reduce_options["axes"] || Nx.axes(shape)
+          Nx.Shape.normalize_axes(shape, axes, List.duplicate(nil, Nx.rank(shape) - 1))
+        end
+
+      opts =
+        if unquote(axis_or_axes) == :axis do
+          last_index = reduce_options["select_last_index"] || 0
+          tie_break = if last_index == 0, do: :low, else: :high
+          [keep_axis: keep_axes, axis: axes, tie_break: tie_break]
+        else
+          [keep_axes: keep_axes, axes: axes]
+        end
+
+      out_shape =
+        if keep_axes do
+          Enum.reduce(List.wrap(axes), shape, fn x, shape -> put_elem(shape, x, 1) end)
+        else
+          shape = for i <- Nx.axes(shape), i not in List.wrap(axes), do: i
+          List.to_tuple(shape)
+        end
+
+      layer_fun = fn x, _params, opts -> apply(unquote(reduce_fun), [x, opts]) end
+
+      layer =
+        case axon_input do
+          %Axon{op: :constant, opts: [value: tensor]} ->
+            new_value = layer_fun.(tensor, %{}, opts)
+            Axon.constant(new_value, name: output_name)
+
+          %Axon{} = axon_input ->
+            Axon.layer(axon_input, layer_fun, out_shape, %{}, output_name, opts)
+        end
+
+      updated_axon = Map.put(axon, output_name, layer)
+
+      {updated_axon, params, used_params}
+    end
+  end
+
+  @builtin_binary_op_types [
+    {"Add", :add},
+    {"Sub", :subtract},
+    {"Mul", :multiply}
+  ]
+
+  for {op, binary_op} <- @builtin_binary_op_types do
+    defp recur_nodes(%Node{op_type: unquote(op), input: [inp1, inp2], output: [output_name]}, {axon, params, used_params}) do
+      # There's a potential this is just a bias add, so we check if
+      # inp1 is a graph node and inp2 is a parameter and handle
+      # accordingly
+      if unquote(op) == "Add" and Map.has_key?(axon, inp1) and Map.has_key?(params, inp2) do
+        inp1 = axon!(inp1, axon)
+        inp2 = param!(inp2, params)
+        
+        updated_axon = Map.put(axon, output_name, Axon.bias(inp1, name: output_name))
+        updated_params = Map.put(used_params, output_name, %{"bias" => inp2})
+
+        {updated_axon, params, updated_params}
+      else
+        inp1 = input!(inp1, axon, params)
+        inp2 = input!(inp2, axon, params)
+
+        {updated_axon, updated_params} =
+          case {inp1, inp2} do
+            {%Axon{op: :constant, opts: [value: v1]}, %Axon{op: :constant, opts: [value: v2]}} ->
+              new_value = apply(Nx, unquote(binary_op), [v1, v2])
+              layer = Axon.constant(new_value, name: output_name)
+              updated_axon = Map.put(axon, output_name, layer)
+              {updated_axon, used_params}
+
+            {%Axon{} = inp1, %Axon{} = inp2} ->
+              layer = apply(Axon, unquote(binary_op), [inp1, inp2])
+              updated_axon = Map.put(axon, output_name, layer)
+              {updated_axon, used_params}
+
+            {%Axon{} = inp1, %Nx.Tensor{} = inp2} ->
+              layer = trainable_binary_layer(inp1, inp2, unquote(binary_op), output_name)
+              updated_axon = Map.put(axon, output_name, layer)
+              updated_params = Map.put(used_params, output_name, %{"kernel" => inp2})
+              {updated_axon, updated_params}
+
+            {%Nx.Tensor{} = inp1, %Axon{} = inp2} ->
+              layer = trainable_binary_layer(inp2, inp1, unquote(binary_op), output_name)
+              updated_axon = Map.put(axon, output_name, layer)
+              updated_params = Map.put(used_params, output_name, %{"kernel" => inp1})
+              {updated_axon, updated_params}
+          end
+
+        {updated_axon, params, updated_params}
+      end
+    end    
+  end
+
+  @binary_op_types [
+    {"And", &Nx.logical_and/2},
+    # {"BitShift", &bitshift/2},
+    {"Div", &Nx.divide/2},
+    {"Equal", &Nx.equal/2},
+    {"Greater", &Nx.greater/2},
+    {"GreaterOrEqual", &Nx.greater_equal/2},
+    {"Less", &Nx.less/2},
+    {"LessOrEqual", &Nx.less_equal/2},
+    {"Mod", &Nx.remainder/2},
+    {"Or", &Nx.logical_or/2},
+    {"Pow", &Nx.power/2},
+    {"Xor", &Nx.logical_xor/2},
+  ]
+
+  for {op, binary_fun} <- @binary_op_types do
+    defp recur_nodes(%Node{op_type: unquote(op), input: [inp1, inp2], output: [output_name]}, {axon, params, used_params}) do
+      %Axon{output_shape: s1} = inp1 = axon!(inp1, axon)
+      %Axon{output_shape: s2} = inp2 = axon!(inp2, axon)
+
+      output_shape = Axon.Shape.element_wise([s1, s2])
+
+      fun = fn x, y, _params -> apply(unquote(binary_fun), [x, y]) end
+
+      updated_axon =
+        case {inp1, inp2} do
+          {%Axon{op: :constant, opts: [value: v1]}, %Axon{op: :constant, opts: [value: v2]}} ->
+            new_value = apply(unquote(binary_fun), [v1, v2])
+            Map.put(axon, output_name, Axon.constant(new_value, name: output_name))
+
+          {%Axon{} = inp1, %Axon{} = inp2} ->
+            layer = Axon.layer([inp1, inp2], fun, output_shape, %{}, output_name)
+            Map.put(axon, output_name, layer)
+        end
+
+      {updated_axon, params, used_params}
+    end
+  end
+
+  @global_pool_types [
+    {"GlobalAveragePool", :global_avg_pool},
+    {"GlobalLpPool", :global_lp_pool},
+    {"GlobalMaxPool", :global_max_pool}
+  ]
+
+  for {op, global_pool_op} <- @global_pool_types do
+    defp recur_nodes(%Node{op_type: unquote(op), attribute: attrs, input: [input], output: [output_name]}, {axon, params, used_params}) do
+      opts =
+        if unquote(op) == "GlobalLpPool" do
+          lp_pool_options = options!(attrs)
+          [name: output_name, keep_axes: true, norm: lp_pool_options["p"]]
+        else
+          [name: output_name, keep_axes: true]
+        end
+
+      inp = axon!(input, axon)
+      layer = apply(Axon, unquote(global_pool_op), [inp, opts])
+      updated_axon = Map.put(axon, output_name, layer)
+
+      {updated_axon, params, used_params}
+    end
+  end
+
+  defp recur_nodes(%Node{op_type: "Cast", attribute: attrs, input: [input], output: [output_name]}, {axon, params, used_params}) do
     cast_options = options!(attrs)
     inp = axon!(input, axon)
-
-    fun = fn x ->
-      case cast_options["to"] do
-        1 ->
-          Nx.as_type(x, {:f, 32})
-
-        2 ->
-          Nx.as_type(x, {:u, 8})
-
-        3 ->
-          Nx.as_type(x, {:s, 8})
-
-        4 ->
-          Nx.as_type(x, {:u, 16})
-
-        5 ->
-          Nx.as_type(x, {:s, 16})
-
-        6 ->
-          Nx.as_type(x, {:s, 32})
-
-        7 ->
-          Nx.as_type(x, {:s, 64})
-
-        8 ->
-          raise ArgumentError, "unsupported STRING type"
-
-        9 ->
-          Nx.as_type(x, {:u, 8})
-
-        10 ->
-          Nx.as_type(x, {:f, 16})
-
-        11 ->
-          Nx.as_type(x, {:f, 64})
-
-        12 ->
-          Nx.as_type(x, {:u, 32})
-
-        13 ->
-          Nx.as_type(x, {:u, 64})
-
-        14 ->
-          raise ArgumentError, "unsupported COMPLEX type"
-
-        15 ->
-          raise ArgumentError, "unsupported COMPLEX type"
-
-        16 ->
-          Nx.as_type(x, {:bf, 16})
-      end
-    end
+    nx_type = onnx_type_to_nx_type(cast_options["to"])
 
     updated_axon =
       case inp do
         %Axon{op: :constant, opts: [value: v]} ->
-          new_value = fun.(v)
+          new_value = Nx.as_type(v, nx_type)
           Map.put(axon, output_name, Axon.constant(new_value, name: output_name))
 
-        %Axon{} ->
-          Map.put(axon, output_name, Axon.nx(inp, fun, name: output_name))
+        %Axon{} = inp ->
+          layer = Axon.nx(inp, &Nx.as_type(&1, nx_type), name: output_name)
+          Map.put(axon, output_name, layer)
       end
 
-    {updated_axon, used_params}
+    {updated_axon, params, used_params}
   end
 
-  defp to_axon_lrn(
-         %Node{input: [input], attribute: attrs, output: [output_name]},
-         axon,
-         _params,
-         used_params
-       ) do
+  defp recur_nodes(%Node{op_type: "LRN", input: [input], attribute: attrs, output: [output_name]}, {axon, params, used_params}) do
     inp = axon!(input, axon)
     lrn_options = options!(attrs)
+    opts = Enum.map(lrn_options, fn {k, v} -> {String.to_atom(k), v} end)
 
-    alpha = lrn_options["alpha"] || 0.0001
-    beta = lrn_options["beta"] || 0.75
-    bias = lrn_options["bias"] || 1.0
-    size = lrn_options["size"]
-
-    axes = Enum.to_list(0..(size - 1))
-
-    fun = fn x ->
-      squares = Nx.power(x, 2)
-      sum_squares = Nx.sum(squares, axes: axes, keep_axes: true)
-      denom = Nx.power(Nx.add(bias, Nx.divide(alpha, Nx.multiply(size, sum_squares))), beta)
-      Nx.divide(x, denom)
-    end
-
-    updated_axon = Map.put(axon, output_name, Axon.nx(inp, fun, name: output_name))
-    {updated_axon, used_params}
+    layer = Axon.nx(inp, &lrn(&1, opts), name: output_name)
+    updated_axon = Map.put(axon, output_name, layer)
+    {updated_axon, params, used_params}
   end
 
   # TODO: Chances are this is an embedding
-  defp to_axon_gather(
-         %Node{op_type: "Gather", input: [x, ind], output: [output_name], attribute: attrs},
-         axon,
-         params,
-         used_params
-       ) do
+  defp recur_nodes(%Node{op_type: "Gather", input: [x, ind], output: [output_name], attribute: attrs}, {axon, params, used_params}) do
     # Assume embedding if ind is axon and x is param
     if Map.has_key?(axon, ind) and Map.has_key?(params, x) do
       kernel = param!(x, params)
@@ -550,7 +413,7 @@ defmodule AxonOnnx.Deserialize do
       updated_params = Map.put(used_params, output_name, %{"kernel" => kernel})
       updated_axon = Map.put(axon, output_name, layer)
 
-      {updated_axon, updated_params}
+      {updated_axon, params, updated_params}
     else
       gather_options = options!(attrs)
 
@@ -588,266 +451,115 @@ defmodule AxonOnnx.Deserialize do
         end
 
       updated_axon = Map.put(axon, output_name, layer)
-      {updated_axon, used_params}
+      {updated_axon, params, used_params}
     end
   end
 
-  # Builds a generic Nx layer by applying the given operation
-  # to the input. Most of these functions are generic element-wise
-  # operations such as Abs, Acos, etc.
-  #
-  # TODO(seanmor5): Replace with Axon.layer when we have better shape
-  # inference
-  defp to_axon_nx(%Node{input: [input], output: [output_name]}, axon, _params, used_params, fun) do
-    axon_input = axon!(input, axon)
+  defp recur_nodes(%Node{op_type: "MatMul", input: [a, b], output: [output_name]}, {axon, params, used_params}) do
+    a = input!(a, axon, params)
+    b = input!(b, axon, params)
 
-    axon_output =
-      case axon_input do
-        %Axon{op: :constant, opts: [value: value]} ->
-          new_value = fun.(value)
-          Axon.constant(new_value, name: output_name)
+    # TODO: Constant folding
+    {updated_axon, updated_params} =
+      case {a, b} do
+        {%Axon{} = inp, %Nx.Tensor{} = kernel} ->
+          units = Nx.shape(kernel) |> elem(1)
 
-        %Axon{} = axon_input ->
-          Axon.nx(axon_input, fun, name: output_name)
-      end
-
-    updated_axon = Map.put(axon, output_name, axon_output)
-    {updated_axon, used_params}
-  end
-
-  # Builds a generic reduction layer by applying the given reduction operation
-  # to the input in a custom layer.
-  defp to_axon_reduction(
-         %Node{input: [input], attribute: attrs, output: [output_name]},
-         axon,
-         _params,
-         used_params,
-         reduce_fun,
-         axis_or_axes
-       ) do
-    reduce_options = options!(attrs)
-
-    %Axon{output_shape: shape} = axon_input = axon!(input, axon)
-
-    keepdims = reduce_options["keepdims"] || 1
-    keep_axes = if keepdims == 1, do: true, else: false
-
-    axes =
-      if axis_or_axes == :axis do
-        axis = reduce_options["axis"] || 0
-        Nx.Shape.normalize_axis(shape, axis, List.duplicate(nil, Nx.rank(shape) - 1))
-      else
-        axes = reduce_options["axes"] || Nx.axes(shape)
-        Nx.Shape.normalize_axes(shape, axes, List.duplicate(nil, Nx.rank(shape) - 1))
-      end
-
-    opts =
-      if axis_or_axes == :axis do
-        last_index = reduce_options["select_last_index"] || 0
-        tie_break = if last_index == 0, do: :low, else: :high
-        [keep_axis: keep_axes, axis: axes, tie_break: tie_break]
-      else
-        [keep_axes: keep_axes, axes: axes]
-      end
-
-    out_shape =
-      if keep_axes do
-        Enum.reduce(List.wrap(axes), shape, fn x, shape -> put_elem(shape, x, 1) end)
-      else
-        shape = for i <- Nx.axes(shape), i not in List.wrap(axes), do: i
-        List.to_tuple(shape)
-      end
-
-    layer_fun = fn x, _params, opts -> reduce_fun.(x, opts) end
-
-    layer =
-      case axon_input do
-        %Axon{op: :constant, opts: [value: tensor]} ->
-          new_value = layer_fun.(tensor, %{}, opts)
-          Axon.constant(new_value, name: output_name)
-
-        %Axon{} = axon_input ->
-          Axon.layer(axon_input, layer_fun, out_shape, %{}, output_name, opts)
-      end
-
-    updated_axon = Map.put(axon, output_name, layer)
-
-    {updated_axon, used_params}
-  end
-
-  # Builds an Axon dense layer from an ONNX MatMul or GEMM Node. MatMul
-  # nodes do not account for bias (they're treated as a separate operation
-  # in the graph). GEMM Nodes are a bit more in-depth.
-  #
-  # TODO(seanmor5): Handle alpha, beta attrs
-  defp to_axon_dense(
-         %Node{op_type: op_type, input: inputs, output: [output_name], attribute: attrs},
-         axon,
-         params,
-         used_params
-       ) do
-    [input, weight | maybe_bias] = inputs
-
-    if Map.has_key?(axon, input) and Map.has_key?(params, weight) do
-      input = axon!(input, axon)
-      weight = param!(weight, params)
-
-      case op_type do
-        "MatMul" ->
-          {_, units} = Nx.shape(weight)
-
-          updated_axon =
-            Map.put(
-              axon,
-              output_name,
-              Axon.dense(input, units, use_bias: false, name: output_name)
-            )
-
-          updated_params = Map.put(used_params, output_name, %{"kernel" => weight})
+          layer = Axon.dense(inp, units, name: output_name, use_bias: false)
+          
+          updated_axon = Map.put(axon, output_name, layer)
+          updated_params = Map.put(used_params, output_name, %{"kernel" => kernel})
           {updated_axon, updated_params}
 
-        "Gemm" ->
-          dense_options = options!(attrs)
+        {%Nx.Tensor{} = kernel, %Axon{} = inp} ->
+          units = Nx.shape(kernel) |> elem(1)
 
-          # TODO(seanmor5): Handle alpha, beta
-          _alpha = dense_options["alpha"]
-          _beta = dense_options["beta"]
+          layer = Axon.dense(inp, units, name: output_name, use_bias: false)
+          
+          updated_axon = Map.put(axon, output_name, layer)
+          updated_params = Map.put(used_params, output_name, %{"kernel" => kernel})
+          {updated_axon, updated_params}
 
-          trans_a = dense_options["transA"]
-          trans_b = dense_options["transB"]
+        {%Axon{} = a, %Axon{} = b} ->
+          layer = numpy_matmul_layer(a, b, output_name)
+          updated_axon = Map.put(axon, output_name, layer)
+          {updated_axon, used_params}
+      end
 
-          input =
-            if trans_a == 1 do
-              Nx.transpose(input)
-            else
-              input
-            end
+    {updated_axon, params, updated_params}
+  end
 
-          weight =
-            if trans_b == 1 do
-              Nx.transpose(weight)
-            else
-              weight
-            end
+  defp recur_nodes(%Node{op_type: "Gemm", input: [a, b | maybe_c], attribute: attrs, output: [output_name]}, {axon, params, used_params}) do
+    gemm_options = options!(attrs)
 
-          {_, units} = Nx.shape(weight)
+    # TODO:
+    # alpha = gemm_options["alpha"]
+    # beta = gemm_options["beta"]
+    trans_a = gemm_options["transA"]
+    trans_b = gemm_options["transB"]
 
-          updated_axon =
-            Map.put(
-              axon,
-              output_name,
-              Axon.dense(input, units, use_bias: maybe_bias != [], name: output_name)
-            )
+    a = input!(a, axon, params)
+    b = input!(b, axon, params)
 
+    {updated_axon, updated_params} =
+      case {a, b} do
+        {%Axon{output_shape: inp_shape} = inp, %Nx.Tensor{} = kernel} ->
+          inp_perm = Enum.to_list(tuple_size(inp_shape) - 1..0//-1)
+          inp = if trans_a == 1, do: Axon.transpose(inp, inp_perm), else: inp
+          kernel = if trans_b == 1, do: Nx.transpose(kernel), else: kernel
+
+          units = Nx.shape(kernel) |> elem(1)
+          use_bias = maybe_c != []
+
+          layer = Axon.dense(inp, units, name: output_name, use_bias: use_bias)
+          
+          updated_axon = Map.put(axon, output_name, layer)
           updated_params =
-            if maybe_bias == [] do
-              Map.put(used_params, output_name, %{"kernel" => weight})
+            if use_bias do
+              [c] = maybe_c
+              bias = input!(c, axon, params)
+              Map.put(used_params, output_name, %{"kernel" => kernel, "bias" => bias})
             else
-              [bias] = maybe_bias
-              bias = param!(bias, params)
-
-              used_params
-              |> Map.put(output_name, %{"kernel" => weight, "bias" => bias})
+              Map.put(used_params, output_name, %{"kernel" => kernel})
             end
-
           {updated_axon, updated_params}
-      end
-    else
-      %{output_shape: inp_shape} = input = axon_or_param!(input, axon, params, used_params)
-      inp_rank = Nx.rank(inp_shape)
-      inp_names = List.duplicate(nil, inp_rank)
-      %{output_shape: weight_shape} = weight = axon_or_param!(weight, axon, params, used_params)
-      weight_rank = Nx.rank(weight_shape)
-      weight_names = List.duplicate(nil, weight_rank)
 
-      batch_dims = Enum.to_list(0..(inp_rank - 3))
-      fun = fn x, y, _params -> Nx.dot(x, y) end
+        {%Nx.Tensor{} = kernel, %Axon{output_shape: inp_shape} = inp} ->
+          inp_perm = Enum.to_list(tuple_size(inp_shape) - 1..0//-1)
+          inp = if trans_a == 1, do: Axon.transpose(inp, inp_perm), else: inp
+          kernel = if trans_b == 1, do: Nx.transpose(kernel), else: kernel
 
-      {output_shape, _} =
-        Nx.Shape.dot(
-          inp_shape,
-          [inp_rank - 1],
-          inp_names,
-          batch_dims,
-          weight_shape,
-          [weight_rank - 2],
-          weight_names,
-          batch_dims
-        )
+          units = Nx.shape(kernel) |> elem(1)
+          use_bias = maybe_c != []
 
-      updated_axon =
-        Map.put(
-          axon,
-          output_name,
-          Axon.layer([input, weight], fun, output_shape, %{}, output_name)
-        )
+          layer = Axon.dense(inp, units, name: output_name, use_bias: use_bias)
+          
+          updated_axon = Map.put(axon, output_name, layer)
+          updated_params =
+            if use_bias do
+              [c] = maybe_c
+              bias = input!(c, axon, params)
+              Map.put(used_params, output_name, %{"kernel" => kernel, "bias" => bias})
+            else
+              Map.put(used_params, output_name, %{"kernel" => kernel})
+            end
+          {updated_axon, updated_params}
 
-      {updated_axon, used_params}
-    end
-  end
+        {%Axon{output_shape: a_shape} = a, %Axon{output_shape: b_shape} = b} ->
+          a_perm = Enum.to_list(Nx.rank(a_shape) - 1..0//-1)
+          b_perm = Enum.to_list(Nx.rank(b_shape) - 1..0//-1)
+          a = if trans_a == 1, do: Axon.transpose(a, a_perm), else: a
+          b = if trans_b == 1, do: Axon.transpose(b, b_perm), else: b
 
-  # Builds an Axon layer from an element-wise binary operation. Binary
-  # op is either an atom representing one of Axon's legitimate Binary op
-  # layers, or a function to be used in a custom layer.
-  #
-  # TODO(seanmor5): Verify broadcasting semantics
-  defp to_axon_binary_op(
-         %Node{input: [x, y], output: [output_name]},
-         axon,
-         params,
-         used_params,
-         binary_op
-       ) do
-    %Axon{output_shape: s1} = inp1 = axon_or_param!(x, axon, params, used_params)
-    %Axon{output_shape: s2} = inp2 = axon_or_param!(y, axon, params, used_params)
-
-    updated_axon =
-      case {inp1, inp2} do
-        {%Axon{op: :constant, opts: [value: v1]}, %Axon{op: :constant, opts: [value: v2]}} ->
-          case binary_op do
-            op when is_atom(op) ->
-              new_value = apply(Nx, op, [v1, v2])
-              Map.put(axon, output_name, Axon.constant(new_value, name: output_name))
-
-            fun when is_function(fun, 2) ->
-              new_value = fun.(v1, v2)
-              Map.put(axon, output_name, Axon.constant(new_value, name: output_name))
-          end
-
-        {inp1, inp2} ->
-          case binary_op do
-            op when is_atom(op) ->
-              Map.put(axon, output_name, apply(Axon, op, [inp1, inp2, [name: output_name]]))
-
-            fun when is_function(fun, 2) ->
-              # TODO: Must fix Axon.layer with no parameters
-              out_shape = Axon.Shape.element_wise([s1, s2])
-
-              layer_fun = fn x, y, _params -> fun.(x, y) end
-
-              Map.put(
-                axon,
-                output_name,
-                Axon.layer([inp1, inp2], layer_fun, out_shape, %{}, output_name)
-              )
-          end
+          layer = numpy_matmul_layer(a, b, output_name)
+          updated_axon = Map.put(axon, output_name, layer)
+          {updated_axon, used_params}
       end
 
-    {updated_axon, used_params}
+    {updated_axon, params, updated_params}
   end
 
-  defp to_axon_sum(%Node{input: inputs, output: [output_name]}, axon, _params, used_params) do
-    axons = for input <- inputs, do: axon!(input, axon)
-    updated_axon = Map.put(axon, output_name, Axon.add(axons, name: output_name))
-    {updated_axon, used_params}
-  end
-
-  defp to_axon_max_pool(
-         %Node{op_type: "MaxPool", input: [inp], attribute: attrs, output: [output_name]},
-         axon,
-         _params,
-         used_params
-       ) do
+  defp recur_nodes(%Node{op_type: "MaxPool", input: [inp], attribute: attrs, output: [output_name]}, {axon, params, used_params}) do
     max_pool_options = options!(attrs)
 
     kernel_shape = max_pool_options["kernel_shape"]
@@ -904,15 +616,10 @@ defmodule AxonOnnx.Deserialize do
         )
       )
 
-    {updated_axon, used_params}
+    {updated_axon, params, used_params}
   end
 
-  defp to_axon_avg_pool(
-         %Node{op_type: "AveragePool", input: [inp], attribute: attrs, output: [output_name]},
-         axon,
-         _params,
-         used_params
-       ) do
+  defp recur_nodes(%Node{op_type: "AveragePool", input: [inp], attribute: attrs, output: [output_name]}, {axon, params, used_params}) do
     avg_pool_options = options!(attrs)
 
     kernel_shape = avg_pool_options["kernel_shape"]
@@ -966,15 +673,10 @@ defmodule AxonOnnx.Deserialize do
         )
       )
 
-    {updated_axon, used_params}
+    {updated_axon, params, used_params}
   end
 
-  defp to_axon_conv(
-         %Node{op_type: "Conv", attribute: attrs, input: input, output: [output_name]},
-         axon,
-         params,
-         used_params
-       ) do
+  defp recur_nodes(%Node{op_type: "Conv", attribute: attrs, input: input, output: [output_name]}, {axon, params, used_params}) do
     conv_options = options!(attrs)
 
     kernel_shape = conv_options["kernel_shape"]
@@ -1044,65 +746,17 @@ defmodule AxonOnnx.Deserialize do
         )
       )
 
-    {updated_axon, updated_params}
+    {updated_axon, params, updated_params}
   end
 
-  defp to_axon_pad(
-         %Node{op_type: "Pad", input: inputs, output: [output_name], attribute: attrs},
-         axon,
-         params,
-         used_params
-       ) do
-    pad_options = options!(attrs)
-
-    case pad_options["mode"] do
-      "constant" ->
-        :ok
-
-      nil ->
-        :ok
-
-      mode ->
-        raise "unsupported padding mode #{inspect(mode)}"
-    end
-
-    [data, pads | maybe_constant] = inputs
-
-    inp = axon!(data, axon)
-    # TODO(seanmor5): Pads should probably be scrubbed from the graph
-    # and parameters
-    pads = param!(pads, params)
-
-    padding_config =
-      pads.ints
-      |> Enum.chunk_every(2)
-      |> Enum.zip()
-
-    constant_value =
-      case maybe_constant do
-        [] ->
-          0
-
-        [value] ->
-          tensor!(value)
-      end
-
-    updated_axon =
-      Map.put(axon, output_name, Axon.pad(inp, padding_config, constant_value, name: output_name))
-
-    {updated_axon, used_params}
-  end
-
-  defp to_axon_batch_norm(
+  defp recur_nodes(
          %Node{
            op_type: "BatchNormalization",
            input: [inp, gamma, beta, mean, var],
            output: [output_name],
            attribute: attrs
          },
-         axon,
-         params,
-         used_params
+         {axon, params, used_params}
        ) do
     options = options!(attrs)
 
@@ -1136,45 +790,13 @@ defmodule AxonOnnx.Deserialize do
         "var" => var
       })
 
-    {updated_axon, updated_params}
+    {updated_axon, params, updated_params}
   end
 
-  # Builds an axon activation layer with the given activation function.
-  # `activation` must be a legitimate Axon activation. `activation` functions
-  # are all element-wise with 1 input. Optionally has activation options.
-  defp to_axon_activation(
-         %Node{attribute: attrs, input: [inp], output: [output_name]},
-         axon,
-         _params,
-         used_params,
-         activation,
-         opts \\ []
+  defp recur_nodes(
+         %Node{op_type: "Concat", attribute: attrs, input: inputs, output: [output_name]},
+         {axon, params, used_params}
        ) do
-    attrs = options!(attrs)
-
-    opts =
-      Enum.map(opts, fn {k, {name, default}} ->
-        if attrs[name] do
-          {k, attrs[name]}
-        else
-          {k, default}
-        end
-      end)
-
-    opts = [name: output_name] ++ opts
-    inp = axon!(inp, axon)
-    {Map.put(axon, output_name, Axon.activation(inp, activation, opts)), used_params}
-  end
-
-  # Builds an Axon layer which returns a new layer with input values 
-  # concatenated on the given axis 
-  defp to_axon_concat(
-         %Node{attribute: attrs, input: inputs, output: [output_name]},
-         axon,
-         params,
-         used_params
-       )
-       when is_list(inputs) do
     inputs = for inp <- inputs, do: axon_or_param!(inp, axon, params, used_params)
     %{"axis" => axis} = options!(attrs)
 
@@ -1187,18 +809,16 @@ defmodule AxonOnnx.Deserialize do
         Map.put(axon, output_name, Axon.concatenate(inputs, axis: axis, name: output_name))
       end
 
-    {updated_axon, used_params}
+    {updated_axon, params, used_params}
   end
 
   # Builds an Axon layer which returns a new layer upsampling the input
   # layer. The scale activation layer must contain 1.0 as the first two values
   # Each dimension value of the output layer is:
   # output_dimension = floor(input_dimension * scale)
-  defp to_axon_upsample(
-         %Node{attribute: attrs, input: [inp, scale], output: [output_name]},
-         axon,
-         params,
-         used_params
+  defp recur_nodes(
+         %Node{op_type: "Upsample", attribute: attrs, input: [inp, scale], output: [output_name]},
+         {axon, params, used_params}
        ) do
     %Axon{output_shape: shape} = inp = axon!(inp, axon)
     %{"mode" => mode} = options!(attrs)
@@ -1227,18 +847,15 @@ defmodule AxonOnnx.Deserialize do
                 "unspported scale format, first two scale values must be 1, got #{s1} and #{s2}"
       end
 
-    {Map.put(
-       axon,
-       output_name,
-       Axon.resize(inp, output_shape, method: method, name: output_name)
-     ), used_params}
+    layer = Axon.resize(inp, output_shape, method: method, name: output_name)
+    updated_axon = Map.put(axon, output_name, layer)
+
+    {updated_axon, params, used_params}
   end
 
-  defp to_axon_split(
-         %Node{attribute: attrs, input: [inp], output: output_names},
-         axon,
-         _params,
-         used_params
+  defp recur_nodes(
+         %Node{op_type: "Split", attribute: attrs, input: [inp], output: output_names},
+         {axon, params, used_params}
        ) do
     inp = axon!(inp, axon)
     %{"axis" => axis, "split" => split_sizes} = options!(attrs)
@@ -1250,54 +867,12 @@ defmodule AxonOnnx.Deserialize do
         Map.put(new_axon, output.name, output)
       end)
 
-    {updated_axon, used_params}
+    {updated_axon, params, used_params}
   end
 
-  defp to_axon_global_pool(
-         %Node{op_type: op_type, attribute: attrs, input: [inp], output: [output_name]},
-         axon,
-         _params,
-         used_params
-       ) do
-    inp = axon!(inp, axon)
-
-    updated_axon =
-      case op_type do
-        "GlobalAveragePool" ->
-          Map.put(
-            axon,
-            output_name,
-            Axon.global_avg_pool(inp, name: output_name, keep_axes: true)
-          )
-
-        "GlobalMaxPool" ->
-          Map.put(
-            axon,
-            output_name,
-            Axon.global_max_pool(inp, name: output_name, keep_axes: true)
-          )
-
-        "GlobalLpPool" ->
-          lp_pool_options = options!(attrs)
-
-          Map.put(
-            axon,
-            output_name,
-            Axon.global_lp_pool(inp, norm: lp_pool_options["p"], name: output_name)
-          )
-      end
-
-    {updated_axon, used_params}
-  end
-
-  # Builds an Axon layer which returns a constant with the given
-  # value. Constants are embedded in custom layers which just yield
-  # the value of the constant here. They are not treated as parameters
-  defp to_axon_constant(
+  defp recur_nodes(
          %Node{op_type: "Constant", attribute: attrs, output: [output_name]},
-         axon,
-         _,
-         used_params
+         {axon, params, used_params}
        ) do
     constant_options = options!(attrs)
 
@@ -1338,19 +913,17 @@ defmodule AxonOnnx.Deserialize do
 
     updated_axon = Map.put(axon, output_name, const)
 
-    {updated_axon, used_params}
+    {updated_axon, params, used_params}
   end
 
-  defp to_axon_constant_of_shape(
+  defp recur_nodes(
          %Node{
            op_type: "ConstantOfShape",
            attribute: attrs,
            input: [shape],
            output: [output_name]
          },
-         axon,
-         params,
-         used_params
+         {axon, params, used_params}
        ) do
     constant_options = options!(attrs)
     value = tensor!(constant_options["value"])
@@ -1360,16 +933,12 @@ defmodule AxonOnnx.Deserialize do
     val = Nx.broadcast(value, shape)
 
     updated_axon = Map.put(axon, output_name, Axon.constant(val, name: output_name))
-    {updated_axon, used_params}
+    {updated_axon, params, used_params}
   end
 
-  # TODO: This currently won't pass any Node tests because reshape
-  # value is read in as an input, how do we handle that?
-  defp to_axon_reshape(
+  defp recur_nodes(
          %Node{op_type: "Reshape", input: [inp, shape], attribute: attrs, output: [output_name]},
-         axon,
-         params,
-         used_params
+         {axon, params, used_params}
        ) do
     reshape_options = options!(attrs)
 
@@ -1412,14 +981,12 @@ defmodule AxonOnnx.Deserialize do
           )
       end
 
-    {updated_axon, used_params}
+    {updated_axon, params, used_params}
   end
 
-  defp to_axon_expand(
+  defp recur_nodes(
          %Node{op_type: "Expand", input: [inp, shape], output: [output_name]},
-         axon,
-         params,
-         used_params
+         {axon, params, used_params}
        ) do
     inp = axon!(inp, axon)
     shape = constant!(shape, axon, params)
@@ -1440,14 +1007,12 @@ defmodule AxonOnnx.Deserialize do
           Map.put(axon, output_name, Axon.nx(inp, fun, name: output_name))
       end
 
-    {updated_axon, used_params}
+    {updated_axon, params, used_params}
   end
 
-  defp to_axon_range(
+  defp recur_nodes(
          %Node{op_type: "Range", input: [start, limit, delta], output: [output_name]},
-         axon,
-         params,
-         used_params
+         {axon, params, used_params}
        ) do
     start = constant!(start, axon, params) |> Nx.to_number()
     limit = constant!(limit, axon, params) |> Nx.to_number()
@@ -1455,25 +1020,21 @@ defmodule AxonOnnx.Deserialize do
 
     vals = for i <- start..limit//delta, do: i
     updated_axon = Map.put(axon, output_name, Axon.constant(Nx.tensor(vals), name: output_name))
-    {updated_axon, used_params}
+    {updated_axon, params, used_params}
   end
 
-  defp to_axon_flatten(
+  defp recur_nodes(
          %Node{op_type: "Flatten", input: [inp], output: [output_name]},
-         axon,
-         _params,
-         used_params
+         {axon, params, used_params}
        ) do
     inp = axon!(inp, axon)
 
-    {Map.put(axon, output_name, Axon.flatten(inp, name: output_name)), used_params}
+    {Map.put(axon, output_name, Axon.flatten(inp, name: output_name)), params, used_params}
   end
 
-  defp to_axon_slice(
+  defp recur_nodes(
          %Node{op_type: "Slice", input: [inp, starts, ends, axes, steps], output: [output_name]},
-         axon,
-         params,
-         used_params
+         {axon, params, used_params}
        ) do
     inp = axon_or_param!(inp, axon, params, used_params)
 
@@ -1500,71 +1061,76 @@ defmodule AxonOnnx.Deserialize do
           Axon.nx(inp, fun, name: output_name)
       end
 
-    {Map.put(axon, output_name, layer), used_params}
+    {Map.put(axon, output_name, layer), params, used_params}
   end
 
-  defp to_axon_shape(
+  defp recur_nodes(
          %Node{op_type: "Shape", input: [inp], attribute: attrs, output: [output_name]},
-         axon,
-         params,
-         used_params
+         {axon, params, used_params}
        ) do
     shape_opts = options!(attrs)
     %{output_shape: shape} = axon_or_param!(inp, axon, params, used_params)
-    ends = shape_opts["end"] || tuple_size(shape) - 1
+    rank = Nx.rank(shape)
+
+    ends = shape_opts["end"]
     starts = shape_opts["start"] || 0
+    starts = max(-rank, min(rank - 1, starts))
+    start_axis = Nx.Shape.normalize_axis(shape, starts, List.duplicate(nil, rank))
+    end_axis =
+      if ends != nil and ends > -rank and ends < rank do
+        ends = max(-rank + 1, min(rank - 1, ends))
+        Nx.Shape.normalize_axis(shape, ends, List.duplicate(nil, rank))
+      else
+        rank
+      end
 
-    end_axis = Nx.Shape.normalize_axis(shape, ends, List.duplicate(nil, tuple_size(shape)))
-    start_axis = Nx.Shape.normalize_axis(shape, starts, List.duplicate(nil, tuple_size(shape)))
+    shape_list =
+      for i <- start_axis..(end_axis - 1) do
+        elem(shape, i) || -1
+      end
+    layer = Axon.constant(Nx.tensor(shape_list), name: output_name)
+    updated_axon = Map.put(axon, output_name, layer)
 
-    shape_list = for i <- start_axis..end_axis, do: elem(shape, i) || 1
-    shape_tensor = Nx.tensor(shape_list)
-    shape_axon = Axon.constant(shape_tensor, name: output_name)
-
-    {Map.put(axon, output_name, shape_axon), used_params}
+    {updated_axon, params, used_params}
   end
 
-  # Builds an Axon transpose layer. Transpose is given by
-  # the perm option in Node attribute. ONNX does not ignore
-  # batch dimensions, so that option is always false.
-  defp to_axon_transpose(
+  defp recur_nodes(
          %Node{op_type: "Transpose", input: [input], attribute: attrs, output: [output_name]},
-         axon,
-         _params,
-         used_params
+         {axon, params, used_params}
        ) do
     transpose_options = options!(attrs)
 
-    %Axon{output_shape: shape} = inp = axon!(input, axon)
+    inp = input!(input, axon, params)
 
-    rank = Nx.rank(shape)
+    {updated_axon, updated_params} =
+      case inp do
+        %Axon{output_shape: shape} = inp ->
+          rank = Nx.rank(shape)
+          permutation = transpose_options["perm"] || Enum.to_list((rank - 1)..0//-1)
+          ignore_batch? = length(permutation) == tuple_size(shape) - 1
+          layer = Axon.transpose(inp, permutation, name: output_name, ignore_batch?: ignore_batch?)
+          updated_axon = Map.put(axon, output_name, layer)
+          {updated_axon, used_params}
 
-    permutation = transpose_options["perm"] || Enum.to_list((rank - 1)..0//-1)
+        %Nx.Tensor{} = inp ->
+          rank = Nx.rank(inp)
+          permutation = transpose_options["perm"] || Enum.to_list((rank - 1)..0//-1)
+          new_value = Nx.transpose(inp, axes: permutation)
+          updated_params = Map.replace(used_params, output_name, new_value)
+          {axon, updated_params}
+      end
 
-    updated_axon =
-      Map.put(
-        axon,
-        output_name,
-        Axon.transpose(inp, permutation, name: output_name, ignore_batch?: true)
-      )
-
-    {updated_axon, used_params}
+    {updated_axon, params, updated_params}
   end
 
-  # Builds an unsqueeze layer using a custom Nx layer with the given
-  # input and axes.
-  #
-  # TODO(seanmor5): Use Axon.layer
-  defp to_axon_unsqueeze(
+  defp recur_nodes(
          %Node{
            op_type: "Unsqueeze",
            input: [input | maybe_axis],
            attribute: attrs,
            output: [output_name]
          },
-         axon,
-         params,
-         used_params
+         {axon, params, used_params}
        ) do
     unsqueeze_options = options!(attrs)
 
@@ -1586,25 +1152,22 @@ defmodule AxonOnnx.Deserialize do
     case inp do
       %Nx.Tensor{} = tensor ->
         updated_params = Map.put(used_params, output_name, fun.(tensor))
-        {axon, updated_params}
+        {axon, params, updated_params}
 
       %Axon{op: :constant, opts: [value: tensor]} ->
         new_value = fun.(tensor)
         updated_axon = Map.put(axon, output_name, Axon.constant(new_value))
-        {updated_axon, used_params}
+        {updated_axon, params, used_params}
 
       %Axon{} = model ->
         updated_axon = Map.put(axon, output_name, Axon.nx(model, fun, name: output_name))
-        {updated_axon, used_params}
+        {updated_axon, params, used_params}
     end
   end
 
-  # Builds a conditional `If` layer.
-  defp to_axon_cond(
+  defp recur_nodes(
          %Node{op_type: "If", input: [input], attribute: attrs, output: outputs},
-         axon,
-         _params,
-         used_params
+         {axon, params, used_params}
        ) do
     cond_options = options!(attrs)
 
@@ -1628,16 +1191,14 @@ defmodule AxonOnnx.Deserialize do
       |> Map.merge(then_params)
       |> Map.merge(used_params)
 
-    {updated_axon, updated_params}
+    {updated_axon, params, updated_params}
   end
 
-  defp to_axon_where(
+  defp recur_nodes(
          %Node{op_type: "Where", input: [condition, x, y], output: [output_name]},
-         axon,
-         params,
-         used_params
+         {axon, params, used_params}
        ) do
-    %Axon{output_shape: shape} = condition = axon!(condition, axon) |> IO.inspect()
+    %Axon{output_shape: shape} = condition = axon!(condition, axon)
     x = axon!(x, axon)
     y = axon!(y, axon)
 
@@ -1656,14 +1217,12 @@ defmodule AxonOnnx.Deserialize do
           Map.put(axon, output_name, Axon.layer([condition, x, y], fun, shape, %{}, output_name))
       end
 
-    {updated_axon, used_params}
+    {updated_axon, params, used_params}
   end
 
-  defp to_axon_cumsum(
+  defp recur_nodes(
          %Node{op_type: "CumSum", input: [x, axis], output: [output_name]},
-         axon,
-         params,
-         used_params
+         {axon, params, used_params}
        ) do
     x = axon!(x, axon)
     axis = constant!(axis, axon, params) |> Nx.to_number()
@@ -1687,7 +1246,11 @@ defmodule AxonOnnx.Deserialize do
     end
 
     updated_axon = Map.put(axon, output_name, Axon.nx(x, fun))
-    {updated_axon, used_params}
+    {updated_axon, params, used_params}
+  end
+
+  defp recur_nodes(%Node{op_type: unsupported}, _) do
+    raise ArgumentError, "unsupported #{inspect(unsupported)}"
   end
 
   # TODO(seanmor5): Handle segments
@@ -1787,6 +1350,19 @@ defmodule AxonOnnx.Deserialize do
     end
   end
 
+  defp input!(name, axon, params) do
+    cond do
+      Map.has_key?(axon, name) ->
+        axon[name]
+
+      Map.has_key?(params, name) ->
+        params[name]
+
+      true ->
+        raise ArgumentError, "#{name} was not present in graph or initializers"
+    end    
+  end
+
   defp axon_or_param!(name, axon, params, used_params) do
     cond do
       Map.has_key?(axon, name) ->
@@ -1799,7 +1375,7 @@ defmodule AxonOnnx.Deserialize do
         Axon.constant(used_params[name], name: name)
 
       true ->
-        raise ArgumentError, "error"
+        raise ArgumentError, "error finding #{name}"
     end
   end
 
