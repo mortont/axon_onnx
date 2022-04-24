@@ -93,7 +93,6 @@ defmodule AxonOnnx.Deserialize do
   defp get_nodes(pruned_nodes, inp, params, used_params) do
     Enum.reduce(pruned_nodes, {inp, used_params}, fn %Node{op_type: op_type} = op_node,
                                                      {axon, used_params} ->
-      IO.inspect op_type
       case op_type do
         "Abs" ->
           to_axon_nx(op_node, axon, params, used_params, &Nx.abs/1)
@@ -555,13 +554,6 @@ defmodule AxonOnnx.Deserialize do
 
       {output_shape, _} = Nx.Shape.take(shape, inp_names, dummy_indices_shape, ind_names, axis)
 
-      output_shape =
-        if tuple_size(output_shape) > 0 do
-          put_elem(output_shape, 0, elem(indices_shape, 0))
-        else
-          output_shape
-        end
-
       fun = fn x, indices, _params ->
         Nx.take(x, Nx.as_type(indices, {:s, 64}), axis: axis)
       end
@@ -675,68 +667,82 @@ defmodule AxonOnnx.Deserialize do
        ) do
     [input, weight | maybe_bias] = inputs
 
-    input = axon!(input, axon)
-    weight = param!(weight, params)
+    if Map.has_key?(axon, input) and Map.has_key?(params, weight) do
+      input = axon!(input, axon)
+      weight = param!(weight, params)
+      case op_type do
+        "MatMul" ->
+          {_, units} = Nx.shape(weight)
 
-    case op_type do
-      "MatMul" ->
-        {_, units} = Nx.shape(weight)
+          updated_axon =
+            Map.put(
+              axon,
+              output_name,
+              Axon.dense(input, units, use_bias: false, name: output_name)
+            )
 
-        updated_axon =
-          Map.put(
-            axon,
-            output_name,
-            Axon.dense(input, units, use_bias: false, name: output_name)
-          )
+          updated_params = Map.put(used_params, output_name, %{"kernel" => weight})
+          {updated_axon, updated_params}
 
-        updated_params = Map.put(used_params, output_name, %{"kernel" => weight})
-        {updated_axon, updated_params}
+        "Gemm" ->
+          dense_options = options!(attrs)
 
-      "Gemm" ->
-        dense_options = options!(attrs)
+          # TODO(seanmor5): Handle alpha, beta
+          _alpha = dense_options["alpha"]
+          _beta = dense_options["beta"]
 
-        # TODO(seanmor5): Handle alpha, beta
-        _alpha = dense_options["alpha"]
-        _beta = dense_options["beta"]
+          trans_a = dense_options["transA"]
+          trans_b = dense_options["transB"]
 
-        trans_a = dense_options["transA"]
-        trans_b = dense_options["transB"]
+          input =
+            if trans_a == 1 do
+              Nx.transpose(input)
+            else
+              input
+            end
 
-        input =
-          if trans_a == 1 do
-            Nx.transpose(input)
-          else
-            input
-          end
+          weight =
+            if trans_b == 1 do
+              Nx.transpose(weight)
+            else
+              weight
+            end
 
-        weight =
-          if trans_b == 1 do
-            Nx.transpose(weight)
-          else
-            weight
-          end
+          {_, units} = Nx.shape(weight)
 
-        {_, units} = Nx.shape(weight)
+          updated_axon =
+            Map.put(
+              axon,
+              output_name,
+              Axon.dense(input, units, use_bias: maybe_bias != [], name: output_name)
+            )
 
-        updated_axon =
-          Map.put(
-            axon,
-            output_name,
-            Axon.dense(input, units, use_bias: maybe_bias != [], name: output_name)
-          )
+          updated_params =
+            if maybe_bias == [] do
+              Map.put(used_params, output_name, %{"kernel" => weight})
+            else
+              [bias] = maybe_bias
+              bias = param!(bias, params)
 
-        updated_params =
-          if maybe_bias == [] do
-            Map.put(used_params, output_name, %{"kernel" => weight})
-          else
-            [bias] = maybe_bias
-            bias = param!(bias, params)
+              used_params
+              |> Map.put(output_name, %{"kernel" => weight, "bias" => bias})
+            end
 
-            used_params
-            |> Map.put(output_name, %{"kernel" => weight, "bias" => bias})
-          end
+          {updated_axon, updated_params}
+      end
+    else
+      %{output_shape: inp_shape} = input = axon_or_param!(input, axon, params, used_params)
+      inp_rank = Nx.rank(inp_shape)
+      inp_names = List.duplicate(nil, inp_rank)
+      %{output_shape: weight_shape} = weight = axon_or_param!(weight, axon, params, used_params)
+      weight_rank = Nx.rank(weight_shape)
+      weight_names = List.duplicate(nil, weight_rank)
 
-        {updated_axon, updated_params}
+      batch_dims = Enum.to_list(0..(inp_rank - 3))
+      fun = fn x, y, _params -> Nx.dot(x, y) end
+      {output_shape, _} = Nx.Shape.dot(inp_shape, [inp_rank - 1], inp_names, batch_dims, weight_shape, [weight_rank - 2], weight_names, batch_dims)
+      updated_axon = Map.put(axon, output_name, Axon.layer([input, weight], fun, output_shape, %{}, output_name))
+      {updated_axon, used_params}
     end
   end
 
@@ -778,7 +784,7 @@ defmodule AxonOnnx.Deserialize do
               Map.put(
                 axon,
                 output_name,
-                Axon.layer([inp1, inp2], layer_fun, out_shape, %{}, name: output_name)
+                Axon.layer([inp1, inp2], layer_fun, out_shape, %{}, output_name)
               )
           end
       end
@@ -1406,7 +1412,7 @@ defmodule AxonOnnx.Deserialize do
       Map.put(
         axon,
         output_name,
-        Axon.transpose(inp, permutation, name: output_name, ignore_batch?: false)
+        Axon.transpose(inp, permutation, name: output_name, ignore_batch?: true)
       )
 
     {updated_axon, used_params}
@@ -1584,6 +1590,9 @@ defmodule AxonOnnx.Deserialize do
 
       Map.has_key?(params, name) ->
         Axon.constant(params[name], name: name)
+
+      Map.has_key?(used_params, name) ->
+        Axon.constant(used_params[name], name: name)
 
       true ->
         raise ArgumentError, "error"
