@@ -160,6 +160,9 @@ defmodule AxonOnnx.Deserialize do
         "Constant" ->
           to_axon_constant(op_node, axon, params, used_params)
 
+        "ConstantOfShape" ->
+          to_axon_constant_of_shape(op_node, axon, params, used_params)
+
         "Concat" ->
           to_axon_concat(op_node, axon, params, used_params)
 
@@ -171,6 +174,9 @@ defmodule AxonOnnx.Deserialize do
 
         "Cosh" ->
           to_axon_nx(op_node, axon, params, used_params, &Nx.cosh/1)
+
+        "CumSum" ->
+          to_axon_cumsum(op_node, axon, params, used_params)
 
         "Div" ->
           to_axon_binary_op(op_node, axon, params, used_params, &Nx.divide/2)
@@ -186,6 +192,9 @@ defmodule AxonOnnx.Deserialize do
 
         "Exp" ->
           to_axon_activation(op_node, axon, params, used_params, :exp)
+
+        "Expand" ->
+          to_axon_expand(op_node, axon, params, used_params)
 
         "Flatten" ->
           to_axon_flatten(op_node, axon, params, used_params)
@@ -283,6 +292,9 @@ defmodule AxonOnnx.Deserialize do
 
         "Pow" ->
           to_axon_binary_op(op_node, axon, params, used_params, &Nx.power/2)
+
+        "Range" ->
+          to_axon_range(op_node, axon, params, used_params)
 
         "ReduceMax" ->
           to_axon_reduction(op_node, axon, params, used_params, &Nx.reduce_max/2, :axes)
@@ -411,6 +423,9 @@ defmodule AxonOnnx.Deserialize do
         "Pad" ->
           to_axon_pad(op_node, axon, params, used_params)
 
+        "Where" ->
+          to_axon_where(op_node, axon, params, used_params)
+
         op ->
           raise "unsupported #{op} op in graph"
       end
@@ -453,7 +468,7 @@ defmodule AxonOnnx.Deserialize do
           raise ArgumentError, "unsupported STRING type"
 
         9 ->
-          raise ArgumentError, "unsupported BOOL type"
+          Nx.as_type(x, {:u, 8})
 
         10 ->
           Nx.as_type(x, {:f, 16})
@@ -482,7 +497,7 @@ defmodule AxonOnnx.Deserialize do
       case inp do
         %Axon{op: :constant, opts: [value: v]} ->
           new_value = fun.(v)
-          Map.put(axon, output_name, Axon.constant(inp, name: output_name))
+          Map.put(axon, output_name, Axon.constant(new_value, name: output_name))
 
         %Axon{} ->
           Map.put(axon, output_name, Axon.nx(inp, fun, name: output_name))
@@ -767,6 +782,10 @@ defmodule AxonOnnx.Deserialize do
           case binary_op do
             op when is_atom(op) ->
               new_value = apply(Nx, op, [v1, v2])
+              Map.put(axon, output_name, Axon.constant(new_value, name: output_name))
+
+            fun when is_function(fun, 2) ->
+              new_value = fun.(v1, v2)
               Map.put(axon, output_name, Axon.constant(new_value, name: output_name))
           end
 
@@ -1297,6 +1316,18 @@ defmodule AxonOnnx.Deserialize do
     {updated_axon, used_params}
   end
 
+  defp to_axon_constant_of_shape(%Node{op_type: "ConstantOfShape", attribute: attrs, input: [shape], output: [output_name]}, axon, params, used_params) do
+    constant_options = options!(attrs)
+    value = tensor!(constant_options["value"])
+
+    shape = constant!(shape, axon, params) |> Nx.to_flat_list() |> List.to_tuple()
+
+    val = Nx.broadcast(value, shape)
+
+    updated_axon = Map.put(axon, output_name, Axon.constant(val, name: output_name))
+    {updated_axon, used_params}
+  end
+
   # TODO: This currently won't pass any Node tests because reshape
   # value is read in as an input, how do we handle that?
   defp to_axon_reshape(
@@ -1326,13 +1357,56 @@ defmodule AxonOnnx.Deserialize do
     new_shape =
       shape
       |> Nx.to_flat_list()
+      |> Enum.map(fn
+        -1 -> :auto
+        x -> x
+      end)
       |> List.to_tuple()
 
-    {Map.put(
-       axon,
-       output_name,
-       Axon.reshape(inp, new_shape, name: output_name, ignore_batch?: true)
-     ), used_params}
+    updated_axon =
+      case inp do
+        %Axon{op: :constant, opts: [value: v]} ->
+          new_value = Nx.reshape(v, new_shape)
+          Map.put(axon, output_name, Axon.constant(new_value, name: output_name))
+
+        %Axon{} = inp ->
+          Map.put(axon, output_name, Axon.reshape(inp, new_shape, name: output_name, ignore_batch?: true))
+      end
+
+    {updated_axon, used_params}
+  end
+
+  defp to_axon_expand(%Node{op_type: "Expand", input: [inp, shape], output: [output_name]}, axon, params, used_params) do
+    inp = axon!(inp, axon)
+    shape = constant!(shape, axon, params)
+
+    shape = shape |> Nx.to_flat_list() |> List.to_tuple()
+
+    fun = fn x ->
+      Nx.broadcast(x, shape)
+    end
+
+    updated_axon =
+      case inp do
+        %Axon{op: :constant, opts: [value: v]} ->
+          new_value = fun.(v)
+          Map.put(axon, output_name, Axon.constant(new_value, name: output_name))
+
+        %Axon{} = inp ->
+          Map.put(axon, output_name, Axon.nx(inp, fun, name: output_name))
+      end
+
+    {updated_axon, used_params}
+  end
+
+  defp to_axon_range(%Node{op_type: "Range", input: [start, limit, delta], output: [output_name]}, axon, params, used_params) do
+    start = constant!(start, axon, params) |> Nx.to_number()
+    limit = constant!(limit, axon, params) |> Nx.to_number()
+    delta = constant!(delta, axon, params) |> Nx.to_number()
+
+    vals = for i <- start..limit//delta, do: i
+    updated_axon = Map.put(axon, output_name, Axon.constant(Nx.tensor(vals), name: output_name))
+    {updated_axon, used_params}
   end
 
   defp to_axon_flatten(
@@ -1423,16 +1497,23 @@ defmodule AxonOnnx.Deserialize do
   #
   # TODO(seanmor5): Use Axon.layer
   defp to_axon_unsqueeze(
-         %Node{op_type: "Unsqueeze", input: [input], attribute: attrs, output: [output_name]},
+         %Node{op_type: "Unsqueeze", input: [input | maybe_axis], attribute: attrs, output: [output_name]},
          axon,
-         _params,
+         params,
          used_params
        ) do
     unsqueeze_options = options!(attrs)
 
     inp = axon!(input, axon)
 
-    axes = unsqueeze_options["axes"]
+    axes =
+      case maybe_axis do
+        [] ->
+          unsqueeze_options["axes"]
+
+        [axes] ->
+          constant!(axes, axon, params) |> Nx.to_flat_list()
+      end
 
     fun = fn input ->
       Enum.reduce(axes, input, fn axis, x -> Nx.new_axis(x, axis) end)
@@ -1484,6 +1565,50 @@ defmodule AxonOnnx.Deserialize do
       |> Map.merge(used_params)
 
     {updated_axon, updated_params}
+  end
+
+  defp to_axon_where(%Node{op_type: "Where", input: [condition, x, y], output: [output_name]}, axon, params, used_params) do
+    %Axon{output_shape: shape} = condition = axon!(condition, axon) |> IO.inspect
+    x = axon!(x, axon)
+    y = axon!(y, axon)
+
+    fun = fn x, y, z, _params ->
+      Nx.select(x, y, z)
+    end
+
+    updated_axon =
+      case {condition, x, y} do
+        {%Axon{op: :constant, opts: [value: c]}, %Axon{op: :constant, opts: [value: x]}, %Axon{op: :constant, opts: [value: y]}} ->
+          new_value = Nx.select(c, x, y)
+          Map.put(axon, output_name, Axon.constant(new_value, name: output_name))
+
+        {%Axon{} = condition, %Axon{} = x, %Axon{} = y} ->
+          Map.put(axon, output_name, Axon.layer([condition, x, y], fun, shape, %{}, output_name))
+      end
+
+    {updated_axon, used_params}
+  end
+
+  defp to_axon_cumsum(%Node{op_type: "CumSum", input: [x, axis], output: [output_name]}, axon, params, used_params) do
+    x = axon!(x, axon)
+    axis = constant!(axis, axon, params) |> Nx.to_number()
+
+    fun = fn x ->
+      n = elem(Nx.shape(x), axis)
+      padding_config =
+      for i <- 0..(Nx.rank(x) - 1) do
+        if i == axis, do: {n - 1, 0}, else: {0, 0}
+      end
+      strides = List.duplicate(1, Nx.rank(x))
+      window_shape =
+        List.duplicate(1, Nx.rank(x))
+        |> List.to_tuple()
+        |> put_elem(axis, n)
+      Nx.window_sum(x, window_shape, strides: strides, padding: padding_config)
+    end
+
+    updated_axon = Map.put(axon, output_name, Axon.nx(x, fun))
+    {updated_axon, used_params}
   end
 
   # TODO(seanmor5): Handle segments
