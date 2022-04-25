@@ -24,7 +24,7 @@ defmodule AxonOnnx.Shared do
     1 / x
   end
 
-  defn identity(x), do: x
+  defn(identity(x), do: x)
 
   defn logsum(x, opts \\ []) do
     opts = keyword!(opts, [:axes, keep_axes: false])
@@ -34,7 +34,7 @@ defmodule AxonOnnx.Shared do
 
   defn logsumexp(x, opts \\ []) do
     opts = keyword!(opts, [:axes, keep_axes: false])
-    
+
     x |> Nx.exp() |> Nx.sum(opts) |> Nx.log()
   end
 
@@ -72,6 +72,7 @@ defmodule AxonOnnx.Shared do
     param_shape = Nx.shape(param)
 
     kernel = Axon.param("kernel", param_shape)
+
     fun = fn x, params ->
       if is_atom(op) do
         apply(Nx, op, [x, params["kernel"]])
@@ -83,7 +84,11 @@ defmodule AxonOnnx.Shared do
     Axon.layer([input], fun, shape, %{"kernel" => kernel}, name)
   end
 
-  def numpy_matmul_layer(%Axon{output_shape: a_shape} = a, %Axon{output_shape: b_shape} = b, output_name) do
+  def numpy_matmul_layer(
+        %Axon{output_shape: a_shape} = a,
+        %Axon{output_shape: b_shape} = b,
+        output_name
+      ) do
     a_names = List.duplicate(nil, Nx.rank(a_shape))
     b_names = List.duplicate(nil, Nx.rank(b_shape))
 
@@ -120,6 +125,31 @@ defmodule AxonOnnx.Shared do
     Axon.layer([a, b], fun, output_shape, %{}, output_name)
   end
 
+  def gather_layer(
+        %Axon{output_shape: shape} = x,
+        %Axon{output_shape: indices_shape} = ind,
+        axis,
+        output_name
+      ) do
+    inp_names = List.duplicate(nil, Nx.rank(shape))
+    ind_names = List.duplicate(nil, Nx.rank(indices_shape))
+
+    dummy_indices_shape =
+      if tuple_size(indices_shape) > 0 and elem(indices_shape, 0) == nil do
+        put_elem(indices_shape, 0, 1)
+      else
+        indices_shape
+      end
+
+    {output_shape, _} = Nx.Shape.take(shape, inp_names, dummy_indices_shape, ind_names, axis)
+
+    fun = fn x, indices, _params ->
+      Nx.take(x, Nx.as_type(indices, {:s, 64}), axis: axis)
+    end
+
+    Axon.layer([x, ind], fun, output_shape, %{}, output_name)
+  end
+
   # Conversion helpers
 
   def onnx_type_to_nx_type(1), do: {:f, 32}
@@ -129,7 +159,7 @@ defmodule AxonOnnx.Shared do
   def onnx_type_to_nx_type(5), do: {:s, 16}
   def onnx_type_to_nx_type(6), do: {:s, 32}
   def onnx_type_to_nx_type(7), do: {:s, 64}
-  def onnx_type_to_nx_type(8), do: raise ArgumentError, "unsupported STRING type"
+  def onnx_type_to_nx_type(8), do: raise(ArgumentError, "unsupported STRING type")
   def onnx_type_to_nx_type(9), do: {:u, 8}
   def onnx_type_to_nx_type(10), do: {:f, 16}
   def onnx_type_to_nx_type(11), do: {:f, 64}

@@ -236,9 +236,9 @@ defmodule DeserializeTest do
     end
 
     test "Elu" do
-      check_onnx_test_case!("node", "test_elu")      
-      check_onnx_test_case!("node", "test_elu_default")      
-      check_onnx_test_case!("node", "test_elu_example")      
+      check_onnx_test_case!("node", "test_elu")
+      check_onnx_test_case!("node", "test_elu_default")
+      check_onnx_test_case!("node", "test_elu_example")
     end
 
     test "Erf" do
@@ -256,15 +256,15 @@ defmodule DeserializeTest do
     # end
 
     # test "Flatten" do
-      # check_onnx_test_case!("node", "test_flatten_axis0") 
-      # check_onnx_test_case!("node", "test_flatten_axis1")    
-      # check_onnx_test_case!("node", "test_flatten_axis2")    
-      # check_onnx_test_case!("node", "test_flatten_axis3")    
-      # check_onnx_test_case!("node", "test_flatten_default_axis")
-      # check_onnx_test_case!("node", "test_flatten_negative_axis1")      
-      # check_onnx_test_case!("node", "test_flatten_negative_axis2")    
-      # check_onnx_test_case!("node", "test_flatten_negative_axis3") 
-      # check_onnx_test_case!("node", "test_flatten_negative_axis4") 
+    # check_onnx_test_case!("node", "test_flatten_axis0") 
+    # check_onnx_test_case!("node", "test_flatten_axis1")    
+    # check_onnx_test_case!("node", "test_flatten_axis2")    
+    # check_onnx_test_case!("node", "test_flatten_axis3")    
+    # check_onnx_test_case!("node", "test_flatten_default_axis")
+    # check_onnx_test_case!("node", "test_flatten_negative_axis1")      
+    # check_onnx_test_case!("node", "test_flatten_negative_axis2")    
+    # check_onnx_test_case!("node", "test_flatten_negative_axis3") 
+    # check_onnx_test_case!("node", "test_flatten_negative_axis4") 
     # end
 
     test "Floor" do
@@ -603,16 +603,16 @@ defmodule DeserializeTest do
 
     # TODO: Dynamic Shapes :(
     # test "Reshape" do
-      # check_onnx_test_case!("node", "test_reshape_allowzero_reordered")
-      # check_onnx_test_case!("node", "test_reshape_extended_dims")
-      # check_onnx_test_case!("node", "test_reshape_negative_dims")
-      # check_onnx_test_case!("node", "test_reshape_negative_extended_dims")
-      # check_onnx_test_case!("node", "test_reshape_one_dim")
-      # check_onnx_test_case!("node", "test_reshape_reduced_dims")
-      # check_onnx_test_case!("node", "test_reshape_reordered_all_dims")
-      # check_onnx_test_case!("node", "test_reshape_reordered_last_dims")
-      # check_onnx_test_case!("node", "test_reshape_zero_and_negative_dims")
-      # check_onnx_test_case!("node", "test_reshape_zero_dim")
+    # check_onnx_test_case!("node", "test_reshape_allowzero_reordered")
+    # check_onnx_test_case!("node", "test_reshape_extended_dims")
+    # check_onnx_test_case!("node", "test_reshape_negative_dims")
+    # check_onnx_test_case!("node", "test_reshape_negative_extended_dims")
+    # check_onnx_test_case!("node", "test_reshape_one_dim")
+    # check_onnx_test_case!("node", "test_reshape_reduced_dims")
+    # check_onnx_test_case!("node", "test_reshape_reordered_all_dims")
+    # check_onnx_test_case!("node", "test_reshape_reordered_last_dims")
+    # check_onnx_test_case!("node", "test_reshape_zero_and_negative_dims")
+    # check_onnx_test_case!("node", "test_reshape_zero_dim")
     # end
 
     # test "Resize" do
@@ -907,7 +907,7 @@ defmodule DeserializeTest do
     # test "ReplicationPad2d" do
     #   check_onnx_test_case!("pytorch-converted", "test_ReplicationPad2d")
     # end
-  
+
     test "SELU" do
       check_onnx_test_case!("pytorch-converted", "test_SELU")
     end
@@ -988,8 +988,6 @@ defmodule DeserializeTest do
       Nx.Defn.default_options(compiler: EXLA)
       check_onnx_test_case!("pytorch-operator", "test_operator_conv")
     end
-
-  
 
     test "exp" do
       check_onnx_test_case!("pytorch-operator", "test_operator_exp")

@@ -11,5 +11,6 @@ defmodule AxonOnnx do
   @doc """
   Exports an Axon model and parameters to an ONNX model.
   """
-  def export(%Axon{} = model, params, opts \\ []), do: AxonOnnx.Serialize.__export__(model, params, opts)
+  def export(%Axon{} = model, params, opts \\ []),
+    do: AxonOnnx.Serialize.__export__(model, params, opts)
 end
