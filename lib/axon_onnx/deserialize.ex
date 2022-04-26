@@ -953,7 +953,7 @@ defmodule AxonOnnx.Deserialize do
 
     allowzero = reshape_options["allowzero"] || 0
 
-    inp = axon!(inp, axon)
+    inp = axon!(inp, axon) |> IO.inspect
     # Reshape is a constant value input that MUST be known
     # ahead of time so we can build a static graph, we can't
     # support any other reshape types
@@ -1051,7 +1051,8 @@ defmodule AxonOnnx.Deserialize do
          %Node{op_type: "Slice", input: [inp, starts, ends], output: [output_name]},
          {axon, params, used_params}
        ) do
-    %{output_shape: shape} = inp = input!(inp, axon, params)
+    inp = input!(inp, axon, params)
+    shape = get_shape(inp)
     rank = Nx.rank(shape)
 
     starts = constant!(starts, axon, params) |> Nx.to_flat_list()
@@ -1059,25 +1060,9 @@ defmodule AxonOnnx.Deserialize do
     axes = Nx.axes(shape)
     steps = List.duplicate(1, rank)
 
-    fun = fn x ->
-      [starts, ends, axes, steps]
-      |> Enum.zip()
-      |> Enum.reduce(x, fn {start, stop, axis, stride}, acc ->
-        Nx.slice_along_axis(acc, start, stop, axis: axis, strides: stride)
-      end)
-    end
+    {updated_axon, updated_params} = slice_layer(inp, starts, ends, axes, steps, output_name, axon, used_params)
 
-    layer =
-      case inp do
-        %Axon{op: :constant, opts: [value: v]} ->
-          new_value = fun.(v)
-          Axon.constant(new_value, name: output_name)
-
-        %Axon{} = inp ->
-          Axon.nx(inp, fun, name: output_name)
-      end
-
-    {Map.put(axon, output_name, layer), params, used_params}
+    {updated_axon, params, updated_params}
   end
 
   defp recur_nodes(
@@ -1091,57 +1076,25 @@ defmodule AxonOnnx.Deserialize do
     axes = constant!(axes, axon, params) |> Nx.to_flat_list()
     steps = List.duplicate(1, length(axes))
 
-    fun = fn x ->
-      [starts, ends, axes, steps]
-      |> Enum.zip()
-      |> Enum.reduce(x, fn {start, stop, axis, stride}, acc ->
-        Nx.slice_along_axis(acc, start, stop, axis: axis, strides: stride)
-      end)
-    end
+    {updated_axon, updated_params} = slice_layer(inp, starts, ends, axes, steps, output_name, axon, used_params)
 
-    layer =
-      case inp do
-        %Axon{op: :constant, opts: [value: v]} ->
-          new_value = fun.(v)
-          Axon.constant(new_value, name: output_name)
-
-        %Axon{} = inp ->
-          Axon.nx(inp, fun, name: output_name)
-      end
-
-    {Map.put(axon, output_name, layer), params, used_params}
+    {updated_axon, params, updated_params}
   end
 
   defp recur_nodes(
          %Node{op_type: "Slice", input: [inp, starts, ends, axes, steps], output: [output_name]},
          {axon, params, used_params}
        ) do
-    inp = axon_or_param!(inp, axon, params, used_params)
+    inp = input!(inp, axon, params)
 
     starts = constant!(starts, axon, params) |> Nx.to_flat_list()
     ends = constant!(ends, axon, params) |> Nx.to_flat_list()
     axes = constant!(axes, axon, params) |> Nx.to_flat_list()
     steps = constant!(steps, axon, params) |> Nx.to_flat_list()
 
-    fun = fn x ->
-      [starts, ends, axes, steps]
-      |> Enum.zip()
-      |> Enum.reduce(x, fn {start, stop, axis, stride}, acc ->
-        Nx.slice_along_axis(acc, start, stop, axis: axis, strides: stride)
-      end)
-    end
+    {updated_axon, updated_params} = slice_layer(inp, starts, ends, axes, steps, output_name, axon, used_params)
 
-    layer =
-      case inp do
-        %Axon{op: :constant, opts: [value: v]} ->
-          new_value = fun.(v)
-          Axon.constant(new_value, name: output_name)
-
-        %Axon{} = inp ->
-          Axon.nx(inp, fun, name: output_name)
-      end
-
-    {Map.put(axon, output_name, layer), params, used_params}
+    {updated_axon, params, updated_params}
   end
 
   defp recur_nodes(

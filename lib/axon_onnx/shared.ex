@@ -150,7 +150,67 @@ defmodule AxonOnnx.Shared do
     Axon.layer([x, ind], fun, output_shape, %{}, output_name)
   end
 
+  def slice_layer(inp, starts, ends, axes, steps, output_name, axon, used_params) do
+    shape = get_shape(inp)
+    rank = Nx.rank(shape)
+
+    axes = axes |> Enum.map(fn x -> if x < 0, do: x + rank, else: x end)
+
+    fun = fn x ->
+      [starts, ends, axes, steps]
+      |> Enum.zip()
+      |> Enum.reduce(x, fn {start, stop, axis, stride}, acc ->
+        start = if start < 0, do: start + elem(shape, axis), else: start
+        stop = if stop < 0, do: stop + elem(shape, axis), else: stop
+        len = stop - start
+        Nx.slice_along_axis(acc, start, len, axis: axis, strides: stride)
+      end)
+    end
+
+    case inp do
+      %Axon{op: :constant, opts: [value: v]} ->
+        new_value = fun.(v)
+        layer = Axon.constant(new_value, name: output_name)
+        updated_axon = Map.put(axon, output_name, layer)
+        {updated_axon, used_params}
+
+      %Axon{} = inp ->
+        layer = Axon.nx(inp, fun, name: output_name)
+        updated_axon = Map.put(axon, output_name, layer)
+        {updated_axon, used_params}
+
+      %Nx.Tensor{} = param ->
+        shape = Nx.shape(param)
+        param_slice(shape, starts, ends, axes, steps, output_name, axon, used_params)
+    end
+  end
+
+  def param_slice(shape, starts, ends, axes, steps, output_name, axon, used_params) do
+    fun = fn _x, params ->
+      [starts, ends, axes, steps]
+      |> Enum.zip()
+      |> Enum.reduce(params["kernel"], fn {start, stop, axis, stride}, acc ->
+        start = if start < 0, do: start + elem(shape, axis), else: start
+        stop = if stop < 0, do: stop + elem(shape, axis), else: stop
+        len = stop - start
+        Nx.slice_along_axis(acc, start, len, axis: axis, strides: stride)
+      end)
+    end
+
+    kernel = Axon.param("kernel", shape)
+    inp = Axon.container({}) # empty layer
+    layer = Axon.custom_layer(inp, fun, %{"kernel" => kernel}, output_name)
+
+    updated_axon = Map.put(axon, output_name, layer)
+    updated_params = Map.put(used_params, output_name, %{"kernel" => kernel})
+
+    {updated_axon, updated_params}
+  end
+
   # Conversion helpers
+
+  def get_shape(%Nx.Tensor{} = t), do: Nx.shape(t)
+  def get_shape(%Axon{output_shape: shape}), do: shape
 
   def onnx_type_to_nx_type(1), do: {:f, 32}
   def onnx_type_to_nx_type(2), do: {:u, 8}
