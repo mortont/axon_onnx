@@ -162,6 +162,7 @@ defmodule AxonOnnx.Shared do
       |> Enum.reduce(x, fn {start, stop, axis, stride}, acc ->
         start = if start < 0, do: start + elem(shape, axis), else: start
         stop = if stop < 0, do: stop + elem(shape, axis), else: stop
+        stop = max(0, min(stop, elem(shape, axis)))
         len = stop - start
         Nx.slice_along_axis(acc, start, len, axis: axis, strides: stride)
       end)

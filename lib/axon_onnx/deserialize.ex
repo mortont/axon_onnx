@@ -952,8 +952,8 @@ defmodule AxonOnnx.Deserialize do
     reshape_options = options!(attrs)
 
     allowzero = reshape_options["allowzero"] || 0
+    inp = axon!(inp, axon)
 
-    inp = axon!(inp, axon) |> IO.inspect
     # Reshape is a constant value input that MUST be known
     # ahead of time so we can build a static graph, we can't
     # support any other reshape types
@@ -987,7 +987,7 @@ defmodule AxonOnnx.Deserialize do
           Map.put(
             axon,
             output_name,
-            Axon.reshape(inp, new_shape, name: output_name, ignore_batch?: true)
+            Axon.reshape(inp, new_shape, name: output_name, ignore_batch?: false)
           )
       end
 
@@ -1033,7 +1033,7 @@ defmodule AxonOnnx.Deserialize do
     limit = constant!(limit, axon, params) |> Nx.to_number()
     delta = constant!(delta, axon, params) |> Nx.to_number()
 
-    vals = for i <- start..limit//delta, do: i
+    vals = for i <- start..(limit - 1)//delta, do: i
     updated_axon = Map.put(axon, output_name, Axon.constant(Nx.tensor(vals), name: output_name))
     {updated_axon, params, used_params}
   end
@@ -1284,6 +1284,54 @@ defmodule AxonOnnx.Deserialize do
     end
 
     updated_axon = Map.put(axon, output_name, Axon.nx(x, fun))
+    {updated_axon, params, used_params}
+  end
+
+  defp recur_nodes(%Node{op_type: "Squeeze", input: [data], output: [output_name]}, {axon, params, used_params}) do
+    inp = input!(data, axon, params)
+    axes = Nx.axes(get_shape(inp))
+
+    fun = fn x, _params ->
+      Nx.squeeze(x, axes: axes)
+    end
+
+    updated_axon =
+      case inp do
+        %Axon{op: :constant, opts: [value: v]} ->
+          new_value = Nx.squeeze(v, axes: axes)
+          layer = Axon.constant(new_value, name: output_name)
+          Map.put(axon, output_name, layer)
+
+        %Axon{} = inp ->
+          # TODO: Change to layer
+          layer = Axon.custom_layer(inp, fun, %{}, output_name)
+          Map.put(axon, output_name, layer)
+      end
+
+    {updated_axon, params, used_params}
+  end
+
+  defp recur_nodes(%Node{op_type: "Squeeze", input: [data, axes], output: [output_name]}, {axon, params, used_params}) do
+    inp = input!(data, axon, params)
+    axes = constant!(axes, axon, params)
+
+    fun = fn x, _params ->
+      Nx.squeeze(x, axes: axes)
+    end
+
+    updated_axon =
+      case inp do
+        %Axon{op: :constant, opts: [value: v]} ->
+          new_value = Nx.squeeze(v, axes: axes)
+          layer = Axon.constant(new_value, name: output_name)
+          Map.put(axon, output_name, layer)
+
+        %Axon{} = inp ->
+          # TODO: Change to layer
+          layer = Axon.custom_layer(inp, fun, %{}, output_name)
+          Map.put(axon, output_name, layer)
+      end
+
     {updated_axon, params, used_params}
   end
 
