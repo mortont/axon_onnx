@@ -1,4 +1,5 @@
 %{
+  "axon": {:git, "https://github.com/elixir-nx/axon.git", "43aa5bb6eb844e65a0120b1de87574b287794a00", [branch: "main"]},
   "castore": {:hex, :castore, "0.1.17", "ba672681de4e51ed8ec1f74ed624d104c0db72742ea1a5e74edbc770c815182f", [:mix], [], "hexpm", "d9844227ed52d26e7519224525cb6868650c272d4a3d327ce3ca5570c12163f9"},
   "complex": {:hex, :complex, "0.4.0", "c4e0402efb587011cdbd73b3f188ec5a3dbd4d516530bedfb041b6d58ea0baea", [:mix], [], "hexpm", "ba7b7547a647dfc907cf0c50c906d16dd1ae879f7ec0d61786962c9cb41f793a"},
   "decimal": {:hex, :decimal, "2.0.0", "a78296e617b0f5dd4c6caf57c714431347912ffb1d0842e998e9792b5642d697", [:mix], [], "hexpm", "34666e9c55dea81013e77d9d87370fe6cb6291d1ef32f46a1600230b1d44f577"},
@@ -11,6 +12,7 @@
   "mint": {:hex, :mint, "1.4.1", "49b3b6ea35a9a38836d2ad745251b01ca9ec062f7cb66f546bf22e6699137126", [:mix], [{:castore, "~> 0.1.0", [hex: :castore, repo: "hexpm", optional: true]}, {:hpax, "~> 0.1.1", [hex: :hpax, repo: "hexpm", optional: false]}], "hexpm", "cd261766e61011a9079cccf8fa9d826e7a397c24fbedf0e11b49312bea629b58"},
   "nimble_options": {:hex, :nimble_options, "0.3.7", "1e52dd7673d36138b1a5dede183b5d86dff175dc46d104a8e98e396b85b04670", [:mix], [], "hexpm", "2086907e6665c6b6579be54ef5001928df5231f355f71ed258f80a55e9f63633"},
   "nimble_pool": {:hex, :nimble_pool, "0.2.6", "91f2f4c357da4c4a0a548286c84a3a28004f68f05609b4534526871a22053cde", [:mix], [], "hexpm", "1c715055095d3f2705c4e236c18b618420a35490da94149ff8b580a2144f653f"},
+  "nx": {:hex, :nx, "0.2.0", "ae550cd72bca2e56f90fc63d59f2f11ac17ed3c4a9cd0968397f4ef9b795b3d6", [:mix], [{:complex, "~> 0.4.0", [hex: :complex, repo: "hexpm", optional: false]}], "hexpm", "31d4936d2cf78a0b147830f0e6fca45bd3ed4b1e592e2bcd61a85f81e892617c"},
   "protox": {:hex, :protox, "1.6.10", "41d0b0c5b9190e7d5e6a2b1a03a09257ead6f3d95e6a0cf8b81430b526126908", [:mix], [{:decimal, "~> 1.9 or ~> 2.0", [hex: :decimal, repo: "hexpm", optional: false]}, {:jason, "~> 1.2", [hex: :jason, repo: "hexpm", optional: true]}], "hexpm", "9769fca26ae7abfc5cc61308a1e8d9e2400ff89a799599cee7930d21132832d9"},
   "req": {:hex, :req, "0.1.2", "8e1b1b78e94c1c7eaa173cb5948fa062d618c54ff79caa40137aeb17cadbe5c9", [:mix], [{:finch, "~> 0.6.0", [hex: :finch, repo: "hexpm", optional: false]}, {:jason, "~> 1.0", [hex: :jason, repo: "hexpm", optional: false]}, {:mime, "~> 1.6 or ~> 2.0", [hex: :mime, repo: "hexpm", optional: false]}, {:nimble_csv, "~> 1.0", [hex: :nimble_csv, repo: "hexpm", optional: true]}], "hexpm", "bb66afa2e4190453e00a6eb8edfb69240311192160010f994b1f29b1ddc1cee5"},
   "table_rex": {:hex, :table_rex, "3.1.1", "0c67164d1714b5e806d5067c1e96ff098ba7ae79413cc075973e17c38a587caa", [:mix], [], "hexpm", "678a23aba4d670419c23c17790f9dcd635a4a89022040df7d5d772cb21012490"},
