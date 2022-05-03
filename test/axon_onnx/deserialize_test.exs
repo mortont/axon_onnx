@@ -150,6 +150,20 @@ defmodule DeserializeTest do
       check_onnx_test_case!("node", "test_celu_expanded")
     end
 
+    test "Clip" do
+      check_onnx_test_case!("node", "test_clip")
+      # check_onnx_test_case!("node", "test_clip_default_int8_max")
+      # check_onnx_test_case!("node", "test_clip_default_min")
+      check_onnx_test_case!("node", "test_clip_outbounds")
+      # check_onnx_test_case!("node", "test_clip_default_inbounds")
+      # check_onnx_test_case!("node", "test_clip_default_int8_min")
+      check_onnx_test_case!("node", "test_clip_example")
+      check_onnx_test_case!("node", "test_clip_splitbounds")
+      # check_onnx_test_case!("node", "test_clip_default_int8_inbounds")
+      # check_onnx_test_case!("node", "test_clip_default_max")
+      check_onnx_test_case!("node", "test_clip_inbounds")
+    end
+
     test "Concat" do
       check_onnx_test_case!("node", "test_concat_1d_axis_0")
       check_onnx_test_case!("node", "test_concat_1d_axis_negative_1")
@@ -255,16 +269,22 @@ defmodule DeserializeTest do
     #   check_onnx_test_case!("node", "test_expand_dim_unchanged")
     # end
 
+    # test "EyeLike" do
+    #   check_onnx_test_case!("node", "test_eyelike_with_dtype")
+    #   check_onnx_test_case!("node", "test_eyelike_without_dtype")
+    #   check_onnx_test_case!("node", "test_eyelike_populate_off_main_diagonal")
+    # end
+
     # test "Flatten" do
-    # check_onnx_test_case!("node", "test_flatten_axis0") 
-    # check_onnx_test_case!("node", "test_flatten_axis1")    
-    # check_onnx_test_case!("node", "test_flatten_axis2")    
-    # check_onnx_test_case!("node", "test_flatten_axis3")    
+    # check_onnx_test_case!("node", "test_flatten_axis0")
+    # check_onnx_test_case!("node", "test_flatten_axis1")
+    # check_onnx_test_case!("node", "test_flatten_axis2")
+    # check_onnx_test_case!("node", "test_flatten_axis3")
     # check_onnx_test_case!("node", "test_flatten_default_axis")
-    # check_onnx_test_case!("node", "test_flatten_negative_axis1")      
-    # check_onnx_test_case!("node", "test_flatten_negative_axis2")    
-    # check_onnx_test_case!("node", "test_flatten_negative_axis3") 
-    # check_onnx_test_case!("node", "test_flatten_negative_axis4") 
+    # check_onnx_test_case!("node", "test_flatten_negative_axis1")
+    # check_onnx_test_case!("node", "test_flatten_negative_axis2")
+    # check_onnx_test_case!("node", "test_flatten_negative_axis3")
+    # check_onnx_test_case!("node", "test_flatten_negative_axis4")
     # end
 
     test "Floor" do
@@ -404,6 +424,18 @@ defmodule DeserializeTest do
       check_onnx_test_case!("node", "test_matmul_4d")
     end
 
+    test "Max" do
+      check_onnx_test_case!("node", "test_max_example")
+      check_onnx_test_case!("node", "test_max_float16")
+      check_onnx_test_case!("node", "test_max_float32")
+      check_onnx_test_case!("node", "test_max_float64")
+      check_onnx_test_case!("node", "test_max_int8")
+      check_onnx_test_case!("node", "test_max_int16")
+      check_onnx_test_case!("node", "test_max_int32")
+      check_onnx_test_case!("node", "test_max_int64")
+      check_onnx_test_case!("node", "test_max_one_input")
+    end
+
     test "MaxPool" do
       check_onnx_test_case!("node", "test_maxpool_1d_default")
       check_onnx_test_case!("node", "test_maxpool_2d_default")
@@ -476,7 +508,7 @@ defmodule DeserializeTest do
     end
 
     # No tests?
-    # test "Pad" do        
+    # test "Pad" do
     # end
 
     test "Pow" do
@@ -783,8 +815,8 @@ defmodule DeserializeTest do
 
   describe "pytorch converted tests" do
     # test "AvgPool" do
-    #   check_onnx_test_case!("pytorch-converted", "test_AvgPool1d") 
-    #   check_onnx_test_case!("pytorch-converted", "test_AvgPool1d_stride") 
+    #   check_onnx_test_case!("pytorch-converted", "test_AvgPool1d")
+    #   check_onnx_test_case!("pytorch-converted", "test_AvgPool1d_stride")
     #   check_onnx_test_case!("pytorch-converted", "test_AvgPool2d")
     #   check_onnx_test_case!("pytorch-converted", "test_AvgPool2d_stride")
     #   check_onnx_test_case!("pytorch-converted", "test_AvgPool3d")
@@ -848,8 +880,8 @@ defmodule DeserializeTest do
     end
 
     # test "GLU" do
-    #   check_onnx_test_case!("pytorch-converted", "test_GLU")      
-    #   check_onnx_test_case!("pytorch-converted", "test_GLU_dim")      
+    #   check_onnx_test_case!("pytorch-converted", "test_GLU")
+    #   check_onnx_test_case!("pytorch-converted", "test_GLU_dim")
     # end
 
     test "LeakyReLU" do
@@ -973,7 +1005,7 @@ defmodule DeserializeTest do
     end
 
     # test "chunk" do
-    #   check_onnx_test_case!("pytorch-operator", "test_operator_chunk")      
+    #   check_onnx_test_case!("pytorch-operator", "test_operator_chunk")
     # end
 
     # test "clip" do
@@ -1022,7 +1054,7 @@ defmodule DeserializeTest do
     end
 
     # test "pad" do
-    #   check_onnx_test_case!("pytorch-operator", "test_operator_pad")      
+    #   check_onnx_test_case!("pytorch-operator", "test_operator_pad")
     # end
 
     test "params" do
@@ -1072,10 +1104,10 @@ defmodule DeserializeTest do
 
   describe "simple tests" do
     # test "expand shape model" do
-    #   check_onnx_test_case!("simple", "test_expand_shape_model1")      
-    #   check_onnx_test_case!("simple", "test_expand_shape_model2")      
-    #   check_onnx_test_case!("simple", "test_expand_shape_model3")      
-    #   check_onnx_test_case!("simple", "test_expand_shape_model4")      
+    #   check_onnx_test_case!("simple", "test_expand_shape_model1")
+    #   check_onnx_test_case!("simple", "test_expand_shape_model2")
+    #   check_onnx_test_case!("simple", "test_expand_shape_model3")
+    #   check_onnx_test_case!("simple", "test_expand_shape_model4")
     # end
 
     # test "gradient model" do
@@ -1161,5 +1193,111 @@ defmodule DeserializeTest do
     #   Nx.Defn.default_options(compiler: EXLA)
     #   check_onnx_model!("zfnet512")
     # end
+  end
+
+  describe "transformer tests" do
+    test "albert" do
+      check_onnx_transformer!("albert-base-v2")
+    end
+
+    test "bart" do
+      check_onnx_transformer!("facebook/bart-base")
+    end
+
+    test "beit" do
+      check_onnx_transformer!("microsoft/beit-base-patch16-224")
+    end
+
+    test "bert" do
+      check_onnx_transformer!("bert-base-cased")
+    end
+
+    test "bigbird" do
+      check_onnx_transformer!("google/bigbird-roberta-base")
+    end
+
+    test "blenderbot" do
+      check_onnx_transformer!("facebook/blenderbot-400M-distill")
+    end
+
+    test "blenderbot_small" do
+      check_onnx_transformer!("facebook/blenderbot_small-90M")
+    end
+
+    test "camembert" do
+      check_onnx_transformer!("camembert-base")
+    end
+
+    test "convbert" do
+      check_onnx_transformer!("YituTech/conv-bert-small")
+    end
+
+    test "data2vectext" do
+      check_onnx_transformer!("facebook/data2vec-text-base")
+    end
+
+    test "deit" do
+      check_onnx_transformer!("facebook/deit-base-patch16-224")
+    end
+
+    test "distilbert" do
+      check_onnx_transformer!("distilbert-base-cased")
+    end
+
+    test "electra" do
+      check_onnx_transformer!("google/electra-small-discriminator")
+      check_onnx_transformer!("google/electra-small-generator")
+    end
+
+    # TODO: This does not convert correctly with transformers 4.18
+    # test "flaubert" do
+    #   check_onnx_transformer!("flaubert/flaubert_small_cased")
+    # end
+
+    # TODO: This model is 22.5GB so not the easiest to test
+    # in a single GH action
+    # test "gpt j" do
+    #   check_onnx_transformer!("EleutherAI/gpt-j-6B")
+    # end
+
+    test "gpt neo" do
+      check_onnx_transformer!("EleutherAI/gpt-neo-125M")
+    end
+
+    test "gpt2" do
+      check_onnx_transformer!("gpt2")
+    end
+
+    test "layoutlm" do
+      check_onnx_transformer!("microsoft/layoutlm-base-cased")
+    end
+
+    test "m2m100" do
+      check_onnx_transformer!("facebook/m2m100_418M")
+    end
+
+    test "mbart" do
+      check_onnx_transformer!("facebook/mbart-large-50")
+    end
+
+    # test "plbart" do
+    #   check_onnx_transformer!("uclanlp/plbart-base")
+    # end
+
+    test "roberta" do
+      check_onnx_transformer!("roberta-base")
+    end
+
+    test "t5" do
+      check_onnx_transformer!("t5-base")
+    end
+
+    test "vit" do
+      check_onnx_transformer!("google/vit-base-patch16-224")
+    end
+
+    test "xlm-roberta" do
+      check_onnx_transformer!("xlm-roberta-base")
+    end
   end
 end

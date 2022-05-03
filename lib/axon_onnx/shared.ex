@@ -66,9 +66,10 @@ defmodule AxonOnnx.Shared do
     Nx.divide(x, denom)
   end
 
+  defn(mean(x, y), do: Nx.divide(Nx.add(x, y), 2))
   # Layer helpers
 
-  def trainable_binary_layer(%Axon{output_shape: shape} = input, %Nx.Tensor{} = param, op, name) do
+  def trainable_binary_layer(%Axon{} = input, %Nx.Tensor{} = param, op, name, op_name) do
     param_shape = Nx.shape(param)
 
     kernel = Axon.param("kernel", param_shape)
@@ -81,7 +82,7 @@ defmodule AxonOnnx.Shared do
       end
     end
 
-    Axon.layer([input], fun, shape, %{"kernel" => kernel}, name)
+    Axon.layer([input], fun, %{"kernel" => kernel}, name, layer_op: op_name)
   end
 
   def numpy_matmul_layer(
@@ -89,9 +90,6 @@ defmodule AxonOnnx.Shared do
         %Axon{output_shape: b_shape} = b,
         output_name
       ) do
-    a_names = List.duplicate(nil, Nx.rank(a_shape))
-    b_names = List.duplicate(nil, Nx.rank(b_shape))
-
     {c1_dims, b1_dims, c2_dims, b2_dims} =
       case {a_shape, b_shape} do
         {{}, {}} ->
@@ -110,44 +108,20 @@ defmodule AxonOnnx.Shared do
 
     fun = fn x, y, _params -> Nx.dot(x, c1_dims, b1_dims, y, c2_dims, b2_dims) end
 
-    {output_shape, _} =
-      Nx.Shape.dot(
-        a_shape,
-        c1_dims,
-        a_names,
-        b1_dims,
-        b_shape,
-        c2_dims,
-        b_names,
-        b2_dims
-      )
-
-    Axon.layer([a, b], fun, output_shape, %{}, output_name)
+    Axon.layer([a, b], fun, %{}, output_name, layer_op: :matmul)
   end
 
   def gather_layer(
-        %Axon{output_shape: shape} = x,
-        %Axon{output_shape: indices_shape} = ind,
+        %Axon{} = x,
+        %Axon{} = ind,
         axis,
         output_name
       ) do
-    inp_names = List.duplicate(nil, Nx.rank(shape))
-    ind_names = List.duplicate(nil, Nx.rank(indices_shape))
-
-    dummy_indices_shape =
-      if tuple_size(indices_shape) > 0 and elem(indices_shape, 0) == nil do
-        put_elem(indices_shape, 0, 1)
-      else
-        indices_shape
-      end
-
-    {output_shape, _} = Nx.Shape.take(shape, inp_names, dummy_indices_shape, ind_names, axis)
-
     fun = fn x, indices, _params ->
       Nx.take(x, Nx.as_type(indices, {:s, 64}), axis: axis)
     end
 
-    Axon.layer([x, ind], fun, output_shape, %{}, output_name)
+    Axon.layer([x, ind], fun, %{}, output_name, layer_op: :gather)
   end
 
   def slice_layer(inp, starts, ends, axes, steps, output_name, axon, used_params) do
@@ -199,8 +173,9 @@ defmodule AxonOnnx.Shared do
     end
 
     kernel = Axon.param("kernel", shape)
-    inp = Axon.container({}) # empty layer
-    layer = Axon.custom_layer(inp, fun, %{"kernel" => kernel}, output_name)
+    # empty layer
+    inp = Axon.container({})
+    layer = Axon.layer(inp, fun, %{"kernel" => kernel}, output_name, layer_op: :slice)
 
     updated_axon = Map.put(axon, output_name, layer)
     updated_params = Map.put(used_params, output_name, %{"kernel" => kernel})
@@ -209,6 +184,13 @@ defmodule AxonOnnx.Shared do
   end
 
   # Conversion helpers
+
+  def constant?(%{op: :constant}), do: true
+  def constant?(%Nx.Tensor{}), do: true
+  def constant?(_), do: false
+
+  def get_value(%{op: :constant, opts: [value: v]}), do: v
+  def get_value(%Nx.Tensor{} = v), do: v
 
   def get_shape(%Nx.Tensor{} = t), do: Nx.shape(t)
   def get_shape(%Axon{output_shape: shape}), do: shape

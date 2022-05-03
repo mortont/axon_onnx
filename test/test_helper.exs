@@ -140,6 +140,24 @@ defmodule OnnxTestHelper do
     end
   end
 
+  @doc """
+  Checks the given transformer model is imported.
+  """
+  def check_onnx_transformer!(model_name) do
+    base_path = Path.join(["test", "cases", "transformers"])
+    File.mkdir_p(base_path)
+
+    path = Path.join([base_path, model_name])
+    model_path = Path.join([path, "model.onnx"])
+
+    unless File.exists?(model_path) do
+      System.cmd("python3", ["-m", "transformers.onnx", "--model=#{model_name}", "#{path}"])
+    end
+
+    # Ensure import
+    AxonOnnx.import(model_path)
+  end
+
   defp assert_all_close!(x, y) do
     unless Nx.all_close(x, y, atol: 1.0e-3) == Nx.tensor(1, type: {:u, 8}) do
       raise "expected #{inspect(x)} to be within tolerance of #{inspect(y)}"
