@@ -143,7 +143,7 @@ defmodule OnnxTestHelper do
   @doc """
   Checks the given transformer model is imported.
   """
-  def check_onnx_transformer!(model_name) do
+  def check_onnx_transformer!(model_name, opts \\ []) do
     base_path = Path.join(["test", "cases", "transformers"])
     File.mkdir_p(base_path)
 
@@ -155,7 +155,7 @@ defmodule OnnxTestHelper do
     end
 
     # Ensure import
-    AxonOnnx.import(model_path)
+    AxonOnnx.import(model_path, opts)
   end
 
   defp assert_all_close!(x, y) do
