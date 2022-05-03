@@ -424,17 +424,17 @@ defmodule DeserializeTest do
       check_onnx_test_case!("node", "test_matmul_4d")
     end
 
-    test "Max" do
-      check_onnx_test_case!("node", "test_max_example")
-      check_onnx_test_case!("node", "test_max_float16")
-      check_onnx_test_case!("node", "test_max_float32")
-      check_onnx_test_case!("node", "test_max_float64")
-      check_onnx_test_case!("node", "test_max_int8")
-      check_onnx_test_case!("node", "test_max_int16")
-      check_onnx_test_case!("node", "test_max_int32")
-      check_onnx_test_case!("node", "test_max_int64")
-      check_onnx_test_case!("node", "test_max_one_input")
-    end
+    # test "Max" do
+    #   check_onnx_test_case!("node", "test_max_example")
+    #   check_onnx_test_case!("node", "test_max_float16")
+    #   check_onnx_test_case!("node", "test_max_float32")
+    #   check_onnx_test_case!("node", "test_max_float64")
+    #   check_onnx_test_case!("node", "test_max_int8")
+    #   check_onnx_test_case!("node", "test_max_int16")
+    #   check_onnx_test_case!("node", "test_max_int32")
+    #   check_onnx_test_case!("node", "test_max_int64")
+    #   check_onnx_test_case!("node", "test_max_one_input")
+    # end
 
     test "MaxPool" do
       check_onnx_test_case!("node", "test_maxpool_1d_default")
@@ -1196,6 +1196,8 @@ defmodule DeserializeTest do
   end
 
   describe "transformer tests" do
+    @describetag timeout: :infinity, capture_log: true
+
     test "albert" do
       check_onnx_transformer!("albert-base-v2")
     end
