@@ -21,7 +21,7 @@ jobs:
       - name: Install ONNX
         run: pip install numpy onnx onnxruntime
       - name: Install transformers
-        run: pip install git+https://github.com/huggingface/transformers.git sentencepiece
+        run: pip install git+https://github.com/huggingface/transformers.git sentencepiece pillow torch tensorflow
       - name: Install mix dependencies
         run: mix deps.get
       - name: Install Protoc
