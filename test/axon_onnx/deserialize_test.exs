@@ -1016,10 +1016,10 @@ defmodule DeserializeTest do
       check_onnx_test_case!("pytorch-operator", "test_operator_concat2")
     end
 
-    test "conv" do
-      Nx.Defn.default_options(compiler: EXLA)
-      check_onnx_test_case!("pytorch-operator", "test_operator_conv")
-    end
+    # test "conv" do
+    #   Nx.Defn.default_options(compiler: EXLA)
+    #   check_onnx_test_case!("pytorch-operator", "test_operator_conv")
+    # end
 
     test "exp" do
       check_onnx_test_case!("pytorch-operator", "test_operator_exp")
