@@ -133,13 +133,7 @@ defmodule AxonOnnx.Shared do
     fun = fn x ->
       [starts, ends, axes, steps]
       |> Enum.zip()
-      |> Enum.reduce(x, fn {start, stop, axis, stride}, acc ->
-        start = if start < 0, do: start + elem(shape, axis), else: start
-        stop = if stop < 0, do: stop + elem(shape, axis), else: stop
-        stop = max(0, min(stop, elem(shape, axis)))
-        len = stop - start
-        Nx.slice_along_axis(acc, start, len, axis: axis, strides: stride)
-      end)
+      |> Enum.reduce(x, &do_slice(shape, &1, &2))
     end
 
     case inp do
@@ -164,12 +158,7 @@ defmodule AxonOnnx.Shared do
     fun = fn _x, params ->
       [starts, ends, axes, steps]
       |> Enum.zip()
-      |> Enum.reduce(params["kernel"], fn {start, stop, axis, stride}, acc ->
-        start = if start < 0, do: start + elem(shape, axis), else: start
-        stop = if stop < 0, do: stop + elem(shape, axis), else: stop
-        len = stop - start
-        Nx.slice_along_axis(acc, start, len, axis: axis, strides: stride)
-      end)
+      |> Enum.reduce(params["kernel"], &do_slice(shape, &1, &2))
     end
 
     kernel = Axon.param("kernel", shape)
@@ -181,6 +170,29 @@ defmodule AxonOnnx.Shared do
     updated_params = Map.put(used_params, output_name, %{"kernel" => kernel})
 
     {updated_axon, updated_params}
+  end
+
+  defp do_slice(shape, {start, stop, axis, stride}, acc) do
+    start = if start < 0, do: start + elem(shape, axis), else: start
+
+    start =
+      if stride < 0,
+        do: clamp_to_range(start, 0, elem(shape, axis) - 1),
+        else: clamp_to_range(start, 0, elem(shape, axis))
+
+    stop = if stop < 0, do: stop + elem(shape, axis), else: stop
+
+    stop =
+      if stride < 0,
+        do: clamp_to_range(stop, -1, elem(shape, axis) - 1),
+        else: clamp_to_range(stop, 0, elem(shape, axis))
+
+    len = stop - start
+    Nx.slice_along_axis(acc, start, len, axis: axis, strides: stride)
+  end
+
+  defp clamp_to_range(val, min, max) do
+    min(max(min, val), max)
   end
 
   # Conversion helpers
