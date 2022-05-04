@@ -38,7 +38,7 @@ defmodule OnnxTestHelper do
       nx_to_tensor_proto(out, Path.join([test_path, "output_0.pb"]))
     end)
 
-    AxonOnnx.Serialize.__export__(axon_model, params, filename: model_path)
+    AxonOnnx.export(axon_model, params, filename: model_path)
     # Run check script
     {_, exit_code} =
       System.cmd("python3", ["scripts/check_onnx_model.py", model_path], into: IO.stream())
@@ -70,7 +70,7 @@ defmodule OnnxTestHelper do
     model_path = Path.join([test_path, "model.onnx"])
     data_paths = Path.wildcard(Path.join([test_path, "test_data_set_*"]))
 
-    {model, params} = AxonOnnx.Deserialize.__import__(model_path)
+    {model, params} = AxonOnnx.import(model_path)
 
     data_paths
     |> Enum.map(fn data_path ->
@@ -138,6 +138,24 @@ defmodule OnnxTestHelper do
 
       check_onnx_test_case!("real", test_name)
     end
+  end
+
+  @doc """
+  Checks the given transformer model is imported.
+  """
+  def check_onnx_transformer!(model_name, opts \\ []) do
+    base_path = Path.join(["test", "cases", "transformers"])
+    File.mkdir_p(base_path)
+
+    path = Path.join([base_path, model_name])
+    model_path = Path.join([path, "model.onnx"])
+
+    unless File.exists?(model_path) do
+      System.cmd("python3", ["-m", "transformers.onnx", "--model=#{model_name}", "#{path}"])
+    end
+
+    # Ensure import
+    AxonOnnx.import(model_path, opts)
   end
 
   defp assert_all_close!(x, y) do

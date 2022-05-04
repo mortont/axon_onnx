@@ -5,7 +5,7 @@ defmodule AxonOnnx.MixProject do
     [
       app: :axon_onnx,
       version: "0.1.0",
-      elixir: "~> 1.12",
+      elixir: "~> 1.13",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       aliases: aliases()
@@ -23,9 +23,8 @@ defmodule AxonOnnx.MixProject do
   defp deps do
     [
       {:protox, "~> 1.6.10"},
-      {:nx, "~> 0.1.0-dev", github: "elixir-nx/nx", sparse: "nx", override: true},
-      {:exla, "~> 0.1.0-dev",
-       github: "elixir-nx/nx", sparse: "exla", override: true, only: :test},
+      {:nx, "~> 0.2.0", nx_opts()},
+      {:exla, "~> 0.2.0"},
       {:req, "~> 0.1.0", only: :test},
       {:jason, "~> 1.2", only: :test},
       {:axon, "~> 0.1.0-dev", axon_opts()}
@@ -37,6 +36,14 @@ defmodule AxonOnnx.MixProject do
       [path: path]
     else
       [github: "elixir-nx/axon", branch: "main"]
+    end
+  end
+
+  defp nx_opts do
+    if path = System.get_env("AXON_NX_PATH") do
+      [path: path, override: true]
+    else
+      []
     end
   end
 
