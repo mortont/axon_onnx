@@ -918,7 +918,6 @@ defmodule AxonOnnx.Deserialize do
          {axon, params, used_params}
        ) do
     constant_options = options!(attrs)
-
     const =
       cond do
         constant_options["sparse_value"] ->
