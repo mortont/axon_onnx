@@ -186,7 +186,7 @@ defmodule AxonOnnx.Shared do
         do: clamp_to_range(stop, -1, elem(shape, axis) - 1),
         else: clamp_to_range(stop, 0, elem(shape, axis))
 
-    len = (stop + 1) - start
+    len = stop - start
     Nx.slice_along_axis(acc, start, len, axis: axis, strides: stride)
   end
 
