@@ -150,11 +150,11 @@ defmodule AxonOnnx.Shared do
 
       %Nx.Tensor{} = param ->
         shape = Nx.shape(param)
-        param_slice(shape, starts, ends, axes, steps, output_name, axon, used_params)
+        param_slice(shape, starts, ends, axes, steps, output_name, axon, param, used_params)
     end
   end
 
-  def param_slice(shape, starts, ends, axes, steps, output_name, axon, used_params) do
+  def param_slice(shape, starts, ends, axes, steps, output_name, axon, param, used_params) do
     fun = fn _x, params ->
       [starts, ends, axes, steps]
       |> Enum.zip()
@@ -167,7 +167,7 @@ defmodule AxonOnnx.Shared do
     layer = Axon.layer(inp, fun, %{"kernel" => kernel}, output_name, layer_op: :slice)
 
     updated_axon = Map.put(axon, output_name, layer)
-    updated_params = Map.put(used_params, output_name, %{"kernel" => kernel})
+    updated_params = Map.put(used_params, output_name, %{"kernel" => param})
 
     {updated_axon, updated_params}
   end
