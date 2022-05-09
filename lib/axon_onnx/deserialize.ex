@@ -763,9 +763,8 @@ defmodule AxonOnnx.Deserialize do
       if group > 1 do
         Axon.depthwise_conv(
           axon_inp,
-          units,
+          group,
           kernel_size: kernel_size,
-          feature_group_size: group,
           kernel_dilation: dilations,
           padding: padding_config,
           strides: strides,
