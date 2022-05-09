@@ -748,9 +748,7 @@ defmodule AxonOnnx.Deserialize do
 
     kernel = param!(kernel, params)
 
-    units =
-      Nx.shape(kernel)
-      |> elem(0)
+    units = elem(Nx.shape(kernel), 0)
 
     updated_params =
       if maybe_bias == [] do
