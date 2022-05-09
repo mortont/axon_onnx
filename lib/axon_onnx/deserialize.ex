@@ -1356,12 +1356,12 @@ defmodule AxonOnnx.Deserialize do
   end
 
   defp recur_nodes(
-         %Node{op_type: "Clip", input: [inp, min, max], output: [output_name]},
+         %Node{op_type: "Clip", input: [inp_name, min_name, max_name], output: [output_name]},
          {axon, params, used_params}
        ) do
-    inp = input!(inp, axon, params)
-    min = input!(min, axon, params)
-    max = input!(max, axon, params)
+    inp = input!(inp_name, axon, params)
+    min = input!(min_name, axon, params)
+    max = input!(max_name, axon, params)
 
     {updated_axon, updated_params} =
       case {inp, min, max} do
@@ -1371,17 +1371,18 @@ defmodule AxonOnnx.Deserialize do
           updated_axon = Map.put(axon, output_name, layer)
           {updated_axon, used_params}
 
-        {%Axon{op: :constant, opts: [value: v]} = inp, %Nx.Tensor{} = min, %Nx.Tensor{} = max} ->
+        {%Axon{op: :constant, opts: [value: v]}, %Nx.Tensor{} = min, %Nx.Tensor{} = max} ->
           new_value = Nx.clip(v, min, max)
           layer = Axon.constant(new_value, name: output_name)
           updated_axon = Map.put(axon, output_name, layer)
           {updated_axon, used_params}
 
         {%Axon{} = inp, %Nx.Tensor{} = min, %Nx.Tensor{} = max} ->
-          fun = fn x, _params -> Nx.clip(x, min, max) end
-          layer = Axon.layer(inp, fun, %{}, output_name, layer_op: :clip)
+          fun = fn x, params -> Nx.clip(x, params[min_name], params[max_name]) end
+          layer = Axon.layer(inp, fun, %{min_name => min, max_name => max}, output_name, layer_op: :clip)
           updated_axon = Map.put(axon, output_name, layer)
-          {updated_axon, used_params}
+          updated_params = Map.put(used_params, output_name, %{min_name => min, max_name => max})
+          {updated_axon, updated_params}
       end
 
     {updated_axon, params, updated_params}
