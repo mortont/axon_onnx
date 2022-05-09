@@ -1380,10 +1380,12 @@ defmodule AxonOnnx.Deserialize do
 
         {%Axon{} = inp, %Nx.Tensor{} = min, %Nx.Tensor{} = max} ->
           op = fn x, params -> Nx.clip(x, params["min"], params["max"]) end
+
           params = %{
             "min" => Axon.param(min_name, Nx.shape(min)),
             "max" => Axon.param(max_name, Nx.shape(max))
           }
+
           layer = Axon.layer(inp, op, params, output_name, layer_op: :clip)
           updated_axon = Map.put(axon, output_name, layer)
           updated_params = Map.put(used_params, output_name, %{min_name => min, max_name => max})
