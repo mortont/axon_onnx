@@ -729,10 +729,18 @@ defmodule AxonOnnx.Deserialize do
     pads = conv_options["pads"]
     strides = conv_options["strides"]
 
-    # Kernel size is a list of integers
-    kernel_size = List.to_tuple(kernel_shape)
-
     [inp, kernel | maybe_bias] = input
+
+    # Kernel shape is a list of integers; If it's not present, infer it
+    # from other values.
+    kernel_size =
+      if kernel_shape do
+        List.to_tuple(kernel_shape)
+      else
+        Nx.shape(kernel)
+        |> Tuple.delete_at(0)
+        |> Tuple.delete_at(0)
+      end
 
     %Axon{output_shape: shape} = axon_inp = axon!(inp, axon)
 
@@ -740,28 +748,7 @@ defmodule AxonOnnx.Deserialize do
 
     kernel = param!(kernel, params)
 
-    {units, kernel_size} =
-      if kernel_shape do
-        full_shape = Nx.shape(kernel)
-        units = elem(full_shape, 0)
-
-        shape =
-          full_shape
-          |> Tuple.delete_at(0)
-          |> Tuple.delete_at(0)
-
-        {units, shape}
-      else
-        full_shape = Nx.shape(kernel)
-        units = elem(full_shape, 0)
-
-        shape =
-          full_shape
-          |> Tuple.delete_at(0)
-          |> Tuple.delete_at(0)
-
-        {units, shape}
-      end
+    units = elem(Nx.shape(kernel), 0)
 
     updated_params =
       if maybe_bias == [] do
