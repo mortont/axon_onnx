@@ -473,6 +473,54 @@ defmodule AxonOnnx.Serialize do
     end
   end
 
+  ## Stochastic
+
+  @supported_dropout_layers [:dropout, :spatial_droput, :feature_alpha_dropout, :alpha_dropout]
+
+  defp to_onnx(
+         %Axon{
+           id: id,
+           op: op,
+           name: name_fn,
+           parent: [%Axon{id: inp_id, output_shape: shape} = parent],
+           opts: opts
+         },
+         inputs,
+         param_names,
+         nodes,
+         op_counts,
+         cache
+       )
+       when op in @supported_dropout_layers do
+    {inputs, param_names, nodes, op_counts, cache} =
+      to_onnx(parent, inputs, param_names, nodes, op_counts, cache)
+
+    input_name = cache[inp_id]
+
+    {name, op_counts, cache} =
+      case cache do
+        %{^id => name} ->
+          {name, op_counts, cache}
+
+        %{} ->
+          name = name_fn.(op, op_counts)
+          op_counts = Map.update(op_counts, op, 1, fn x -> x + 1 end)
+          cache = Map.put(cache, id, name)
+          {name, op_counts, cache}
+      end
+
+    # For now just forward with an identity
+    node = %Node{
+      input: [input_name],
+      output: [name],
+      name: name,
+      op_type: "Identity"
+    }
+
+    # Just forward to the next layer
+    {inputs, param_names, [node | nodes], op_counts, cache}
+  end
+
   defp to_attr(name, type, value) do
     case type do
       :INT ->
@@ -526,7 +574,13 @@ defmodule AxonOnnx.Serialize do
     dims =
       shape
       |> Tuple.to_list()
-      |> Enum.map(&%Dimension{value: {:dim_value, &1}})
+      |> Enum.map(fn
+        nil ->
+          %Dimension{value: {:dim_param, 1}}
+
+        value ->
+          %Dimension{value: {:dim_value, value}}
+      end)
 
     %Shape{dim: dims}
   end
