@@ -482,8 +482,7 @@ defmodule AxonOnnx.Serialize do
            id: id,
            op: op,
            name: name_fn,
-           parent: [%Axon{id: inp_id, output_shape: shape} = parent],
-           opts: opts
+           parent: [%Axon{id: inp_id} = parent],
          },
          inputs,
          param_names,
