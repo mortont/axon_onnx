@@ -759,10 +759,21 @@ defmodule AxonOnnx.Deserialize do
         Map.put(used_params, output_name, %{"kernel" => kernel, "bias" => bias})
       end
 
-    updated_axon =
-      Map.put(
-        axon,
-        output_name,
+    conv =
+      if group > 1 do
+        channel_multiplier = div(units, elem(shape, 1))
+
+        Axon.depthwise_conv(
+          axon_inp,
+          channel_multiplier,
+          kernel_size: kernel_size,
+          kernel_dilation: dilations,
+          padding: padding_config,
+          strides: strides,
+          use_bias: maybe_bias != [],
+          name: output_name
+        )
+      else
         Axon.conv(
           axon_inp,
           units,
@@ -774,8 +785,9 @@ defmodule AxonOnnx.Deserialize do
           use_bias: maybe_bias != [],
           name: output_name
         )
-      )
+      end
 
+    updated_axon = Map.put(axon, output_name, conv)
     {updated_axon, params, updated_params}
   end
 
