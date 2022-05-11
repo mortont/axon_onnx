@@ -762,6 +762,7 @@ defmodule AxonOnnx.Deserialize do
     conv =
       if group > 1 do
         channel_multiplier = div(units, elem(shape, 1))
+
         Axon.depthwise_conv(
           axon_inp,
           channel_multiplier,
