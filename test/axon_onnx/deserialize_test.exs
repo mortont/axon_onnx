@@ -355,11 +355,10 @@ defmodule DeserializeTest do
       # check_onnx_test_case!("node", "test_identity_sequence")
     end
 
-    test "If" do
-      check_onnx_test_case!("node", "test_if")
-      # TODO: Sequence types
-      # check_onnx_test_case!("node", "test_if_seq")
-    end
+    # test "If" do
+    #   check_onnx_test_case!("node", "test_if")
+    #   check_onnx_test_case!("node", "test_if_seq")
+    # end
 
     # test "InstanceNormalization" do
     #   check_onnx_test_case!("node", "test_instancenorm_epsilon")
@@ -424,17 +423,22 @@ defmodule DeserializeTest do
       check_onnx_test_case!("node", "test_matmul_4d")
     end
 
-    # test "Max" do
-    #   check_onnx_test_case!("node", "test_max_example")
-    #   check_onnx_test_case!("node", "test_max_float16")
-    #   check_onnx_test_case!("node", "test_max_float32")
-    #   check_onnx_test_case!("node", "test_max_float64")
-    #   check_onnx_test_case!("node", "test_max_int8")
-    #   check_onnx_test_case!("node", "test_max_int16")
-    #   check_onnx_test_case!("node", "test_max_int32")
-    #   check_onnx_test_case!("node", "test_max_int64")
-    #   check_onnx_test_case!("node", "test_max_one_input")
-    # end
+    test "Max" do
+      check_onnx_test_case!("node", "test_max_example")
+      check_onnx_test_case!("node", "test_max_float16")
+      check_onnx_test_case!("node", "test_max_float32")
+      check_onnx_test_case!("node", "test_max_float64")
+      check_onnx_test_case!("node", "test_max_int8")
+      check_onnx_test_case!("node", "test_max_int16")
+      check_onnx_test_case!("node", "test_max_int32")
+      check_onnx_test_case!("node", "test_max_int64")
+      check_onnx_test_case!("node", "test_max_uint8")
+      check_onnx_test_case!("node", "test_max_uint16")
+      check_onnx_test_case!("node", "test_max_uint32")
+      check_onnx_test_case!("node", "test_max_uint64")
+      check_onnx_test_case!("node", "test_max_one_input")
+      check_onnx_test_case!("node", "test_max_two_inputs")
+    end
 
     test "MaxPool" do
       check_onnx_test_case!("node", "test_maxpool_1d_default")
@@ -459,6 +463,29 @@ defmodule DeserializeTest do
       assert_raise ArgumentError, ~r/invalid ceil_mode/, fn ->
         check_onnx_test_case!("node", "test_maxpool_2d_ceil")
       end
+    end
+
+    test "Mean" do
+      check_onnx_test_case!("node", "test_mean_example")
+      check_onnx_test_case!("node", "test_mean_one_input")
+      check_onnx_test_case!("node", "test_mean_two_inputs")
+    end
+
+    test "Min" do
+      check_onnx_test_case!("node", "test_min_example")
+      check_onnx_test_case!("node", "test_min_float16")
+      check_onnx_test_case!("node", "test_min_float32")
+      check_onnx_test_case!("node", "test_min_float64")
+      check_onnx_test_case!("node", "test_min_int8")
+      check_onnx_test_case!("node", "test_min_int16")
+      check_onnx_test_case!("node", "test_min_int32")
+      check_onnx_test_case!("node", "test_min_int64")
+      check_onnx_test_case!("node", "test_min_uint8")
+      check_onnx_test_case!("node", "test_min_uint16")
+      check_onnx_test_case!("node", "test_min_uint32")
+      check_onnx_test_case!("node", "test_min_uint64")
+      check_onnx_test_case!("node", "test_min_one_input")
+      check_onnx_test_case!("node", "test_min_two_inputs")
     end
 
     test "Mod" do
@@ -758,11 +785,11 @@ defmodule DeserializeTest do
       check_onnx_test_case!("node", "test_sub_uint8")
     end
 
-    # test "Sum" do
-    #   check_onnx_test_case!("node", "test_sum_example")
-    #   check_onnx_test_case!("node", "test_sum_one_input")
-    #   check_onnx_test_case!("node", "test_sum_two_inputs")
-    # end
+    test "Sum" do
+      check_onnx_test_case!("node", "test_sum_example")
+      check_onnx_test_case!("node", "test_sum_one_input")
+      check_onnx_test_case!("node", "test_sum_two_inputs")
+    end
 
     test "Tan" do
       check_onnx_test_case!("node", "test_tan")
