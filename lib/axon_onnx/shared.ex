@@ -69,20 +69,20 @@ defmodule AxonOnnx.Shared do
   defn(mean(x, y), do: Nx.divide(Nx.add(x, y), 2))
   # Layer helpers
 
-  def trainable_binary_layer(%Axon{} = input, %Nx.Tensor{} = param, op, name, op_name) do
+  def trainable_binary_layer(%Axon{} = input, %Nx.Tensor{} = param, op, name) do
     param_shape = Nx.shape(param)
 
     kernel = Axon.param("kernel", param_shape)
 
-    fun = fn x, params ->
+    fun = fn x, kernel, _opts ->
       if is_atom(op) do
-        apply(Nx, op, [x, params["kernel"]])
+        apply(Nx, op, [x, kernel])
       else
-        apply(op, [x, params["kernel"]])
+        apply(op, [x, kernel])
       end
     end
 
-    Axon.layer([input], fun, %{"kernel" => kernel}, name, layer_op: op_name)
+    Axon.layer(fun, [input, kernel], name: name)
   end
 
   def numpy_matmul_layer(
@@ -106,9 +106,9 @@ defmodule AxonOnnx.Shared do
           {[Nx.rank(a_shape) - 1], batch_dims, [Nx.rank(b_shape) - 2], batch_dims}
       end
 
-    fun = fn x, y, _params -> Nx.dot(x, c1_dims, b1_dims, y, c2_dims, b2_dims) end
+    fun = fn x, y, _opts -> Nx.dot(x, c1_dims, b1_dims, y, c2_dims, b2_dims) end
 
-    Axon.layer([a, b], fun, %{}, output_name, layer_op: :matmul)
+    Axon.layer(fun, [a, b], name: output_name)
   end
 
   def gather_layer(
@@ -117,11 +117,11 @@ defmodule AxonOnnx.Shared do
         axis,
         output_name
       ) do
-    fun = fn x, indices, _params ->
+    fun = fn x, indices, _opts ->
       Nx.take(x, Nx.as_type(indices, {:s, 64}), axis: axis)
     end
 
-    Axon.layer([x, ind], fun, %{}, output_name, layer_op: :gather)
+    Axon.layer(fun, [x, ind], name: output_name)
   end
 
   def slice_layer(inp, starts, ends, axes, steps, output_name, axon, used_params) do
@@ -155,16 +155,16 @@ defmodule AxonOnnx.Shared do
   end
 
   def param_slice(shape, starts, ends, axes, steps, output_name, axon, param, used_params) do
-    fun = fn _x, params ->
+    fun = fn _x, kernel, _opts ->
       [starts, ends, axes, steps]
       |> Enum.zip()
-      |> Enum.reduce(params["kernel"], &do_slice(shape, &1, &2))
+      |> Enum.reduce(kernel, &do_slice(shape, &1, &2))
     end
 
     kernel = Axon.param("kernel", shape)
     # empty layer
     inp = Axon.container({})
-    layer = Axon.layer(inp, fun, %{"kernel" => kernel}, output_name, layer_op: :slice)
+    layer = Axon.layer(fun, [inp, kernel], name: output_name)
 
     updated_axon = Map.put(axon, output_name, layer)
     updated_params = Map.put(used_params, output_name, %{"kernel" => param})

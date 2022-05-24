@@ -110,8 +110,7 @@ defmodule AxonOnnx.Serialize do
            op: :dense,
            name: name_fn,
            parent: [%Axon{id: inp_id} = parent],
-           params: params,
-           opts: [use_bias: use_bias]
+           parameters: params
          },
          inputs,
          param_names,
@@ -136,27 +135,18 @@ defmodule AxonOnnx.Serialize do
           {name, op_counts, cache}
       end
 
-    %{name: k_name} = params["kernel"]
-    full_k_name = name <> "_" <> k_name
-
-    {node_inputs, updated_param_names} =
-      if use_bias do
-        %{name: b_name} = params["bias"]
-        full_b_name = name <> "_" <> b_name
-
-        {[inp_name, full_k_name, full_b_name], [full_k_name, full_b_name | param_names]}
-      else
-        {[inp_name, full_k_name], [full_k_name | param_names]}
-      end
+    updated_param_names = Enum.map(params, fn %{name: p_name} ->
+      name <> "_" <> p_name
+    end)
 
     node = %Node{
-      input: node_inputs,
+      input: [inp_name | updated_param_names],
       output: [name],
       name: name,
       op_type: "Gemm"
     }
 
-    {inputs, updated_param_names, [node | nodes], op_counts, cache}
+    {inputs, updated_param_names ++ param_names, [node | nodes], op_counts, cache}
   end
 
   ## Convolution
@@ -167,7 +157,7 @@ defmodule AxonOnnx.Serialize do
            op: :conv,
            name: name_fn,
            parent: [%Axon{id: inp_id} = parent],
-           params: params,
+           parameters: params,
            opts: opts
          },
          inputs,
@@ -214,28 +204,19 @@ defmodule AxonOnnx.Serialize do
 
     # TODO: Dilations
 
-    %{name: k_name} = params["kernel"]
-    full_k_name = name <> "_" <> k_name
-
-    {node_inputs, updated_param_names} =
-      if use_bias do
-        %{name: b_name} = params["bias"]
-        full_b_name = name <> "_" <> b_name
-
-        {[inp_name, full_k_name, full_b_name], [full_k_name, full_b_name | param_names]}
-      else
-        {[inp_name, full_k_name], [full_k_name | param_names]}
-      end
+    updated_param_names = Enum.map(params, fn %{name: p_name} ->
+      name <> "_" <> p_name
+    end)
 
     node = %Node{
-      input: node_inputs,
+      input: [inp_name | updated_param_names],
       output: [name],
       name: name,
       attribute: [strides_attr, padding_attr],
       op_type: "Conv"
     }
 
-    {inputs, updated_param_names, [node | nodes], op_counts, cache}
+    {inputs, updated_param_names ++ param_names, [node | nodes], op_counts, cache}
   end
 
   ## Pooling

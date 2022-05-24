@@ -217,7 +217,10 @@ defmodule AxonOnnx.Deserialize do
           [keep_axes: keep_axes, axes: axes]
         end
 
-      layer_fun = fn x, _params, opts -> apply(unquote(reduce_fun), [x, opts]) end
+      layer_fun = fn x, opts ->
+        opts = Keyword.delete(opts, :mode)
+        apply(unquote(reduce_fun), [x, opts])
+      end
 
       layer =
         case axon_input do
@@ -226,7 +229,7 @@ defmodule AxonOnnx.Deserialize do
             Axon.constant(new_value, name: output_name)
 
           %Axon{} = axon_input ->
-            Axon.layer(axon_input, layer_fun, %{}, output_name, [layer_op: unquote(op)] ++ opts)
+            Axon.layer(layer_fun, [axon_input], [name: output_name] ++ opts)
         end
 
       updated_axon = Map.put(axon, output_name, layer)
@@ -276,7 +279,7 @@ defmodule AxonOnnx.Deserialize do
 
             {%Axon{} = inp1, %Nx.Tensor{} = inp2} ->
               layer =
-                trainable_binary_layer(inp1, inp2, unquote(binary_op), output_name, unquote(op))
+                trainable_binary_layer(inp1, inp2, unquote(binary_op), output_name)
 
               updated_axon = Map.put(axon, output_name, layer)
               updated_params = Map.put(used_params, output_name, %{"kernel" => inp2})
@@ -284,7 +287,7 @@ defmodule AxonOnnx.Deserialize do
 
             {%Nx.Tensor{} = inp1, %Axon{} = inp2} ->
               layer =
-                trainable_binary_layer(inp2, inp1, unquote(binary_op), output_name, unquote(op))
+                trainable_binary_layer(inp2, inp1, unquote(binary_op), output_name)
 
               updated_axon = Map.put(axon, output_name, layer)
               updated_params = Map.put(used_params, output_name, %{"kernel" => inp1})
@@ -319,7 +322,7 @@ defmodule AxonOnnx.Deserialize do
       inp1 = input!(inp1, axon, params)
       inp2 = input!(inp2, axon, params)
 
-      fun = fn x, y, _params -> apply(unquote(binary_fun), [x, y]) end
+      fun = fn x, y, _opts -> apply(unquote(binary_fun), [x, y]) end
 
       updated_axon =
         case {inp1, inp2} do
@@ -336,7 +339,7 @@ defmodule AxonOnnx.Deserialize do
             Map.put(axon, output_name, Axon.constant(new_value, name: output_name))
 
           {%Axon{} = inp1, %Axon{} = inp2} ->
-            layer = Axon.layer([inp1, inp2], fun, %{}, output_name, layer_op: unquote(op))
+            layer = Axon.layer(fun, [inp1, inp2], name: output_name)
             Map.put(axon, output_name, layer)
         end
 
@@ -373,7 +376,7 @@ defmodule AxonOnnx.Deserialize do
 
   @variadic_op_types [
     {"Max", &Nx.max/2},
-    {"Mean", &mean/2},
+    # {"Mean", &mean/2},
     {"Min", &Nx.min/2},
     {"Sum", &Nx.add/2}
   ]
@@ -384,7 +387,7 @@ defmodule AxonOnnx.Deserialize do
          ) do
       inputs = Enum.map(inputs, &input!(&1, axon, params))
 
-      fun = fn inputs, _params ->
+      fun = fn inputs, _opts ->
         [init | rest] = inputs |> Tuple.to_list()
 
         Enum.reduce(rest, init, fn x, y ->
@@ -393,9 +396,7 @@ defmodule AxonOnnx.Deserialize do
       end
 
       layer =
-        Axon.layer(Axon.container(List.to_tuple(inputs)), fun, %{}, output_name,
-          layer_op: unquote(op)
-        )
+        Axon.layer(fun, [Axon.container(List.to_tuple(inputs))], name: output_name)
 
       updated_axon = Map.put(axon, output_name, layer)
 
@@ -1068,8 +1069,8 @@ defmodule AxonOnnx.Deserialize do
           updated_axon
 
         %Axon{} = inp ->
-          fun = fn x, _params -> Nx.multiply(x, Nx.broadcast(1, shape)) end
-          layer = Axon.layer([inp], fun, %{}, output_name, layer_op: :expand)
+          fun = fn x, _opts -> Nx.multiply(x, Nx.broadcast(1, shape)) end
+          layer = Axon.layer(fun, [inp], name: output_name)
           updated_axon = Map.put(axon, output_name, layer)
           updated_axon
       end
@@ -1311,25 +1312,23 @@ defmodule AxonOnnx.Deserialize do
           {updated_axon, used_params}
 
         {%Axon{} = condition, %Axon{} = x, %Axon{} = y} ->
-          fun = fn x, y, z, _params -> Nx.select(x, y, z) end
-          layer = Axon.layer([condition, x, y], fun, %{}, output_name, layer_op: :where)
+          fun = fn x, y, z, _opts -> Nx.select(x, y, z) end
+          layer = Axon.layer(fun, [condition, x, y], name: output_name)
           updated_axon = Map.put(axon, output_name, layer)
           {updated_axon, used_params}
 
         {%Axon{} = condition, %Axon{} = x, %Nx.Tensor{} = y} ->
           # TODO: Nx's shape rules should handle this like a binary broadcast
           # between all operands
-          fun = fn x, y, params ->
+          fun = fn x, y, z, _opts ->
             x = Nx.multiply(x, Nx.broadcast(1, y))
             y = Nx.multiply(y, Nx.broadcast(1, x))
-            z = Nx.multiply(params[y_name], Nx.broadcast(1, y))
+            z = Nx.multiply(z, Nx.broadcast(1, y))
             Nx.select(x, y, z)
           end
 
           param = Axon.param(y_name, Nx.shape(y))
-
-          layer =
-            Axon.layer([condition, x], fun, %{y_name => param}, output_name, layer_op: :where)
+          layer = Axon.layer(fun, [condition, x, param], name: output_name)
 
           updated_axon = Map.put(axon, output_name, layer)
           updated_params = Map.put(used_params, output_name, %{y_name => param})
@@ -1379,8 +1378,8 @@ defmodule AxonOnnx.Deserialize do
     {updated_axon, updated_params} =
       case {inp, min, max} do
         {%Axon{} = inp, %Axon{} = min, %Axon{} = max} ->
-          fun = fn x, y, z, _params -> Nx.clip(x, y, z) end
-          layer = Axon.layer([inp, min, max], fun, %{}, output_name, layer_op: :clip)
+          fun = fn x, y, z, _opts -> Nx.clip(x, y, z) end
+          layer = Axon.layer(fun, [inp, min, max], name: output_name)
           updated_axon = Map.put(axon, output_name, layer)
           {updated_axon, used_params}
 
@@ -1391,14 +1390,11 @@ defmodule AxonOnnx.Deserialize do
           {updated_axon, used_params}
 
         {%Axon{} = inp, %Nx.Tensor{} = min, %Nx.Tensor{} = max} ->
-          op = fn x, params -> Nx.clip(x, params["min"], params["max"]) end
+          fun = fn x, min, max, _opts -> Nx.clip(x, min, max) end
 
-          params = %{
-            "min" => Axon.param(min_name, Nx.shape(min)),
-            "max" => Axon.param(max_name, Nx.shape(max))
-          }
-
-          layer = Axon.layer(inp, op, params, output_name, layer_op: :clip)
+          min = Axon.param(min_name, Nx.shape(min))
+          max = Axon.param(max_name, Nx.shape(max))
+          layer = Axon.layer(fun, [inp, min, max], name: output_name)
           updated_axon = Map.put(axon, output_name, layer)
           updated_params = Map.put(used_params, output_name, %{min_name => min, max_name => max})
           {updated_axon, updated_params}
@@ -1426,7 +1422,7 @@ defmodule AxonOnnx.Deserialize do
           Map.put(axon, output_name, layer)
 
         %Axon{} = inp ->
-          layer = Axon.layer(inp, fun, %{}, output_name, layer_op: :squeeze)
+          layer = Axon.layer(fun, [inp], name: output_name)
           Map.put(axon, output_name, layer)
       end
 
@@ -1452,7 +1448,7 @@ defmodule AxonOnnx.Deserialize do
           Map.put(axon, output_name, layer)
 
         %Axon{} = inp ->
-          layer = Axon.layer(inp, fun, %{}, output_name, layer_op: :squeeze)
+          layer = Axon.layer(fun, [inp], name: output_name)
           Map.put(axon, output_name, layer)
       end
 
