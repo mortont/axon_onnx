@@ -183,7 +183,6 @@ defmodule AxonOnnx.Serialize do
           {name, op_counts, cache}
       end
 
-    use_bias = opts[:use_bias]
     strides = opts[:strides]
     padding = opts[:padding]
 
