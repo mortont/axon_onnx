@@ -135,9 +135,10 @@ defmodule AxonOnnx.Serialize do
           {name, op_counts, cache}
       end
 
-    updated_param_names = Enum.map(params, fn %{name: p_name} ->
-      name <> "_" <> p_name
-    end)
+    updated_param_names =
+      Enum.map(params, fn %{name: p_name} ->
+        name <> "_" <> p_name
+      end)
 
     node = %Node{
       input: [inp_name | updated_param_names],
@@ -203,9 +204,10 @@ defmodule AxonOnnx.Serialize do
 
     # TODO: Dilations
 
-    updated_param_names = Enum.map(params, fn %{name: p_name} ->
-      name <> "_" <> p_name
-    end)
+    updated_param_names =
+      Enum.map(params, fn %{name: p_name} ->
+        name <> "_" <> p_name
+      end)
 
     node = %Node{
       input: [inp_name | updated_param_names],

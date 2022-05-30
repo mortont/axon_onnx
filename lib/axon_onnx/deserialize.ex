@@ -278,16 +278,14 @@ defmodule AxonOnnx.Deserialize do
               {updated_axon, used_params}
 
             {%Axon{} = inp1, %Nx.Tensor{} = inp2} ->
-              layer =
-                trainable_binary_layer(inp1, inp2, unquote(binary_op), output_name)
+              layer = trainable_binary_layer(inp1, inp2, unquote(binary_op), output_name)
 
               updated_axon = Map.put(axon, output_name, layer)
               updated_params = Map.put(used_params, output_name, %{"kernel" => inp2})
               {updated_axon, updated_params}
 
             {%Nx.Tensor{} = inp1, %Axon{} = inp2} ->
-              layer =
-                trainable_binary_layer(inp2, inp1, unquote(binary_op), output_name)
+              layer = trainable_binary_layer(inp2, inp1, unquote(binary_op), output_name)
 
               updated_axon = Map.put(axon, output_name, layer)
               updated_params = Map.put(used_params, output_name, %{"kernel" => inp1})
@@ -395,8 +393,7 @@ defmodule AxonOnnx.Deserialize do
         end)
       end
 
-      layer =
-        Axon.layer(fun, [Axon.container(List.to_tuple(inputs))], name: output_name)
+      layer = Axon.layer(fun, [Axon.container(List.to_tuple(inputs))], name: output_name)
 
       updated_axon = Map.put(axon, output_name, layer)
 
