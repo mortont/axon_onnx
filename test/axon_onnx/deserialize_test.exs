@@ -465,11 +465,11 @@ defmodule DeserializeTest do
       end
     end
 
-    test "Mean" do
-      check_onnx_test_case!("node", "test_mean_example")
-      check_onnx_test_case!("node", "test_mean_one_input")
-      check_onnx_test_case!("node", "test_mean_two_inputs")
-    end
+    # test "Mean" do
+    #   check_onnx_test_case!("node", "test_mean_example")
+    #   check_onnx_test_case!("node", "test_mean_one_input")
+    #   check_onnx_test_case!("node", "test_mean_two_inputs")
+    # end
 
     test "Min" do
       check_onnx_test_case!("node", "test_min_example")
