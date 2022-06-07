@@ -23,8 +23,8 @@ defmodule AxonOnnx.MixProject do
   defp deps do
     [
       {:protox, "~> 1.6.10"},
-      {:nx, "~> 0.2.0", nx_opts()},
-      {:exla, "~> 0.2.0", exla_opts()},
+      {:nx, "~> 0.2.1", nx_opts()},
+      {:exla, "~> 0.2.1", exla_opts()},
       {:req, "~> 0.1.0", only: :test},
       {:jason, "~> 1.2", only: :test},
       {:axon, "~> 0.1.0-dev", axon_opts()}
@@ -49,9 +49,9 @@ defmodule AxonOnnx.MixProject do
 
   defp exla_opts do
     if path = System.get_env("EXLA_PATH") do
-      [path: path, override: true]
+      [path: path, override: true, only: :test]
     else
-      []
+      [only: :test]
     end
   end
 
