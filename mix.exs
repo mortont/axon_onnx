@@ -24,7 +24,7 @@ defmodule AxonOnnx.MixProject do
     [
       {:protox, "~> 1.6.10"},
       {:nx, "~> 0.2.1", nx_opts()},
-      {:exla, "~> 0.2.1", exla_opts()},
+      {:exla, "~> 0.2.2", [only: :test] ++ exla_opts()},
       {:req, "~> 0.1.0", only: :test},
       {:jason, "~> 1.2", only: :test},
       {:axon, "~> 0.1.0-dev", axon_opts()}
@@ -43,15 +43,15 @@ defmodule AxonOnnx.MixProject do
     if path = System.get_env("AXON_NX_PATH") do
       [path: path, override: true]
     else
-      [github: "elixir-nx/nx", sparse: "nx", override: true, branch: "v0.2"]
+      []
     end
   end
 
   defp exla_opts do
-    if path = System.get_env("EXLA_PATH") do
-      [path: path, override: true, only: :test]
+    if path = System.get_env("AXON_EXLA_PATH") do
+      [path: path]
     else
-      [github: "elixir-nx/exla", sparse: "exla", branch: "v0.2", only: :test]
+      []
     end
   end
 
