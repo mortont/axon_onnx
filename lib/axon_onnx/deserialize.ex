@@ -603,7 +603,7 @@ defmodule AxonOnnx.Deserialize do
     storage_order = max_pool_options["storage_order"]
     pads = max_pool_options["pads"]
     strides = max_pool_options["strides"]
-    dilations = max_pool_options["dilations"]
+    dilations = max_pool_options["dilations"] || 1
 
     # Kernel size is a list of integers
     kernel_size = List.to_tuple(kernel_shape)
@@ -665,8 +665,8 @@ defmodule AxonOnnx.Deserialize do
     auto_pad = avg_pool_options["auto_pad"] || "NOTSET"
     _count_include_pad = avg_pool_options["count_include_pad"] || 0
     pads = avg_pool_options["pads"]
-    strides = avg_pool_options["strides"]
-    dilations = avg_pool_options["dilations"]
+    strides = avg_pool_options["strides"] || 1
+    dilations = avg_pool_options["dilations"] || 1
 
     # Kernel size is a list of integers
     kernel_size = List.to_tuple(kernel_shape)
