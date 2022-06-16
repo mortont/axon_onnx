@@ -56,10 +56,9 @@ defmodule AxonOnnx.MixProject do
 
   defp docs do
     [
-      main: "Axon",
+      main: "AxonOnnx",
       source_ref: "v#{@version}",
-      logo: "axon.png",
-      source_url: @source_url,
+      source_url: @source_url
     ]
   end
 
