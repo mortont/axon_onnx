@@ -38,7 +38,7 @@ defmodule OnnxTestHelper do
       nx_to_tensor_proto(out, Path.join([test_path, "output_0.pb"]))
     end)
 
-    AxonOnnx.export(axon_model, params, filename: model_path)
+    AxonOnnx.export(axon_model, params, path: model_path)
     # Run check script
     {_, exit_code} =
       System.cmd("python3", ["scripts/check_onnx_model.py", model_path], into: IO.stream())

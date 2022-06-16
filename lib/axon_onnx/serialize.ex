@@ -1,4 +1,6 @@
 defmodule AxonOnnx.Serialize do
+  @moduledoc false
+
   alias Onnx.ModelProto, as: Model
   alias Onnx.GraphProto, as: Graph
   alias Onnx.NodeProto, as: Node
@@ -15,10 +17,9 @@ defmodule AxonOnnx.Serialize do
   @producer_name "AxonOnnx"
   @producer_version "0.1.0-dev"
 
-  # TODO(seanmor5): Multi-output models
   def __export__(%Axon{} = axon, params, opts \\ []) do
     %Model{graph: %Graph{name: output_name}} = onnx_model = to_onnx_model(axon, params, opts)
-    fname = opts[:filename] || output_name <> ".onnx"
+    fname = opts[:path] || output_name <> ".onnx"
 
     encoded = Model.encode!(onnx_model)
 

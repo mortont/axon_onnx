@@ -1,4 +1,6 @@
 defmodule AxonOnnx.Deserialize do
+  @moduledoc false
+
   alias Onnx.ModelProto, as: Model
   alias Onnx.GraphProto, as: Graph
   alias Onnx.ValueInfoProto, as: Value
