@@ -1,16 +1,30 @@
 defmodule AxonOnnx.MixProject do
   use Mix.Project
 
+  @source_url "https://github.com/elixir-nx/axon_onnx"
+  @version "0.1.0"
+
   def project do
     [
       app: :axon_onnx,
-      version: "0.1.0",
+      version: @version,
+      name: "AxonOnnx",
       elixir: "~> 1.13",
-      start_permanent: Mix.env() == :prod,
+      elixirc_paths: elixirc_paths(Mix.env()),
       deps: deps(),
+      docs: docs(),
+      description: "Convert models between Axon/ONNX",
+      package: package(),
+      preferred_cli_env: [
+        docs: :docs,
+        "hex.publish": :docs
+      ],
       aliases: aliases()
     ]
   end
+
+  defp elixirc_paths(:test), do: ~w(lib test/support)
+  defp elixirc_paths(_), do: ~w(lib)
 
   # Run "mix help compile.app" to learn about applications.
   def application do
@@ -27,7 +41,24 @@ defmodule AxonOnnx.MixProject do
       {:exla, "~> 0.2.2", [only: :test] ++ exla_opts()},
       {:req, "~> 0.1.0", only: :test},
       {:jason, "~> 1.2", only: :test},
-      {:axon, "~> 0.1.0-dev", axon_opts()}
+      {:axon, "~> 0.1.0", axon_opts()}
+    ]
+  end
+
+  defp package do
+    [
+      maintainers: ["Sean Moriarity"],
+      licenses: ["Apache-2.0"],
+      links: %{"GitHub" => @source_url}
+    ]
+  end
+
+  defp docs do
+    [
+      main: "Axon",
+      source_ref: "v#{@version}",
+      logo: "axon.png",
+      source_url: @source_url,
     ]
   end
 
@@ -35,7 +66,7 @@ defmodule AxonOnnx.MixProject do
     if path = System.get_env("AXON_PATH") do
       [path: path]
     else
-      [github: "elixir-nx/axon", branch: "main"]
+      []
     end
   end
 

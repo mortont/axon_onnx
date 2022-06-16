@@ -1223,6 +1223,7 @@ defmodule DeserializeTest do
   end
 
   describe "transformer tests" do
+    @describetag :transformers
     @describetag timeout: :infinity, capture_log: true
 
     test "albert" do
