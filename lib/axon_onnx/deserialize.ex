@@ -1591,6 +1591,28 @@ defmodule AxonOnnx.Deserialize do
     {updated_axon, params, used_params}
   end
 
+  defp recur_nodes(
+         %Node{
+           op_type: "Resize",
+           input: input,
+           attribute: attrs,
+           output: output
+         },
+         {axon, params, used_params}
+       ) do
+
+    # op_type spec: https://github.com/onnx/onnx/blob/main/docs/Operators.md#resize
+
+    IO.inspect([input, output], label: "IO")
+    IO.inspect(options!(attrs), label: "attributes")
+
+    IO.inspect(Map.get(params, "Resize_roi"), label: "roi")
+    IO.inspect(Map.get(params, "Resize_scales"), label: "scales")
+    IO.inspect(Map.get(params, "Resize_sizes"), label: "sizes")
+
+    raise ArgumentError, "op_type Resize is a WIP"
+  end
+
   defp recur_nodes(%Node{op_type: unsupported}, _) do
     raise ArgumentError, "unsupported #{inspect(unsupported)}"
   end
