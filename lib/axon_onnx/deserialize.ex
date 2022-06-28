@@ -1606,11 +1606,45 @@ defmodule AxonOnnx.Deserialize do
     IO.inspect([input, output], label: "IO")
     IO.inspect(options!(attrs), label: "attributes")
 
-    IO.inspect(Map.get(params, "Resize_roi"), label: "roi")
-    IO.inspect(Map.get(params, "Resize_scales"), label: "scales")
-    IO.inspect(Map.get(params, "Resize_sizes"), label: "sizes")
+    _roi = Map.get(params, "Resize_roi") |> IO.inspect(label: "roi") # [0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0]
+    _sizes = Map.get(params, "Resize_sizes") |> IO.inspect(label: "sizes") # nil
+    scales = Map.get(params, "Resize_scales") |> IO.inspect(label: "scales") # [1.0, 1.0, 2.0, 2.0]
 
-    raise ArgumentError, "op_type Resize is a WIP"
+    %{
+      "coordinate_transformation_mode" => _transformation,
+      "mode" => mode,
+      "nearest_mode" => "floor"
+    } = options!(attrs)
+
+    [in_layer_name | _ ] = input
+    [out_layer_name] = output
+    inp = input!(in_layer_name, axon, params)
+    input_shape = get_shape(inp)
+    method = case mode do
+      "nearest" -> :nearest
+      "linear" -> :linear
+      "bilinear" -> :biliear
+    end
+
+    IO.inspect(input_shape, label: "input_shape")
+    IO.inspect(method, label: "method")
+
+    # this is terrible...
+    # element-wise multiply input shape and scale
+    output_shape = input_shape |> Tuple.to_list()
+                |> Enum.zip(Nx.to_flat_list(scales))
+                # multiply
+                |> Enum.map(fn {nil, _} -> nil
+                               {is, sc}-> trunc(is * sc) end)
+                # drop non-spatial dimensions
+                |> Enum.drop(2)
+                # build tuple
+                |> Enum.reduce({}, fn e, acc -> Tuple.append(acc, e) end)
+                |> IO.inspect(label: "output_shape")
+
+    layer = Axon.resize(inp, output_shape, method: method)
+    updated_axon = Map.put(axon, out_layer_name, layer)
+    {updated_axon, params, used_params}
   end
 
   defp recur_nodes(%Node{op_type: unsupported}, _) do
