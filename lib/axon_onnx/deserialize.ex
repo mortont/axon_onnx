@@ -1620,11 +1620,15 @@ defmodule AxonOnnx.Deserialize do
     [out_layer_name] = output
     inp = input!(in_layer_name, axon, params)
     input_shape = get_shape(inp)
-    method = case mode do
-      "nearest" -> :nearest
-      "linear" -> :linear
-      "bilinear" -> :biliear
-    end
+    method =
+      case mode do
+        "nearest" -> :nearest
+        "linear" -> :linear
+        "bilinear" -> :bilinear
+        mode ->
+          raise ArgumentError, "unsupported resize mode #{inspect(model)}, Axon only supports" <>
+                                               "nearest, linear, and bilinear resizing"
+      end
 
     IO.inspect(input_shape, label: "input_shape")
     IO.inspect(method, label: "method")
