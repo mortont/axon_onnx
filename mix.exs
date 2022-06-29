@@ -2,7 +2,7 @@ defmodule AxonOnnx.MixProject do
   use Mix.Project
 
   @source_url "https://github.com/elixir-nx/axon_onnx"
-  @version "0.1.0"
+  @version "0.2.0-dev"
 
   def project do
     [
@@ -36,7 +36,7 @@ defmodule AxonOnnx.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:axon, "~> 0.1.0", axon_opts()},
+      {:axon, "~> 0.2.0-dev", axon_opts()},
       {:protox, "~> 1.6.10"},
       {:nx, "~> 0.2.1", nx_opts()},
       {:exla, "~> 0.2.2", [only: :test] ++ exla_opts()},
@@ -66,7 +66,7 @@ defmodule AxonOnnx.MixProject do
     if path = System.get_env("AXON_PATH") do
       [path: path]
     else
-      []
+      [github: "elixir-nx/axon"]
     end
   end
 

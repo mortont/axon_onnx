@@ -1311,7 +1311,14 @@ defmodule AxonOnnx.Deserialize do
           {updated_axon, used_params}
 
         {%Axon{} = condition, %Axon{} = x, %Axon{} = y} ->
-          fun = fn x, y, z, _opts -> Nx.select(x, y, z) end
+          fun = fn x, y, z, _opts ->
+            # TODO: Nx's shape rules should handle this like a binary broadcast
+            # between all operands
+            x = Nx.multiply(x, Nx.broadcast(1, y))
+            y = Nx.multiply(y, Nx.broadcast(1, x))
+            z = Nx.multiply(z, Nx.broadcast(1, y))
+            Nx.select(x, y, z)
+          end
           layer = Axon.layer(fun, [condition, x, y], name: output_name)
           updated_axon = Map.put(axon, output_name, layer)
           {updated_axon, used_params}
