@@ -108,19 +108,23 @@ defmodule AxonOnnx.Deserialize do
            %Node{op_type: unquote(op), input: [input], output: [output_name]},
            {axon, params, used_params}
          ) do
-      axon_input = axon!(input, axon)
+      input_value = input!(input, axon, params)
 
-      axon_output =
-        case axon_input do
+      output =
+        case input_value do
           %Axon{op: :constant, opts: [value: value]} ->
             new_value = apply(unquote(fun), [value])
             Axon.constant(new_value, name: output_name)
 
           %Axon{} = axon_input ->
             Axon.nx(axon_input, unquote(fun), name: output_name)
+
+          %Nx.Tensor{} = tensor_input ->
+            value = apply(unquote(fun), [tensor_input])
+            Axon.constant(value, name: output_name)
         end
 
-      updated_axon = Map.put(axon, output_name, axon_output)
+      updated_axon = Map.put(axon, output_name, output)
       {updated_axon, params, used_params}
     end
   end
