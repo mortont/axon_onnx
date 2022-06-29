@@ -31,7 +31,8 @@ defmodule OnnxTestHelper do
       test_path = Path.join([cache_dir, "test_data_set_#{n}"])
       File.mkdir_p!(test_path)
 
-      inp = Map.new(input_shape, fn {k, v} ->
+      inp =
+        Map.new(input_shape, fn {k, v} ->
           {k, Nx.random_uniform(v, type: {:f, 32})}
         end)
 
@@ -42,6 +43,7 @@ defmodule OnnxTestHelper do
       |> Enum.with_index(fn inp, i ->
         nx_to_tensor_proto(inp, Path.join([test_path, "input_#{i}.pb"]))
       end)
+
       nx_to_tensor_proto(out, Path.join([test_path, "output_0.pb"]))
     end)
 

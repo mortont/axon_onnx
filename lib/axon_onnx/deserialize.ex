@@ -1319,6 +1319,7 @@ defmodule AxonOnnx.Deserialize do
             z = Nx.multiply(z, Nx.broadcast(1, y))
             Nx.select(x, y, z)
           end
+
           layer = Axon.layer(fun, [condition, x, y], name: output_name)
           updated_axon = Map.put(axon, output_name, layer)
           {updated_axon, used_params}
