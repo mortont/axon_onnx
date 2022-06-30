@@ -2,6 +2,10 @@ defmodule DeserializeTest do
   use ExUnit.Case
   import OnnxTestHelper
 
+  setup do
+    Nx.Defn.default_options(compiler: EXLA)
+  end
+
   describe "node tests" do
     test "Abs" do
       check_onnx_test_case!("node", "test_abs")
@@ -1176,15 +1180,16 @@ defmodule DeserializeTest do
   end
 
   describe "real tests" do
+    @describetag :real
+
     # test "bvlc alexnet" do
     #   Nx.Defn.default_options(compiler: EXLA)
     #   check_onnx_model!("bvlc_alexnet")
     # end
 
-    # test "densenet121" do
-    #   Nx.Defn.default_options(compiler: EXLA)
-    #   check_onnx_model!("densenet121")
-    # end
+    test "densenet121" do
+      check_onnx_model!("densenet121")
+    end
 
     # test "inception_v1" do
     #   Nx.Defn.default_options(compiler: EXLA)
@@ -1196,30 +1201,41 @@ defmodule DeserializeTest do
     #   check_onnx_model!("inception_v2")
     # end
 
-    # test "resnet50" do
-    #   Nx.Defn.default_options(compiler: EXLA)
-    #   check_onnx_model!("resnet50")
-    # end
+    test "resnet50" do
+      check_onnx_model!("resnet50")
+    end
 
-    # test "shufflenet" do
-    #   Nx.Defn.default_options(compiler: EXLA)
-    #   check_onnx_model!("shufflenet")
-    # end
+    test "shufflenet" do
+      check_onnx_model!("shufflenet")
+    end
 
     # test "squeezenet" do
     #   Nx.Defn.default_options(compiler: EXLA)
     #   check_onnx_model!("squeezenet")
     # end
 
-    # test "vgg19" do
-    #   Nx.Defn.default_options(compiler: EXLA)
-    #   check_onnx_model!("vgg19")
-    # end
+    @tag timeout: 120_000
+    test "vgg19" do
+      check_onnx_model!("vgg19")
+    end
 
     # test "zfnet512" do
     #   Nx.Defn.default_options(compiler: EXLA)
     #   check_onnx_model!("zfnet512")
     # end
+  end
+
+  describe "torchvision tests" do
+    @describetag :torchvision
+
+    test "alexnet" do
+      check_onnx_test_case!("torchvision", "alexnet", compiler: EXLA)
+    end
+
+    @tag timeout: 120_000
+    test "vgg11" do
+      check_onnx_test_case!("torchvision", "vgg11", compiler: EXLA)
+    end
   end
 
   describe "transformer tests" do

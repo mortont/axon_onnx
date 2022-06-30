@@ -73,12 +73,14 @@ defmodule OnnxTestHelper do
   @doc """
   Tests model agains given ONNX test case.
   """
-  def check_onnx_test_case!(type, test_name) do
+  def check_onnx_test_case!(type, test_name, opts \\ []) do
     test_path = Path.join(["test", "cases", type, test_name])
     model_path = Path.join([test_path, "model.onnx"])
     data_paths = Path.wildcard(Path.join([test_path, "test_data_set_*"]))
 
     {model, params} = AxonOnnx.import(model_path)
+
+    {inputs, _} = Axon.get_model_signature(model)
 
     data_paths
     |> Enum.map(fn data_path ->
@@ -87,24 +89,20 @@ defmodule OnnxTestHelper do
 
       inp_tensors =
         input_paths
-        |> Enum.map_reduce(0, &pb_to_tensor/2)
-        |> elem(0)
-        |> Map.new()
+        |> Enum.map(&pb_to_tensor/1)
+        |> Enum.zip(Map.keys(inputs))
+        |> Map.new(fn {v, k} -> {k, v} end)
 
-      out_tensors =
-        Enum.map(output_paths, fn x ->
-          {{_, tensor}, _} = pb_to_tensor(x, 0)
-          tensor
-        end)
+      out_tensors = Enum.map(output_paths, &pb_to_tensor/1)
 
-      actual_outputs = Axon.predict(model, params, inp_tensors)
+      actual_outputs = Axon.predict(model, params, inp_tensors, opts)
 
       case out_tensors do
         [expected_output] ->
-          assert_all_close!(expected_output, actual_outputs)
+          assert_all_close!(actual_outputs, expected_output)
 
         [_ | _] = expected_outputs ->
-          Enum.zip_with(expected_outputs, Tuple.to_list(actual_outputs), &assert_all_close!/2)
+          Enum.zip_with(Tuple.to_list(actual_outputs), expected_outputs, &assert_all_close!/2)
       end
     end)
   end
@@ -167,7 +165,10 @@ defmodule OnnxTestHelper do
   end
 
   defp assert_all_close!(x, y) do
-    unless Nx.all_close(x, y, atol: 1.0e-3) == Nx.tensor(1, type: {:u, 8}) do
+    # Normalize outputs
+    res = Nx.all_close(x, y, atol: 1.0e-3) |> Nx.to_number()
+
+    unless res == 1 do
       raise "expected #{inspect(x)} to be within tolerance of #{inspect(y)}"
     end
 
@@ -175,74 +176,66 @@ defmodule OnnxTestHelper do
   end
 
   # Parses the protobuf file into an Nx tensor.
-  def pb_to_tensor(pb_path, counter) do
+  def pb_to_tensor(pb_path) do
     pb_path
     |> File.read!()
     |> Onnx.TensorProto.decode!()
-    |> tensor!(counter)
-    |> then(&{&1, counter + 1})
+    |> tensor!()
   end
 
-  defp tensor!(%Onnx.TensorProto{data_type: dtype, dims: dims, name: name} = tensor, counter) do
+  defp tensor!(%Onnx.TensorProto{data_type: dtype, dims: dims} = tensor) do
     shape = List.to_tuple(dims)
 
-    nx_tensor =
-      case dtype do
-        1 ->
-          to_nx_tensor(tensor.float_data, tensor.raw_data, {:f, 32}, shape)
+    case dtype do
+      1 ->
+        to_nx_tensor(tensor.float_data, tensor.raw_data, {:f, 32}, shape)
 
-        2 ->
-          to_nx_tensor(tensor.int32_data, tensor.raw_data, {:u, 8}, shape)
+      2 ->
+        to_nx_tensor(tensor.int32_data, tensor.raw_data, {:u, 8}, shape)
 
-        3 ->
-          to_nx_tensor(tensor.int32_data, tensor.raw_data, {:s, 8}, shape)
+      3 ->
+        to_nx_tensor(tensor.int32_data, tensor.raw_data, {:s, 8}, shape)
 
-        4 ->
-          to_nx_tensor(tensor.int32_data, tensor.raw_data, {:u, 16}, shape)
+      4 ->
+        to_nx_tensor(tensor.int32_data, tensor.raw_data, {:u, 16}, shape)
 
-        5 ->
-          to_nx_tensor(tensor.int32_data, tensor.raw_data, {:s, 16}, shape)
+      5 ->
+        to_nx_tensor(tensor.int32_data, tensor.raw_data, {:s, 16}, shape)
 
-        6 ->
-          to_nx_tensor(tensor.int32_data, tensor.raw_data, {:s, 32}, shape)
+      6 ->
+        to_nx_tensor(tensor.int32_data, tensor.raw_data, {:s, 32}, shape)
 
-        7 ->
-          to_nx_tensor(tensor.int64_data, tensor.raw_data, {:s, 64}, shape)
+      7 ->
+        to_nx_tensor(tensor.int64_data, tensor.raw_data, {:s, 64}, shape)
 
-        8 ->
-          raise "unsupported Nx tensor type: string"
+      8 ->
+        raise "unsupported Nx tensor type: string"
 
-        9 ->
-          to_nx_tensor(tensor.int32_data, tensor.raw_data, {:u, 8}, shape)
+      9 ->
+        to_nx_tensor(tensor.int32_data, tensor.raw_data, {:u, 8}, shape)
 
-        10 ->
-          to_nx_tensor(tensor.int32_data, tensor.raw_data, {:f, 16}, shape)
+      10 ->
+        to_nx_tensor(tensor.int32_data, tensor.raw_data, {:f, 16}, shape)
 
-        11 ->
-          to_nx_tensor(tensor.double_data, tensor.raw_data, {:f, 64}, shape)
+      11 ->
+        to_nx_tensor(tensor.double_data, tensor.raw_data, {:f, 64}, shape)
 
-        12 ->
-          to_nx_tensor(tensor.uint64_data, tensor.raw_data, {:u, 32}, shape)
+      12 ->
+        to_nx_tensor(tensor.uint64_data, tensor.raw_data, {:u, 32}, shape)
 
-        13 ->
-          to_nx_tensor(tensor.uint64_data, tensor.raw_data, {:u, 64}, shape)
+      13 ->
+        to_nx_tensor(tensor.uint64_data, tensor.raw_data, {:u, 64}, shape)
 
-        14 ->
-          # TODO(seanmor5): When complex is supported, tensor.float_data
-          raise "unsupported Nx tensor type: C64"
+      14 ->
+        # TODO(seanmor5): When complex is supported, tensor.float_data
+        raise "unsupported Nx tensor type: C64"
 
-        15 ->
-          # TODO(seanmor5): When complex is supported, tensor.double_data
-          raise "unsupported Nx tensor type: C128"
+      15 ->
+        # TODO(seanmor5): When complex is supported, tensor.double_data
+        raise "unsupported Nx tensor type: C128"
 
-        16 ->
-          to_nx_tensor([], tensor.raw_data, {:bf, 16}, shape)
-      end
-
-    if name == "" do
-      {Integer.to_string(counter), nx_tensor}
-    else
-      {name, nx_tensor}
+      16 ->
+        to_nx_tensor([], tensor.raw_data, {:bf, 16}, shape)
     end
   end
 

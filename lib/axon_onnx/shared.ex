@@ -210,7 +210,7 @@ defmodule AxonOnnx.Shared do
   end
 
   defp clamp_to_range(val, min, max) do
-    min(max(min, val), max)
+    floor(min(max(min, val), max))
   end
 
   # Conversion helpers
