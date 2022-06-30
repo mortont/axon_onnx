@@ -753,13 +753,14 @@ defmodule AxonOnnx.Deserialize do
 
     inp = input!(inp_name, axon, params, used_params)
     kernel = input!(kernel_name, axon, params, used_params)
-    {bias, bias_name} =
+
+    bias =
       case maybe_bias do
         [] ->
-          {nil, nil}
+          nil
 
         [bias_name] ->
-          {input!(bias_name, axon, params, used_params), bias_name}
+          input!(bias_name, axon, params, used_params)
       end
 
     inp_shape = get_shape(inp)
@@ -814,7 +815,10 @@ defmodule AxonOnnx.Deserialize do
             )
 
           updated_axon = Map.put(axon, output_name, out_layer)
-          updated_params = Map.put(used_params, output_name, %{"kernel" => kernel, "bias" => bias})
+
+          updated_params =
+            Map.put(used_params, output_name, %{"kernel" => kernel, "bias" => bias})
+
           {updated_axon, updated_params}
       end
 
@@ -936,8 +940,11 @@ defmodule AxonOnnx.Deserialize do
     split_layers = Axon.split(inp, split_sizes, axis: axis, name: output_names)
 
     updated_axon =
-      Enum.reduce(Tuple.to_list(split_layers), axon, fn output, new_axon ->
-        Map.put(new_axon, output.name, output)
+      split_layers
+      |> Tuple.to_list()
+      |> Enum.zip(output_names)
+      |> Enum.reduce(axon, fn {output, name}, new_axon ->
+        Map.put(new_axon, name, output)
       end)
 
     {updated_axon, params, used_params}
@@ -1552,13 +1559,17 @@ defmodule AxonOnnx.Deserialize do
   end
 
   defp recur_nodes(
-         %Node{op_type: "Squeeze", input: [data], output: [output_name]},
+         %Node{op_type: "Squeeze", attribute: attrs, input: [data], output: [output_name]},
          {axon, params, used_params}
        ) do
-    inp = input!(data, axon, params)
+    inp = input!(data, axon, params, used_params)
+    squeeze_options = options!(attrs)
+
+    inp = input!(data, axon, params, used_params)
+    axes = squeeze_options["axes"]
 
     fun = fn x, _opts ->
-      axes = Nx.axes(x)
+      axes = axes || Nx.axes(x)
       Nx.squeeze(x, axes: axes)
     end
 
@@ -1821,9 +1832,40 @@ defmodule AxonOnnx.Deserialize do
         [mask_name] ->
           shape = get_shape(inp)
           mask_layer = Axon.constant(Nx.broadcast(0, shape))
+
           axon
           |> Map.put(output_name, dropout_layer)
-          |> Map.put(output_name, dropout_layer)
+          |> Map.put(mask_name, mask_layer)
+      end
+
+    {updated_axon, params, used_params}
+  end
+
+  defp recur_nodes(
+         %Node{op_type: "Pad", input: [inp_name], attribute: attrs, output: [output_name]},
+         {axon, params, used_params}
+       ) do
+    pad_options = options!(attrs)
+
+    inp = input!(inp_name, axon, params, used_params)
+    ratio = input!(ratio_name, axon, params, used_params)
+
+    mode = pad_options["mode"] || "constant"
+    value = pad_options["value"] || 0.0
+    pads = pad_options["pads"]
+
+    updated_axon =
+      case mode do
+        "constant" ->
+          config =
+            pads
+            |> Enum.count()
+            |> then(&Enum.chunk_every(pads, div(&1, 2)))
+            |> Enum.zip()
+            |> Enum.map(fn {x, y} -> {x, y, 0} end)
+
+          pad_layer = Axon.nx(inp, &Nx.pad(&1, value, config))
+          Map.put(axon, output_name, pad_layer)
       end
 
     {updated_axon, params, used_params}
@@ -1831,37 +1873,44 @@ defmodule AxonOnnx.Deserialize do
 
   defp recur_nodes(
          %Node{
-           op_type: "Dropout",
-           input: [inp_name, ratio_name],
+           op_type: "Pad",
+           input: [inp_name, pad_name | maybe_constant],
            attribute: attrs,
-           output: [output_name | maybe_mask]
+           output: [output_name]
          },
          {axon, params, used_params}
        ) do
-    dropout_options = options!(attrs)
+    pad_options = options!(attrs)
 
-    inp = input!(inp_name, axon, params, used_params)
-    ratio = input!(ratio_name, axon, params, used_params)
-
-    {axon, params, used_params}
-  end
-
-  defp recur_nodes(
-         %Node{
-           op_type: "Dropout",
-           input: [inp_name, ratio_name, training_mode_name],
-           attribute: attrs,
-           output: [output_name | maybe_mask]
-         },
-         {axon, params, used_params}
-       ) do
-    dropout_options = options!(attrs)
-
-    inp = input!(inp_name, axon, params, used_params)
     ratio = input!(ratio_name, axon, params, used_params)
     training_mode = input!(training_mode_name, axon, params, used_params)
+    pads = constant!(pad_name, axon, params) |> Nx.to_flat_list()
 
-    {axon, params, used_params}
+    mode = pad_options["mode"] || "constant"
+
+    updated_axon =
+      case mode do
+        "constant" ->
+          value =
+            case maybe_constant do
+              [] ->
+                0
+
+              [value_name] ->
+                constant!(value_name, axon, params) |> Nx.to_number()
+            end
+
+          config =
+            pads
+            |> Enum.count()
+            |> then(&Enum.chunk_every(pads, div(&1, 2)))
+            |> Enum.zip()
+
+          pad_layer = Axon.nx(inp, &Nx.pad(&1, value, config))
+          Map.put(axon, output_name, pad_layer)
+      end
+
+    {updated_axon, params, used_params}
   end
 
   defp recur_nodes(%Node{op_type: unsupported}, _) do

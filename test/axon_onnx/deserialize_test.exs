@@ -1,10 +1,6 @@
 defmodule DeserializeTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: false
   import OnnxTestHelper
-
-  setup do
-    Nx.Defn.default_options(compiler: EXLA)
-  end
 
   describe "node tests" do
     test "Abs" do
@@ -845,52 +841,52 @@ defmodule DeserializeTest do
   end
 
   describe "pytorch converted tests" do
-    # test "AvgPool" do
-    #   check_onnx_test_case!("pytorch-converted", "test_AvgPool1d")
-    #   check_onnx_test_case!("pytorch-converted", "test_AvgPool1d_stride")
-    #   check_onnx_test_case!("pytorch-converted", "test_AvgPool2d")
-    #   check_onnx_test_case!("pytorch-converted", "test_AvgPool2d_stride")
-    #   check_onnx_test_case!("pytorch-converted", "test_AvgPool3d")
-    #   check_onnx_test_case!("pytorch-converted", "test_AvgPool3d_stride")
-    #   check_onnx_test_case!("pytorch-converted", "test_AvgPool3d_strid1_pad0_gpu_input")
-    # end
+    test "AvgPool" do
+      check_onnx_test_case!("pytorch-converted", "test_AvgPool1d")
+      check_onnx_test_case!("pytorch-converted", "test_AvgPool1d_stride")
+      check_onnx_test_case!("pytorch-converted", "test_AvgPool2d")
+      check_onnx_test_case!("pytorch-converted", "test_AvgPool2d_stride")
+      check_onnx_test_case!("pytorch-converted", "test_AvgPool3d")
+      check_onnx_test_case!("pytorch-converted", "test_AvgPool3d_stride")
+      check_onnx_test_case!("pytorch-converted", "test_AvgPool3d_stride1_pad0_gpu_input")
+    end
 
     test "BatchNorm" do
       check_onnx_test_case!("pytorch-converted", "test_BatchNorm1d_3d_input_eval")
       check_onnx_test_case!("pytorch-converted", "test_BatchNorm2d_eval")
-      # check_onnx_test_case!("pytorch-converted", "test_BatchNorm2d_momentum_eval")
+      check_onnx_test_case!("pytorch-converted", "test_BatchNorm2d_momentum_eval")
       check_onnx_test_case!("pytorch-converted", "test_BatchNorm3d_eval")
       check_onnx_test_case!("pytorch-converted", "test_BatchNorm3d_momentum_eval")
     end
 
-    # test "ConstantPad2d" do
-    #   check_onnx_test_case!("pytorch-converted", "test_ConstantPad2d")
-    # end
+    test "ConstantPad2d" do
+      check_onnx_test_case!("pytorch-converted", "test_ConstantPad2d")
+    end
 
     test "Conv" do
       check_onnx_test_case!("pytorch-converted", "test_Conv1d")
       check_onnx_test_case!("pytorch-converted", "test_Conv1d_dilated")
-      # check_onnx_test_case!("pytorch-converted", "test_Conv1d_groups")
+      check_onnx_test_case!("pytorch-converted", "test_Conv1d_groups")
       check_onnx_test_case!("pytorch-converted", "test_Conv1d_pad1")
       check_onnx_test_case!("pytorch-converted", "test_Conv1d_pad1size1")
       check_onnx_test_case!("pytorch-converted", "test_Conv1d_pad2")
       check_onnx_test_case!("pytorch-converted", "test_Conv1d_pad2size1")
       check_onnx_test_case!("pytorch-converted", "test_Conv1d_stride")
       check_onnx_test_case!("pytorch-converted", "test_Conv2d")
-      # check_onnx_test_case!("pytorch-converted", "test_Conv2d_depthwise")
-      # check_onnx_test_case!("pytorch-converted", "test_Conv2d_depthwise_padding")
-      # check_onnx_test_case!("pytorch-converted", "test_Conv2d_depthwise_stride")
-      # check_onnx_test_case!("pytorch-converted", "test_Conv2d_depthwise_with_multiplier")
+      check_onnx_test_case!("pytorch-converted", "test_Conv2d_depthwise")
+      check_onnx_test_case!("pytorch-converted", "test_Conv2d_depthwise_padded")
+      check_onnx_test_case!("pytorch-converted", "test_Conv2d_depthwise_strided")
+      check_onnx_test_case!("pytorch-converted", "test_Conv2d_depthwise_with_multiplier")
       check_onnx_test_case!("pytorch-converted", "test_Conv2d_dilated")
-      # check_onnx_test_case!("pytorch-converted", "test_Conv2d_groups")
-      # check_onnx_test_case!("pytorch-converted", "test_Conv2d_groups_thnn")
+      check_onnx_test_case!("pytorch-converted", "test_Conv2d_groups")
+      check_onnx_test_case!("pytorch-converted", "test_Conv2d_groups_thnn")
       check_onnx_test_case!("pytorch-converted", "test_Conv2d_no_bias")
       check_onnx_test_case!("pytorch-converted", "test_Conv2d_padding")
       check_onnx_test_case!("pytorch-converted", "test_Conv2d_strided")
       check_onnx_test_case!("pytorch-converted", "test_Conv3d")
       check_onnx_test_case!("pytorch-converted", "test_Conv3d_dilated")
       check_onnx_test_case!("pytorch-converted", "test_Conv3d_dilated_strided")
-      # check_onnx_test_case!("pytorch-converted", "test_Conv3d_groups")
+      check_onnx_test_case!("pytorch-converted", "test_Conv3d_groups")
       check_onnx_test_case!("pytorch-converted", "test_Conv3d_no_bias")
       check_onnx_test_case!("pytorch-converted", "test_Conv3d_stride")
       check_onnx_test_case!("pytorch-converted", "test_Conv3d_stride_padding")
@@ -920,10 +916,10 @@ defmodule DeserializeTest do
       check_onnx_test_case!("pytorch-converted", "test_LeakyReLU_with_negval")
     end
 
-    # test "Linear" do
-    #   check_onnx_test_case!("pytorch-converted", "test_Linear")
-    #   check_onnx_test_case!("pytorch-converted", "test_Linear_no_bias")
-    # end
+    test "Linear" do
+      check_onnx_test_case!("pytorch-converted", "test_Linear")
+      # check_onnx_test_case!("pytorch-converted", "test_Linear_no_bias")
+    end
 
     test "LogSoftmax" do
       check_onnx_test_case!("pytorch-converted", "test_log_softmax_lastdim")
@@ -934,12 +930,11 @@ defmodule DeserializeTest do
     test "MaxPool" do
       check_onnx_test_case!("pytorch-converted", "test_MaxPool1d")
       check_onnx_test_case!("pytorch-converted", "test_MaxPool1d_stride")
-      # check_onnx_test_case!("pytorch-converted", "test_MaxPool1d_stride_padding_dilation")
+      check_onnx_test_case!("pytorch-converted", "test_MaxPool1d_stride_padding_dilation")
       check_onnx_test_case!("pytorch-converted", "test_MaxPool2d")
-      # check_onnx_test_case!("pytorch-converted", "test_MaxPool2d_stride_padding_dilation")
+      check_onnx_test_case!("pytorch-converted", "test_MaxPool2d_stride_padding_dilation")
       check_onnx_test_case!("pytorch-converted", "test_MaxPool3d")
       check_onnx_test_case!("pytorch-converted", "test_MaxPool3d_stride")
-      # check_onnx_test_case!("pytorch-converted", "test_MaxPool3d_stride_padding_dilation")
     end
 
     # test "PReLU" do
@@ -1001,9 +996,9 @@ defmodule DeserializeTest do
       check_onnx_test_case!("pytorch-converted", "test_Tanh")
     end
 
-    # test "ZeroPad2d" do
-    #   check_onnx_test_case!("pytorch-converted", "test_ZeroPad2d")
-    # end
+    test "ZeroPad2d" do
+      check_onnx_test_case!("pytorch-converted", "test_ZeroPad2d")
+    end
   end
 
   describe "pytorch operator tests" do
@@ -1232,9 +1227,204 @@ defmodule DeserializeTest do
       check_onnx_test_case!("torchvision", "alexnet", compiler: EXLA)
     end
 
+    test "convnext_tiny" do
+      check_onnx_test_case!("torchvision", "convnext_tiny", compiler: EXLA)
+    end
+
+    test "convnext_small" do
+      check_onnx_test_case!("torchvision", "convnext_small", compiler: EXLA)
+    end
+
+    test "convnext_base" do
+      check_onnx_test_case!("torchvision", "convnext_base", compiler: EXLA)
+    end
+
+    test "convnext_large" do
+      check_onnx_test_case!("torchvision", "convnext_large", compiler: EXLA)
+    end
+
+    test "efficientnet_b0" do
+      check_onnx_test_case!("torchvision", "efficientnet_b0", compiler: EXLA)
+    end
+
+    test "efficientnet_b1" do
+      check_onnx_test_case!("torchvision", "efficientnet_b1", compiler: EXLA)
+    end
+
+    test "efficientnet_b2" do
+      check_onnx_test_case!("torchvision", "efficientnet_b2", compiler: EXLA)
+    end
+
+    test "efficientnet_b3" do
+      check_onnx_test_case!("torchvision", "efficientnet_b3", compiler: EXLA)
+    end
+
+    test "efficientnet_b4" do
+      check_onnx_test_case!("torchvision", "efficientnet_b4", compiler: EXLA)
+    end
+
+    test "efficientnet_b5" do
+      check_onnx_test_case!("torchvision", "efficientnet_b5", compiler: EXLA)
+    end
+
+    test "efficientnet_b6" do
+      check_onnx_test_case!("torchvision", "efficientnet_b6", compiler: EXLA)
+    end
+
+    test "efficientnet_b7" do
+      check_onnx_test_case!("torchvision", "efficientnet_b7", compiler: EXLA)
+    end
+
+    test "efficientnet_v2_s" do
+      check_onnx_test_case!("torchvision", "efficientnet_v2_s", compiler: EXLA)
+    end
+
+    test "efficientnet_v2_m" do
+      check_onnx_test_case!("torchvision", "efficientnet_v2_s", compiler: EXLA)
+    end
+
+    test "efficientnet_v2_l" do
+      check_onnx_test_case!("torchvision", "efficientnet_v2_s", compiler: EXLA)
+    end
+
     @tag timeout: 120_000
     test "vgg11" do
       check_onnx_test_case!("torchvision", "vgg11", compiler: EXLA)
+    end
+
+    @tag timeout: 120_000
+    test "vgg11_bn" do
+      check_onnx_test_case!("torchvision", "vgg11_bn", compiler: EXLA)
+    end
+
+    @tag timeout: 120_000
+    test "vgg13" do
+      check_onnx_test_case!("torchvision", "vgg13", compiler: EXLA)
+    end
+
+    @tag timeout: 120_000
+    test "vgg13_bn" do
+      check_onnx_test_case!("torchvision", "vgg13_bn", compiler: EXLA)
+    end
+
+    @tag timeout: 120_000
+    test "vgg16" do
+      check_onnx_test_case!("torchvision", "vgg16", compiler: EXLA)
+    end
+
+    @tag timeout: 120_000
+    test "vgg16_bn" do
+      check_onnx_test_case!("torchvision", "vgg16_bn", compiler: EXLA)
+    end
+
+    @tag timeout: 120_000
+    test "vgg19" do
+      check_onnx_test_case!("torchvision", "vgg19", compiler: EXLA)
+    end
+
+    @tag timeout: 120_000
+    test "vgg19_bn" do
+      check_onnx_test_case!("torchvision", "vgg19_bn", compiler: EXLA)
+    end
+
+    test "resnet18" do
+      check_onnx_test_case!("torchvision", "resnet18", compiler: EXLA)
+    end
+
+    test "resnet34" do
+      check_onnx_test_case!("torchvision", "resnet34", compiler: EXLA)
+    end
+
+    test "resnet50" do
+      check_onnx_test_case!("torchvision", "resnet50", compiler: EXLA)
+    end
+
+    test "resnet101" do
+      check_onnx_test_case!("torchvision", "resnet101", compiler: EXLA)
+    end
+
+    test "resnet152" do
+      check_onnx_test_case!("torchvision", "resnet152", compiler: EXLA)
+    end
+
+    test "squeezenet1_0" do
+      check_onnx_test_case!("torchvision", "squeezenet1_0", compiler: EXLA)
+    end
+
+    test "squeezenet1_1" do
+      check_onnx_test_case!("torchvision", "squeezenet1_1", compiler: EXLA)
+    end
+
+    test "densenet121" do
+      check_onnx_test_case!("torchvision", "densenet121", compiler: EXLA)
+    end
+
+    test "densenet161" do
+      check_onnx_test_case!("torchvision", "densenet121", compiler: EXLA)
+    end
+
+    test "densenet169" do
+      check_onnx_test_case!("torchvision", "densenet121", compiler: EXLA)
+    end
+
+    test "densenet201" do
+      check_onnx_test_case!("torchvision", "densenet121", compiler: EXLA)
+    end
+
+    test "inception_v3" do
+      check_onnx_test_case!("torchvision", "inception_v3", compiler: EXLA)
+    end
+
+    test "googlenet" do
+      check_onnx_test_case!("torchvision", "googlenet", compiler: EXLA)
+    end
+
+    test "shufflenet_v2_x0_5" do
+      check_onnx_test_case!("torchvision", "shufflenet_v2_x0_5", compiler: EXLA)
+    end
+
+    test "shufflenet_v2_x1_0" do
+      check_onnx_test_case!("torchvision", "shufflenet_v2_x1_0", compiler: EXLA)
+    end
+
+    test "mobilenet_v2" do
+      check_onnx_test_case!("torchvision", "mobilenet_v2", compiler: EXLA)
+    end
+
+    test "mobilenet_v3_small" do
+      check_onnx_test_case!("torchvision", "mobilenet_v3_small", compiler: EXLA)
+    end
+
+    # test "mobilenet_v3_large" do
+    #   check_onnx_test_case!("torchvision", "mobilenet_v3_large", compiler: EXLA)
+    # end
+
+    test "resnext50_32x4d" do
+      check_onnx_test_case!("torchvision", "resnext50_32x4d", compiler: EXLA)
+    end
+
+    test "resnext101_32x8d" do
+      check_onnx_test_case!("torchvision", "resnext101_32x8d", compiler: EXLA)
+    end
+
+    test "wide_resnet50_2" do
+      check_onnx_test_case!("torchvision", "wide_resnet50_2", compiler: EXLA)
+    end
+
+    test "wide_resnet101_2" do
+      check_onnx_test_case!("torchvision", "wide_resnet101_2", compiler: EXLA)
+    end
+
+    test "mnasnet0_5" do
+      check_onnx_test_case!("torchvision", "mnasnet0_5", compiler: EXLA)
+    end
+
+    test "mnasnet1_0" do
+      check_onnx_test_case!("torchvision", "mnasnet1_0", compiler: EXLA)
+    end
+
+    test "vit_b_16" do
+      check_onnx_test_case!("torchvision", "vit_b_16", compiler: EXLA)
     end
   end
 
