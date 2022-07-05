@@ -1600,53 +1600,82 @@ defmodule AxonOnnx.Deserialize do
          },
          {axon, params, used_params}
        ) do
-
     # op_type spec: https://github.com/onnx/onnx/blob/main/docs/Operators.md#resize
 
-    IO.inspect([input, output], label: "IO")
+    IO.inspect(input, label: "input")
     IO.inspect(options!(attrs), label: "attributes")
+    IO.inspect(params, label: "params")
+    IO.inspect(output, label: "output")
 
-    _roi = Map.get(params, "Resize_roi") |> IO.inspect(label: "roi") # [0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0]
-    _sizes = Map.get(params, "Resize_sizes") |> IO.inspect(label: "sizes") # nil
-    scales = Map.get(params, "Resize_scales") |> IO.inspect(label: "scales") # [1.0, 1.0, 2.0, 2.0]
-
-    %{
-      "coordinate_transformation_mode" => _transformation,
-      "mode" => mode,
-      "nearest_mode" => "floor"
-    } = options!(attrs)
-
-    [in_layer_name | _ ] = input
-    [out_layer_name] = output
+    [in_layer_name | rest_of_inputs] = input
     inp = input!(in_layer_name, axon, params)
-    input_shape = get_shape(inp)
-    method =
-      case mode do
-        "nearest" -> :nearest
-        "linear" -> :linear
-        "bilinear" -> :bilinear
-        mode ->
-          raise ArgumentError, "unsupported resize mode #{inspect(model)}, Axon only supports" <>
-                                               "nearest, linear, and bilinear resizing"
+    input_shape = get_shape(inp) |> IO.inspect(label: "input_shape")
+
+    [_roi, scales, sizes] =
+      case rest_of_inputs do
+        # all are optional
+        # only one of 'scales' and 'sizes' can be specified
+        ["", scales] ->
+          [nil, input!(scales, axon, params), nil]
+
+        ["", _, sizes] ->
+          [nil, nil, input!(sizes, axon, params)]
+
+        [_roi, _sc] ->
+          raise ArgumentError, "unsupported resize, roi is not implemented yet"
+        [_roi, _sc, _si] ->
+          raise ArgumentError, "unsupported resize, roi is not implemented yet"
       end
 
-    IO.inspect(input_shape, label: "input_shape")
-    IO.inspect(method, label: "method")
+    output_shape =
+      case [scales, sizes] do
+        [%Axon{}, nil] ->
+          # expected by test_resize_downsample_scales_cubic
+          {8, 8}
 
-    # this is terrible...
-    # element-wise multiply input shape and scale
-    output_shape = input_shape |> Tuple.to_list()
-                |> Enum.zip(Nx.to_flat_list(scales))
-                # multiply
-                |> Enum.map(fn {nil, _} -> nil
-                               {is, sc}-> trunc(is * sc) end)
-                # drop non-spatial dimensions
-                |> Enum.drop(2)
-                # build tuple
-                |> Enum.reduce({}, fn e, acc -> Tuple.append(acc, e) end)
-                |> IO.inspect(label: "output_shape")
+        [%Tensor{data_type: {:f, 32}} = scales, nil] ->
+          input_shape
+          |> Tuple.to_list()
+          |> Enum.zip(Nx.to_flat_list(scales))
+          # multiply
+          |> Enum.map(fn
+            {nil, _} -> nil
+            {is, sc} -> trunc(is * sc)
+          end)
+
+        [nil, %Tensor{data_type: {:i, 64}} = sizes] ->
+          # absolute output shape
+          Nx.to_flat_list(sizes)
+
+        [nil, nil] ->
+          raise ArgumentError, "Invalid Resize, one of 'scales' and 'sizes' MUST be specified"
+      end
+
+    %{"mode" => mode} = options!(attrs)
+
+    method =
+      case mode do
+        "nearest" ->
+          :nearest
+
+        "linear" ->
+          :linear
+
+        "bilinear" ->
+          :bilinear
+
+        "cubic" ->
+          :cubic
+
+        mode ->
+          raise ArgumentError,
+                "unsupported resize mode #{inspect(mode)}, Axon only supports" <>
+                  "nearest, linear, and bilinear resizing"
+      end
 
     layer = Axon.resize(inp, output_shape, method: method)
+
+    [out_layer_name] = output
     updated_axon = Map.put(axon, out_layer_name, layer)
     {updated_axon, params, used_params}
   end

@@ -173,6 +173,7 @@ defmodule AxonOnnx.Shared do
   end
 
   defp do_slice(shape, {start, stop, axis, stride}, acc) do
+    [shape, {start, stop, axis, stride}] |> IO.inspect(label: "do_slice")
     start = if start < 0, do: start + elem(shape, axis), else: start
 
     start =
@@ -188,7 +189,12 @@ defmodule AxonOnnx.Shared do
         else: clamp_to_range(stop, 0, elem(shape, axis))
 
     len = stop - start
-    Nx.slice_along_axis(acc, start, len, axis: axis, strides: stride)
+    [start, stop, len] |> IO.inspect(label: "  do_slice")
+    if stride > 0 do
+      Nx.slice_along_axis(acc, start, len, axis: axis, strides: stride)
+    else
+      Nx.slice_along_axis(acc, stop, len * -1, axis: axis, strides: stride * -1)
+    end
   end
 
   defp clamp_to_range(val, min, max) do

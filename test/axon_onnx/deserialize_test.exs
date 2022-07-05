@@ -674,29 +674,29 @@ defmodule DeserializeTest do
     # check_onnx_test_case!("node", "test_reshape_zero_dim")
     # end
 
-    # test "Resize" do
-    #   check_onnx_test_case!("node", "test_resize_downsample_scales_cubic")
-    #   check_onnx_test_case!("node", "test_resize_downsample_scales_cubic_A_n0p5_exclude_outside")
-    #   check_onnx_test_case!("node", "test_resize_downsample_scales_cubic_align_corners")
-    #   check_onnx_test_case!("node", "test_resize_downsample_scales_linear")
-    #   check_onnx_test_case!("node", "test_resize_downsample_scales_linear_align_corners")
-    #   check_onnx_test_case!("node", "test_resize_downsample_scales_nearest")
-    #   check_onnx_test_case!("node", "test_resize_downsample_sizes_cubic")
-    #   check_onnx_test_case!("node", "test_resize_downsample_sizes_linear_pytorch_half_pixel")
-    #   check_onnx_test_case!("node", "test_resize_downsample_sizes_nearest")
-    #   check_onnx_test_case!("node", "test_resize_downsample_sizes_nearest_tf_half_pixel_for_nn")
-    #   check_onnx_test_case!("node", "test_resize_tf_crop_and_resize")
-    #   check_onnx_test_case!("node", "test_resize_upsample_scales_cubic")
-    #   check_onnx_test_case!("node", "test_resize_upsample_scales_cubic_A_n0p5_exclude_outside")
-    #   check_onnx_test_case!("node", "test_resize_upsample_scales_cubic_align_corners")
-    #   check_onnx_test_case!("node", "test_resize_upsample_scales_cubic_asymmetric")
-    #   check_onnx_test_case!("node", "test_resize_upsample_scales_linear")
-    #   check_onnx_test_case!("node", "test_resize_upsample_scales_linear_align_corners")
-    #   check_onnx_test_case!("node", "test_resize_upsample_scales_nearest")
-    #   check_onnx_test_case!("node", "test_resize_upsample_scales_nearest_ceil_half_pixel")
-    #   check_onnx_test_case!("node", "test_resize_upsample_scales_nearest_floor_align_corners")
-    #   check_onnx_test_case!("node", "test_resize_upsample_scales_nearest_round_prefer_ceil_asymmetric")
-    # end
+    test "Resize" do
+      check_onnx_test_case!("node", "test_resize_downsample_scales_cubic")
+      # check_onnx_test_case!("node", "test_resize_downsample_scales_cubic_A_n0p5_exclude_outside")
+      # check_onnx_test_case!("node", "test_resize_downsample_scales_cubic_align_corners")
+      # check_onnx_test_case!("node", "test_resize_downsample_scales_linear")
+      # check_onnx_test_case!("node", "test_resize_downsample_scales_linear_align_corners")
+      # check_onnx_test_case!("node", "test_resize_downsample_scales_nearest")
+      # check_onnx_test_case!("node", "test_resize_downsample_sizes_cubic")
+      # check_onnx_test_case!("node", "test_resize_downsample_sizes_linear_pytorch_half_pixel")
+      # check_onnx_test_case!("node", "test_resize_downsample_sizes_nearest")
+      # check_onnx_test_case!("node", "test_resize_downsample_sizes_nearest_tf_half_pixel_for_nn")
+      # check_onnx_test_case!("node", "test_resize_tf_crop_and_resize")
+      # check_onnx_test_case!("node", "test_resize_upsample_scales_cubic")
+      # check_onnx_test_case!("node", "test_resize_upsample_scales_cubic_A_n0p5_exclude_outside")
+      # check_onnx_test_case!("node", "test_resize_upsample_scales_cubic_align_corners")
+      # check_onnx_test_case!("node", "test_resize_upsample_scales_cubic_asymmetric")
+      # check_onnx_test_case!("node", "test_resize_upsample_scales_linear")
+      # check_onnx_test_case!("node", "test_resize_upsample_scales_linear_align_corners")
+      # check_onnx_test_case!("node", "test_resize_upsample_scales_nearest")
+      # check_onnx_test_case!("node", "test_resize_upsample_scales_nearest_ceil_half_pixel")
+      # check_onnx_test_case!("node", "test_resize_upsample_scales_nearest_floor_align_corners")
+      # check_onnx_test_case!("node", "test_resize_upsample_scales_nearest_round_prefer_ceil_asymmetric")
+    end
 
     # test "Round" do
     #   check_onnx_test_case!("node", "test_round")
@@ -1222,120 +1222,120 @@ defmodule DeserializeTest do
     # end
   end
 
-  describe "transformer tests" do
-    @describetag :transformers
-    @describetag timeout: :infinity, capture_log: true
+  # describe "transformer tests" do
+  #   @describetag :transformers
+  #   @describetag timeout: :infinity, capture_log: true
 
-    test "albert" do
-      check_onnx_transformer!("albert-base-v2")
-    end
+  #   test "albert" do
+  #     check_onnx_transformer!("albert-base-v2")
+  #   end
 
-    test "bart" do
-      check_onnx_transformer!("facebook/bart-base")
-    end
+  #   test "bart" do
+  #     check_onnx_transformer!("facebook/bart-base")
+  #   end
 
-    test "beit" do
-      # TODO: Conv/Concat both do not support nil dims, add support
-      # and update this test
-      check_onnx_transformer!("microsoft/beit-base-patch16-224", batch: 2, sequence: 8)
-    end
+  #   test "beit" do
+  #     # TODO: Conv/Concat both do not support nil dims, add support
+  #     # and update this test
+  #     check_onnx_transformer!("microsoft/beit-base-patch16-224", batch: 2, sequence: 8)
+  #   end
 
-    test "bert" do
-      check_onnx_transformer!("bert-base-cased")
-    end
+  #   test "bert" do
+  #     check_onnx_transformer!("bert-base-cased")
+  #   end
 
-    test "bigbird" do
-      check_onnx_transformer!("google/bigbird-roberta-base")
-    end
+  #   test "bigbird" do
+  #     check_onnx_transformer!("google/bigbird-roberta-base")
+  #   end
 
-    test "blenderbot" do
-      check_onnx_transformer!("facebook/blenderbot-400M-distill")
-    end
+  #   test "blenderbot" do
+  #     check_onnx_transformer!("facebook/blenderbot-400M-distill")
+  #   end
 
-    test "blenderbot_small" do
-      check_onnx_transformer!("facebook/blenderbot_small-90M")
-    end
+  #   test "blenderbot_small" do
+  #     check_onnx_transformer!("facebook/blenderbot_small-90M")
+  #   end
 
-    test "camembert" do
-      check_onnx_transformer!("camembert-base")
-    end
+  #   test "camembert" do
+  #     check_onnx_transformer!("camembert-base")
+  #   end
 
-    # TODO: This does not seem right...
-    # test "convbert" do
-    #   check_onnx_transformer!("YituTech/conv-bert-small", batch: 2, sequence: 8)
-    # end
+  #   # TODO: This does not seem right...
+  #   # test "convbert" do
+  #   #   check_onnx_transformer!("YituTech/conv-bert-small", batch: 2, sequence: 8)
+  #   # end
 
-    test "data2vectext" do
-      check_onnx_transformer!("facebook/data2vec-text-base")
-    end
+  #   test "data2vectext" do
+  #     check_onnx_transformer!("facebook/data2vec-text-base")
+  #   end
 
-    test "deit" do
-      # TODO: Conv/Concat both do not support nil dims, add support
-      # and update this test
-      check_onnx_transformer!("facebook/deit-base-patch16-224", batch: 2, sequence: 8)
-    end
+  #   test "deit" do
+  #     # TODO: Conv/Concat both do not support nil dims, add support
+  #     # and update this test
+  #     check_onnx_transformer!("facebook/deit-base-patch16-224", batch: 2, sequence: 8)
+  #   end
 
-    test "distilbert" do
-      check_onnx_transformer!("distilbert-base-cased")
-    end
+  #   test "distilbert" do
+  #     check_onnx_transformer!("distilbert-base-cased")
+  #   end
 
-    test "electra" do
-      check_onnx_transformer!("google/electra-small-discriminator")
-      check_onnx_transformer!("google/electra-small-generator")
-    end
+  #   test "electra" do
+  #     check_onnx_transformer!("google/electra-small-discriminator")
+  #     check_onnx_transformer!("google/electra-small-generator")
+  #   end
 
-    # TODO: This does not convert correctly with transformers 4.18
-    # test "flaubert" do
-    #   check_onnx_transformer!("flaubert/flaubert_small_cased")
-    # end
+  #   # TODO: This does not convert correctly with transformers 4.18
+  #   # test "flaubert" do
+  #   #   check_onnx_transformer!("flaubert/flaubert_small_cased")
+  #   # end
 
-    # TODO: This model is 22.5GB so not the easiest to test
-    # in a single GH action
-    # test "gpt j" do
-    #   check_onnx_transformer!("EleutherAI/gpt-j-6B")
-    # end
+  #   # TODO: This model is 22.5GB so not the easiest to test
+  #   # in a single GH action
+  #   # test "gpt j" do
+  #   #   check_onnx_transformer!("EleutherAI/gpt-j-6B")
+  #   # end
 
-    test "gpt neo" do
-      check_onnx_transformer!("EleutherAI/gpt-neo-125M")
-    end
+  #   test "gpt neo" do
+  #     check_onnx_transformer!("EleutherAI/gpt-neo-125M")
+  #   end
 
-    test "gpt2" do
-      check_onnx_transformer!("gpt2")
-    end
+  #   test "gpt2" do
+  #     check_onnx_transformer!("gpt2")
+  #   end
 
-    test "layoutlm" do
-      check_onnx_transformer!("microsoft/layoutlm-base-cased")
-    end
+  #   test "layoutlm" do
+  #     check_onnx_transformer!("microsoft/layoutlm-base-cased")
+  #   end
 
-    test "m2m100" do
-      check_onnx_transformer!("facebook/m2m100_418M")
-    end
+  #   test "m2m100" do
+  #     check_onnx_transformer!("facebook/m2m100_418M")
+  #   end
 
-    # TODO: Empty tensor?
-    # test "mbart" do
-    #   check_onnx_transformer!("facebook/mbart-large-50")
-    # end
+  #   # TODO: Empty tensor?
+  #   # test "mbart" do
+  #   #   check_onnx_transformer!("facebook/mbart-large-50")
+  #   # end
 
-    # TODO: Listed as supported, but does not appear to be?
-    # test "plbart" do
-    #   check_onnx_transformer!("uclanlp/plbart-base")
-    # end
+  #   # TODO: Listed as supported, but does not appear to be?
+  #   # test "plbart" do
+  #   #   check_onnx_transformer!("uclanlp/plbart-base")
+  #   # end
 
-    test "roberta" do
-      check_onnx_transformer!("roberta-base")
-    end
+  #   test "roberta" do
+  #     check_onnx_transformer!("roberta-base")
+  #   end
 
-    # TODO: Infinity support
-    # test "t5" do
-    #   check_onnx_transformer!("t5-base")
-    # end
+  #   # TODO: Infinity support
+  #   # test "t5" do
+  #   #   check_onnx_transformer!("t5-base")
+  #   # end
 
-    test "vit" do
-      check_onnx_transformer!("google/vit-base-patch16-224", batch: 1, sequence: 8)
-    end
+  #   test "vit" do
+  #     check_onnx_transformer!("google/vit-base-patch16-224", batch: 1, sequence: 8)
+  #   end
 
-    test "xlm-roberta" do
-      check_onnx_transformer!("xlm-roberta-base")
-    end
-  end
+  #   test "xlm-roberta" do
+  #     check_onnx_transformer!("xlm-roberta-base")
+  #   end
+  # end
 end
