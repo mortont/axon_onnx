@@ -302,102 +302,103 @@ defmodule AxonOnnx.Serialize do
 
   ## Global Pooling
 
-  @supported_global_pooling [:global_avg_pool, :global_lp_pool, :global_max_pool]
+  # TODO: Fix
+  # @supported_global_pooling [:global_avg_pool, :global_lp_pool, :global_max_pool]
 
-  defp to_onnx(
-         %Axon{
-           id: id,
-           op: pool,
-           name: name_fn,
-           parent: [%Axon{id: inp_id, output_shape: shape} = parent],
-           opts: opts
-         },
-         inputs,
-         param_names,
-         nodes,
-         op_counts,
-         cache
-       )
-       when pool in @supported_global_pooling do
-    {inputs, param_names, nodes, op_counts, cache} =
-      to_onnx(parent, inputs, param_names, nodes, op_counts, cache)
+  # defp to_onnx(
+  #        %Axon{
+  #          id: id,
+  #          op: pool,
+  #          name: name_fn,
+  #          parent: [%Axon{id: inp_id, output_shape: shape} = parent],
+  #          opts: opts
+  #        },
+  #        inputs,
+  #        param_names,
+  #        nodes,
+  #        op_counts,
+  #        cache
+  #      )
+  #      when pool in @supported_global_pooling do
+  #   {inputs, param_names, nodes, op_counts, cache} =
+  #     to_onnx(parent, inputs, param_names, nodes, op_counts, cache)
 
-    inp_name = cache[inp_id]
+  #   inp_name = cache[inp_id]
 
-    {name, op_counts, cache} =
-      case cache do
-        %{^id => name} ->
-          {name, op_counts, cache}
+  #   {name, op_counts, cache} =
+  #     case cache do
+  #       %{^id => name} ->
+  #         {name, op_counts, cache}
 
-        %{} ->
-          name = name_fn.(pool, op_counts)
-          op_counts = Map.update(op_counts, pool, 1, fn x -> x + 1 end)
-          cache = Map.put(cache, id, name)
-          {name, op_counts, cache}
-      end
+  #       %{} ->
+  #         name = name_fn.(pool, op_counts)
+  #         op_counts = Map.update(op_counts, pool, 1, fn x -> x + 1 end)
+  #         cache = Map.put(cache, id, name)
+  #         {name, op_counts, cache}
+  #     end
 
-    keep_axes = opts[:keep_axes]
+  #   keep_axes = opts[:keep_axes]
 
-    {op_type, attrs} =
-      case pool do
-        :global_avg_pool ->
-          {"GlobalAveragePool", []}
+  #   {op_type, attrs} =
+  #     case pool do
+  #       :global_avg_pool ->
+  #         {"GlobalAveragePool", []}
 
-        :global_lp_pool ->
-          {"GlobalLpPool", [to_attr("p", :INT, opts[:norm])]}
+  #       :global_lp_pool ->
+  #         {"GlobalLpPool", [to_attr("p", :INT, opts[:norm])]}
 
-        :global_max_pool ->
-          {"GlobalMaxPool", []}
-      end
+  #       :global_max_pool ->
+  #         {"GlobalMaxPool", []}
+  #     end
 
-    node_inputs = [inp_name]
+  #   node_inputs = [inp_name]
 
-    nodes =
-      if keep_axes do
-        node = %Node{
-          input: node_inputs,
-          output: [name],
-          name: name,
-          attribute: attrs,
-          op_type: op_type
-        }
+  #   nodes =
+  #     if keep_axes do
+  #       node = %Node{
+  #         input: node_inputs,
+  #         output: [name],
+  #         name: name,
+  #         attribute: attrs,
+  #         op_type: op_type
+  #       }
 
-        [node | nodes]
-      else
-        pre_squeeze_name = name <> "_pre_squeeze"
+  #       [node | nodes]
+  #     else
+  #       pre_squeeze_name = name <> "_pre_squeeze"
 
-        pre_squeeze_node = %Node{
-          input: node_inputs,
-          output: [pre_squeeze_name],
-          name: pre_squeeze_name,
-          attribute: attrs,
-          op_type: op_type
-        }
+  #       pre_squeeze_node = %Node{
+  #         input: node_inputs,
+  #         output: [pre_squeeze_name],
+  #         name: pre_squeeze_name,
+  #         attribute: attrs,
+  #         op_type: op_type
+  #       }
 
-        constant_name = name <> "_squeeze_axes"
-        axes = Enum.to_list(2..(Nx.rank(shape) - 1)//1)
-        axes_tensor = nx_to_tensor_proto(constant_name, Nx.tensor(axes))
-        value_attr = to_attr("value", :TENSOR, axes_tensor)
+  #       constant_name = name <> "_squeeze_axes"
+  #       axes = Enum.to_list(2..(Nx.rank(shape) - 1)//1)
+  #       axes_tensor = nx_to_tensor_proto(constant_name, Nx.tensor(axes))
+  #       value_attr = to_attr("value", :TENSOR, axes_tensor)
 
-        constant_node = %Node{
-          output: [constant_name],
-          name: constant_name,
-          attribute: [value_attr],
-          op_type: "Constant"
-        }
+  #       constant_node = %Node{
+  #         output: [constant_name],
+  #         name: constant_name,
+  #         attribute: [value_attr],
+  #         op_type: "Constant"
+  #       }
 
-        node = %Node{
-          input: [pre_squeeze_name, constant_name],
-          output: [name],
-          name: name,
-          op_type: "Squeeze"
-        }
+  #       node = %Node{
+  #         input: [pre_squeeze_name, constant_name],
+  #         output: [name],
+  #         name: name,
+  #         op_type: "Squeeze"
+  #       }
 
-        [node, constant_node, pre_squeeze_node | nodes]
-      end
+  #       [node, constant_node, pre_squeeze_node | nodes]
+  #     end
 
-    {inputs, param_names, nodes, op_counts, cache}
-  end
+  #   {inputs, param_names, nodes, op_counts, cache}
+  # end
 
   ## Activations
 
@@ -526,22 +527,24 @@ defmodule AxonOnnx.Serialize do
     end)
   end
 
-  defp to_value_info(%Axon{id: id, op: op, name: name_fn, output_shape: shape}, op_counts, cache) do
-    {name, op_counts, cache} =
-      case cache do
-        %{^id => name} ->
-          {name, op_counts, cache}
+  # TODO: Fix this with input template
+  defp to_value_info(_, _, _), do: :ok
+  # defp to_value_info(%Axon{id: id, op: op, name: name_fn, output_shape: shape}, op_counts, cache) do
+  #   {name, op_counts, cache} =
+  #     case cache do
+  #       %{^id => name} ->
+  #         {name, op_counts, cache}
 
-        %{} ->
-          name = name_fn.(op, op_counts)
-          op_counts = Map.update(op_counts, op, 1, fn x -> x + 1 end)
-          cache = Map.put(cache, id, name)
-          {name, op_counts, cache}
-      end
+  #       %{} ->
+  #         name = name_fn.(op, op_counts)
+  #         op_counts = Map.update(op_counts, op, 1, fn x -> x + 1 end)
+  #         cache = Map.put(cache, id, name)
+  #         {name, op_counts, cache}
+  #     end
 
-    input_type = %Type{value: {:tensor_type, to_placeholder(shape)}}
-    {%Value{name: name, type: input_type}, op_counts, cache}
-  end
+  #   input_type = %Type{value: {:tensor_type, to_placeholder(shape)}}
+  #   {%Value{name: name, type: input_type}, op_counts, cache}
+  # end
 
   defp to_value_info(param_name, shape) do
     input_type = %Type{value: {:tensor_type, to_placeholder(shape)}}

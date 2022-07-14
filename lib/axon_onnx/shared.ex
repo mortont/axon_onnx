@@ -86,12 +86,15 @@ defmodule AxonOnnx.Shared do
   end
 
   def numpy_matmul_layer(
-        %Axon{output_shape: a_shape} = a,
-        %Axon{output_shape: b_shape} = b,
+        %Axon{} = a,
+        %Axon{} = b,
         output_name
       ) do
-    {c1_dims, b1_dims, c2_dims, b2_dims} =
-      case {a_shape, b_shape} do
+    Axon.layer(&numpy_matmul/3, [a, b], name: output_name, op_name: :numpy_matmul)
+  end
+
+  defnp numpy_matmul(a, b, _opts) do
+    {c1_dims, b1_dims, c2_dims, b2_dims} = transform({Nx.shape(a), Nx.shape(b)}, fn
         {{}, {}} ->
           {[], [], [], []}
 
@@ -104,11 +107,9 @@ defmodule AxonOnnx.Shared do
         {a_shape, b_shape} ->
           batch_dims = Enum.to_list(0..(Nx.rank(a_shape) - 3))
           {[Nx.rank(a_shape) - 1], batch_dims, [Nx.rank(b_shape) - 2], batch_dims}
-      end
+    end)
 
-    fun = fn x, y, _opts -> Nx.dot(x, c1_dims, b1_dims, y, c2_dims, b2_dims) end
-
-    Axon.layer(fun, [a, b], name: output_name)
+    Nx.dot(a, c1_dims, b1_dims, b, c2_dims, b2_dims)
   end
 
   def gather_layer(
@@ -125,12 +126,14 @@ defmodule AxonOnnx.Shared do
   end
 
   def slice_layer(inp, starts, ends, axes, steps, output_name, axon, used_params) do
-    shape = get_shape(inp)
-    rank = Nx.rank(shape)
-
-    axes = axes |> Enum.map(fn x -> if x < 0, do: x + rank, else: x end)
 
     fun = fn x ->
+      shape = Nx.shape(x)
+      rank = Nx.rank(shape)
+      axes = if axes, do: axes, else: Nx.axes(x)
+      axes = axes |> Enum.map(fn x -> if x < 0, do: x + rank, else: x end)
+      steps = if steps, do: steps, else: List.duplicate(1, rank)
+
       [starts, ends, axes, steps]
       |> Enum.zip()
       |> Enum.reduce(x, &do_slice(shape, &1, &2))
@@ -203,9 +206,6 @@ defmodule AxonOnnx.Shared do
 
   def get_value(%{op: :constant, opts: [value: v]}), do: v
   def get_value(%Nx.Tensor{} = v), do: v
-
-  def get_shape(%Nx.Tensor{} = t), do: Nx.shape(t)
-  def get_shape(%Axon{output_shape: shape}), do: shape
 
   def onnx_type_to_nx_type(1), do: {:f, 32}
   def onnx_type_to_nx_type(2), do: {:u, 8}
