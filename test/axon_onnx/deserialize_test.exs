@@ -1226,9 +1226,9 @@ defmodule DeserializeTest do
     @describetag :transformers
     # @describetag timeout: :infinity, capture_log: true
 
-    # test "albert" do
-    #   check_onnx_transformer!("albert-base-v2", batch: 2, sequence: 8)
-    # end
+    test "albert" do
+      check_onnx_transformer!("albert-base-v2", batch: 2, sequence: 8)
+    end
 
     test "bart" do
       check_onnx_transformer!("facebook/bart-base",
