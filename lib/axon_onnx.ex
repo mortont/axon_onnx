@@ -14,9 +14,9 @@ defmodule AxonOnnx do
   `model` will be an Axon struct and `params` will be a compatible
   model state.
 
-  You can export supported models using `AxonOnnx.export/3`:
+  You can export supported models using `AxonOnnx.export/4`:
 
-      AxonOnnx.export(model, params)
+      AxonOnnx.export(model, templates, params)
   """
 
   @doc """
@@ -34,15 +34,16 @@ defmodule AxonOnnx do
   def import(path, dimensions \\ []), do: AxonOnnx.Deserialize.__import__(path, dimensions)
 
   @doc """
-  Exports an Axon model and parameters to an ONNX model.
+  Exports an Axon model and parameters to an ONNX model
+  with the given input templates.
 
   You may optionally specify a `path` to export a model to
   a specific file path:
 
-      AxonOnnx.export(model, params, path: "resnet.onnx")
+      AxonOnnx.export(model, templates, params, path: "resnet.onnx")
 
 
   """
-  def export(%Axon{} = model, params, opts \\ []),
-    do: AxonOnnx.Serialize.__export__(model, params, opts)
+  def export(%Axon{} = model, templates, params, opts \\ []),
+    do: AxonOnnx.Serialize.__export__(model, templates, params, opts)
 end

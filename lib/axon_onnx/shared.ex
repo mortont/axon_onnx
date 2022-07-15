@@ -69,7 +69,7 @@ defmodule AxonOnnx.Shared do
   defn(mean(x, y), do: Nx.divide(Nx.add(x, y), 2))
   # Layer helpers
 
-  def trainable_binary_layer(%Axon{} = input, %Nx.Tensor{} = param, op, name) do
+  def trainable_binary_layer(%Axon{} = input, %Nx.Tensor{} = param, op, name, op_name) do
     param_shape = Nx.shape(param)
 
     kernel = Axon.param("kernel", fn _ -> param_shape end)
@@ -82,7 +82,7 @@ defmodule AxonOnnx.Shared do
       end
     end
 
-    Axon.layer(fun, [input, kernel], name: name)
+    Axon.layer(fun, [input, kernel], name: name, op_name: op_name)
   end
 
   def numpy_matmul_layer(
@@ -94,21 +94,36 @@ defmodule AxonOnnx.Shared do
   end
 
   defnp numpy_matmul(a, b, _opts) do
-    {c1_dims, b1_dims, c2_dims, b2_dims} =
+    {out_a_shape, c1_dims, b1_dims, out_b_shape, c2_dims, b2_dims} =
       transform({Nx.shape(a), Nx.shape(b)}, fn
         {{}, {}} ->
-          {[], [], [], []}
+          {{}, [], [], {}, [], []}
 
-        {{_}, {_}} ->
-          {[0], [], [0], []}
+        {{_} = a, {_} = b} ->
+          {a, [0], [], b, [0], []}
 
-        {{_, _}, {_, _}} ->
-          {[1], [], [0], []}
+        {{_, _} = a, {_, _} = b} ->
+          {a, [1], [], b, [0], []}
 
         {a_shape, b_shape} ->
+          # TODO: This should broadcast both sides, not just one
           batch_dims = Enum.to_list(0..(Nx.rank(a_shape) - 3))
-          {[Nx.rank(a_shape) - 1], batch_dims, [Nx.rank(b_shape) - 2], batch_dims}
+
+          b_shape =
+            if Elixir.Kernel.==(Nx.rank(b_shape), Nx.rank(a_shape)) do
+              b_shape
+            else
+              Enum.reduce(Enum.reverse(batch_dims), b_shape, fn dim, shape ->
+                Tuple.insert_at(shape, 0, elem(a_shape, dim))
+              end)
+            end
+
+          {a_shape, [Nx.rank(a_shape) - 1], batch_dims, b_shape, [Nx.rank(b_shape) - 2],
+           batch_dims}
       end)
+
+    a = Nx.broadcast(a, out_a_shape)
+    b = Nx.broadcast(b, out_b_shape)
 
     Nx.dot(a, c1_dims, b1_dims, b, c2_dims, b2_dims)
   end
@@ -123,7 +138,7 @@ defmodule AxonOnnx.Shared do
       Nx.take(x, Nx.as_type(indices, {:s, 64}), axis: axis)
     end
 
-    Axon.layer(fun, [x, ind], name: output_name)
+    Axon.layer(fun, [x, ind], name: output_name, op_name: :gather)
   end
 
   def slice_layer(inp, starts, ends, axes, steps, output_name, axon, used_params) do
@@ -167,7 +182,7 @@ defmodule AxonOnnx.Shared do
     kernel = Axon.param("kernel", fn _ -> shape end)
     # empty layer
     inp = Axon.container({})
-    layer = Axon.layer(fun, [inp, kernel], name: output_name)
+    layer = Axon.layer(fun, [inp, kernel], name: output_name, op_name: :param_slice)
 
     updated_axon = Map.put(axon, output_name, layer)
     updated_params = Map.put(used_params, output_name, %{"kernel" => param})
