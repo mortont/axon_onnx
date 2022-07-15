@@ -529,6 +529,7 @@ defmodule AxonOnnx.Serialize do
 
   # TODO: Fix this with input template
   defp to_value_info(_, _, _), do: :ok
+
   # defp to_value_info(%Axon{id: id, op: op, name: name_fn, output_shape: shape}, op_counts, cache) do
   #   {name, op_counts, cache} =
   #     case cache do

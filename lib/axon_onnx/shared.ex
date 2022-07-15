@@ -72,7 +72,7 @@ defmodule AxonOnnx.Shared do
   def trainable_binary_layer(%Axon{} = input, %Nx.Tensor{} = param, op, name) do
     param_shape = Nx.shape(param)
 
-    kernel = Axon.param("kernel", param_shape)
+    kernel = Axon.param("kernel", fn _ -> param_shape end)
 
     fun = fn x, kernel, _opts ->
       if is_atom(op) do
@@ -94,7 +94,8 @@ defmodule AxonOnnx.Shared do
   end
 
   defnp numpy_matmul(a, b, _opts) do
-    {c1_dims, b1_dims, c2_dims, b2_dims} = transform({Nx.shape(a), Nx.shape(b)}, fn
+    {c1_dims, b1_dims, c2_dims, b2_dims} =
+      transform({Nx.shape(a), Nx.shape(b)}, fn
         {{}, {}} ->
           {[], [], [], []}
 
@@ -107,7 +108,7 @@ defmodule AxonOnnx.Shared do
         {a_shape, b_shape} ->
           batch_dims = Enum.to_list(0..(Nx.rank(a_shape) - 3))
           {[Nx.rank(a_shape) - 1], batch_dims, [Nx.rank(b_shape) - 2], batch_dims}
-    end)
+      end)
 
     Nx.dot(a, c1_dims, b1_dims, b, c2_dims, b2_dims)
   end
@@ -126,7 +127,6 @@ defmodule AxonOnnx.Shared do
   end
 
   def slice_layer(inp, starts, ends, axes, steps, output_name, axon, used_params) do
-
     fun = fn x ->
       shape = Nx.shape(x)
       rank = Nx.rank(shape)
@@ -164,7 +164,7 @@ defmodule AxonOnnx.Shared do
       |> Enum.reduce(kernel, &do_slice(shape, &1, &2))
     end
 
-    kernel = Axon.param("kernel", shape)
+    kernel = Axon.param("kernel", fn _ -> shape end)
     # empty layer
     inp = Axon.container({})
     layer = Axon.layer(fun, [inp, kernel], name: output_name)
