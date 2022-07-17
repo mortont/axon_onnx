@@ -110,14 +110,14 @@ defmodule OnnxTestHelper do
   @doc """
   Tests given ONNX model.
   """
-  def check_onnx_model!(model_name) do
+  def check_onnx_model!(model_name, opts \\ []) do
     test_name = "test_" <> model_name
     base_path = Path.join(["test", "cases", "real", test_name])
     test_path = Path.join([base_path, "data.json"])
     model_path = Path.join([base_path, "model.onnx"])
 
     if File.exists?(model_path) do
-      check_onnx_test_case!("real", test_name)
+      check_onnx_test_case!("real", test_name, opts)
     else
       data =
         test_path
@@ -142,7 +142,7 @@ defmodule OnnxTestHelper do
         end
       end)
 
-      check_onnx_test_case!("real", test_name)
+      check_onnx_test_case!("real", test_name, opts)
     end
   end
 

@@ -280,6 +280,18 @@ defmodule AxonOnnx.Deserialize do
               updated_axon = Map.put(axon, output_name, layer)
               {updated_axon, used_params}
 
+            {%Axon{op: :constant, opts: [value: v1]}, %Nx.Tensor{} = v2} ->
+              new_value = apply(Nx, unquote(binary_op), [v1, v2])
+              layer = Axon.constant(new_value, name: output_name)
+              updated_axon = Map.put(axon, output_name, layer)
+              {updated_axon, used_params}
+
+            {%Nx.Tensor{} = v1, %Axon{op: :constant, opts: [value: v2]}} ->
+              new_value = apply(Nx, unquote(binary_op), [v1, v2])
+              layer = Axon.constant(new_value, name: output_name)
+              updated_axon = Map.put(axon, output_name, layer)
+              {updated_axon, used_params}
+
             {%Axon{} = inp1, %Axon{} = inp2} ->
               layer = apply(Axon, unquote(binary_op), [inp1, inp2])
               updated_axon = Map.put(axon, output_name, layer)
@@ -488,7 +500,6 @@ defmodule AxonOnnx.Deserialize do
 
         {%Nx.Tensor{} = x, %Nx.Tensor{} = ind} ->
           new_value = Nx.take(x, Nx.as_type(ind, {:s, 64}))
-          # TODO: Should this be graph or param?
           layer = Axon.constant(new_value, name: output_name)
           updated_axon = Map.put(axon, output_name, layer)
           {updated_axon, used_params}
@@ -794,6 +805,25 @@ defmodule AxonOnnx.Deserialize do
               name: output_name,
               feature_group_size: group
             )
+
+          updated_axon = Map.put(axon, output_name, out_layer)
+          updated_params = Map.put(used_params, output_name, %{"kernel" => kernel})
+          {updated_axon, updated_params}
+
+        {%Axon{} = inp, %Nx.Tensor{} = kernel, %Axon{op: :constant} = bias} ->
+          out_layer =
+            Axon.conv(
+              inp,
+              units,
+              kernel_size: kernel_size,
+              kernel_dilation: dilations,
+              padding: padding_config,
+              strides: strides,
+              use_bias: false,
+              name: output_name,
+              feature_group_size: group
+            )
+            |> Axon.add(bias)
 
           updated_axon = Map.put(axon, output_name, out_layer)
           updated_params = Map.put(used_params, output_name, %{"kernel" => kernel})
@@ -1366,6 +1396,17 @@ defmodule AxonOnnx.Deserialize do
           updated_axon = Map.put(axon, output_name, Axon.constant(new_value, name: output_name))
           {updated_axon, used_params}
 
+        {%Axon{op: :constant, opts: [value: c]}, %Axon{op: :constant, opts: [value: x]},
+         %Nx.Tensor{} = y} ->
+          new_value = Nx.select(c, x, y)
+          updated_axon = Map.put(axon, output_name, Axon.constant(new_value, name: output_name))
+          {updated_axon, used_params}
+
+        {%Axon{op: :constant, opts: [value: c]}, %Nx.Tensor{} = x, %Nx.Tensor{} = y} ->
+          new_value = Nx.select(c, x, y)
+          updated_axon = Map.put(axon, output_name, Axon.constant(new_value, name: output_name))
+          {updated_axon, used_params}
+
         {%Axon{} = condition, %Axon{} = x, %Axon{} = y} ->
           fun = fn x, y, z, _opts ->
             # TODO: Nx's shape rules should handle this like a binary broadcast
@@ -1906,6 +1947,7 @@ defmodule AxonOnnx.Deserialize do
             |> Enum.count()
             |> then(&Enum.chunk_every(pads, div(&1, 2)))
             |> Enum.zip()
+            |> Enum.map(fn {x, y} -> {x, y, 0} end)
 
           pad_layer = Axon.nx(inp, &Nx.pad(&1, value, config))
           Map.put(axon, output_name, pad_layer)
@@ -2036,7 +2078,7 @@ defmodule AxonOnnx.Deserialize do
           %Axon{op: :constant, opts: [value: shape]} ->
             shape
 
-          %Axon{op: op} ->
+          %Axon{op_name: op} ->
             raise ArgumentError,
                   "unable to build model from ONNX graph, expected value #{name}" <>
                     " to be constant value, but was #{inspect(op)}"

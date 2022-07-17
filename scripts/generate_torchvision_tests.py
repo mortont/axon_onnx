@@ -31,6 +31,7 @@ MODELS_TO_TEST = {
   'vgg11': torchvision.models.vgg11,
   'vgg11_bn': torchvision.models.vgg11_bn,
   'vgg13': torchvision.models.vgg13,
+  'vgg13_bn': torchvision.models.vgg13_bn,
   'vgg16': torchvision.models.vgg16,
   'vgg16_bn': torchvision.models.vgg16_bn,
   'vgg19': torchvision.models.vgg19,
@@ -50,8 +51,8 @@ MODELS_TO_TEST = {
   'googlenet': torchvision.models.googlenet,
   'shufflenet_v2_x0_5': torchvision.models.shufflenet_v2_x0_5,
   'shufflenet_v2_x1_0': torchvision.models.shufflenet_v2_x1_0,
-  # 'shufflenet_v2_x1_5': torchvision.models.shufflenet_v2_x1_5,
-  # 'shufflenet_v2_x2_0': torchvision.models.shufflenet_v2_x2_0,
+  'shufflenet_v2_x1_5': torchvision.models.shufflenet_v2_x1_5,
+  'shufflenet_v2_x2_0': torchvision.models.shufflenet_v2_x2_0,
   'mobilenet_v2': torchvision.models.mobilenet_v2,
   'mobilenet_v3_small': torchvision.models.mobilenet_v3_small,
   'mobilenet_v3_large': torchvision.models.mobilenet_v3_large,
@@ -59,18 +60,18 @@ MODELS_TO_TEST = {
   'resnext101_32x8d': torchvision.models.resnext101_32x8d,
   'resnext101_64x4d': torchvision.models.resnext101_64x4d,
   'wide_resnet50_2': torchvision.models.wide_resnet50_2,
-  # 'wide_resnet101_2': torchvision.models.wide_resnet101_2,
+  'wide_resnet101_2': torchvision.models.wide_resnet101_2,
   'mnasnet0_5': torchvision.models.mnasnet0_5,
-  # 'mnasnet0_75': torchvision.models.mnasnet0_75,
+  'mnasnet0_75': torchvision.models.mnasnet0_75,
   'mnasnet1_0': torchvision.models.mnasnet1_0,
   'mnasnet1_3': torchvision.models.mnasnet1_3,
-  # 'swin_t': torchvision.models.swin_t,
-  # 'swin_s': torchvision.models.swin_s,
-  # 'swin_b': torchvision.models.swin_b,
+  'swin_t': torchvision.models.swin_t,
+  'swin_s': torchvision.models.swin_s,
+  'swin_b': torchvision.models.swin_b,
   'vit_b_16': torchvision.models.vit_b_16,
   'vit_b_32': torchvision.models.vit_b_32,
   'vit_l_16': torchvision.models.vit_l_16,
-  # 'vit_l_32': torchvision.models.vit_l_32,
+  'vit_l_32': torchvision.models.vit_l_32,
   'vit_h_14': torchvision.models.vit_h_14,
   # Segmentation
   # 'fcn_resnet50': torchvision.models.segmentation.fcn_resnet50,
@@ -93,7 +94,7 @@ for key, model in MODELS_TO_TEST.items():
   if not os.path.exists(model_base_path):
     os.mkdir(model_base_path)
 
-    net = model(pretrained=True)
+    net = model()
     model_onnx_path = os.path.join(model_base_path, 'model.onnx')
 
     input_names = [ "input_0" ]

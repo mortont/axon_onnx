@@ -1176,6 +1176,7 @@ defmodule DeserializeTest do
 
   describe "real tests" do
     @describetag :real
+    @describetag timeout: 120_000
 
     # test "bvlc alexnet" do
     #   Nx.Defn.default_options(compiler: EXLA)
@@ -1183,7 +1184,7 @@ defmodule DeserializeTest do
     # end
 
     test "densenet121" do
-      check_onnx_model!("densenet121")
+      check_onnx_model!("densenet121", compiler: EXLA)
     end
 
     # test "inception_v1" do
@@ -1197,11 +1198,11 @@ defmodule DeserializeTest do
     # end
 
     test "resnet50" do
-      check_onnx_model!("resnet50")
+      check_onnx_model!("resnet50", compiler: EXLA)
     end
 
     test "shufflenet" do
-      check_onnx_model!("shufflenet")
+      check_onnx_model!("shufflenet", compiler: EXLA)
     end
 
     # test "squeezenet" do
@@ -1209,9 +1210,8 @@ defmodule DeserializeTest do
     #   check_onnx_model!("squeezenet")
     # end
 
-    @tag timeout: 120_000
     test "vgg19" do
-      check_onnx_model!("vgg19")
+      check_onnx_model!("vgg19", compiler: EXLA)
     end
 
     # test "zfnet512" do
@@ -1222,6 +1222,7 @@ defmodule DeserializeTest do
 
   describe "torchvision tests" do
     @describetag :torchvision
+    @describetag timeout: 120_000
 
     test "alexnet" do
       check_onnx_test_case!("torchvision", "alexnet", compiler: EXLA)
@@ -1287,42 +1288,34 @@ defmodule DeserializeTest do
       check_onnx_test_case!("torchvision", "efficientnet_v2_s", compiler: EXLA)
     end
 
-    @tag timeout: 120_000
     test "vgg11" do
       check_onnx_test_case!("torchvision", "vgg11", compiler: EXLA)
     end
 
-    @tag timeout: 120_000
     test "vgg11_bn" do
       check_onnx_test_case!("torchvision", "vgg11_bn", compiler: EXLA)
     end
 
-    @tag timeout: 120_000
     test "vgg13" do
       check_onnx_test_case!("torchvision", "vgg13", compiler: EXLA)
     end
 
-    @tag timeout: 120_000
     test "vgg13_bn" do
       check_onnx_test_case!("torchvision", "vgg13_bn", compiler: EXLA)
     end
 
-    @tag timeout: 120_000
     test "vgg16" do
       check_onnx_test_case!("torchvision", "vgg16", compiler: EXLA)
     end
 
-    @tag timeout: 120_000
     test "vgg16_bn" do
       check_onnx_test_case!("torchvision", "vgg16_bn", compiler: EXLA)
     end
 
-    @tag timeout: 120_000
     test "vgg19" do
       check_onnx_test_case!("torchvision", "vgg19", compiler: EXLA)
     end
 
-    @tag timeout: 120_000
     test "vgg19_bn" do
       check_onnx_test_case!("torchvision", "vgg19_bn", compiler: EXLA)
     end
@@ -1387,6 +1380,14 @@ defmodule DeserializeTest do
       check_onnx_test_case!("torchvision", "shufflenet_v2_x1_0", compiler: EXLA)
     end
 
+    test "shufflenet_v2_x1_5" do
+      check_onnx_test_case!("torchvision", "shufflenet_v2_x1_5", compiler: EXLA)
+    end
+
+    test "shufflenet_v2_x2_0" do
+      check_onnx_test_case!("torchvision", "shufflenet_v2_x2_0", compiler: EXLA)
+    end
+
     test "mobilenet_v2" do
       check_onnx_test_case!("torchvision", "mobilenet_v2", compiler: EXLA)
     end
@@ -1395,9 +1396,9 @@ defmodule DeserializeTest do
       check_onnx_test_case!("torchvision", "mobilenet_v3_small", compiler: EXLA)
     end
 
-    # test "mobilenet_v3_large" do
-    #   check_onnx_test_case!("torchvision", "mobilenet_v3_large", compiler: EXLA)
-    # end
+    test "mobilenet_v3_large" do
+      check_onnx_test_case!("torchvision", "mobilenet_v3_large", compiler: EXLA)
+    end
 
     test "resnext50_32x4d" do
       check_onnx_test_case!("torchvision", "resnext50_32x4d", compiler: EXLA)
@@ -1405,6 +1406,10 @@ defmodule DeserializeTest do
 
     test "resnext101_32x8d" do
       check_onnx_test_case!("torchvision", "resnext101_32x8d", compiler: EXLA)
+    end
+
+    test "resnext101_64x4d" do
+      check_onnx_test_case!("torchvision", "resnext101_64x4d", compiler: EXLA)
     end
 
     test "wide_resnet50_2" do
@@ -1419,12 +1424,48 @@ defmodule DeserializeTest do
       check_onnx_test_case!("torchvision", "mnasnet0_5", compiler: EXLA)
     end
 
+    test "mnasnet0_75" do
+      check_onnx_test_case!("torchvision", "mnasnet0_75", compiler: EXLA)
+    end
+
     test "mnasnet1_0" do
       check_onnx_test_case!("torchvision", "mnasnet1_0", compiler: EXLA)
     end
 
+    test "mnasnet1_3" do
+      check_onnx_test_case!("torchvision", "mnasnet1_3", compiler: EXLA)
+    end
+
+    test "swin_t" do
+      check_onnx_test_case!("torchvision", "swin_t", compiler: EXLA)
+    end
+
+    test "swin_s" do
+      check_onnx_test_case!("torchvision", "swin_s", compiler: EXLA)
+    end
+
+    test "swin_b" do
+      check_onnx_test_case!("torchvision", "swin_b", compiler: EXLA)
+    end
+
     test "vit_b_16" do
       check_onnx_test_case!("torchvision", "vit_b_16", compiler: EXLA)
+    end
+
+    test "vit_b_32" do
+      check_onnx_test_case!("torchvision", "vit_b_32", compiler: EXLA)
+    end
+
+    test "vit_l_16" do
+      check_onnx_test_case!("torchvision", "vit_l_16", compiler: EXLA)
+    end
+
+    test "vit_l_32" do
+      check_onnx_test_case!("torchvision", "vit_l_32", compiler: EXLA)
+    end
+
+    test "vit_h_14" do
+      check_onnx_test_case!("torchvision", "vit_h_14", compiler: EXLA)
     end
   end
 
