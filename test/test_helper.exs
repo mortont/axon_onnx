@@ -16,7 +16,7 @@ defmodule OnnxTestHelper do
   The script `check_onnx_model.py` to ensure ONNX runtime results
   are consistent with Axon results.
   """
-  def serialize_and_test_model!(%Axon{name: name} = axon_model, opts \\ []) do
+  def serialize_and_test_model!(%Axon{name: name} = axon_model, input_shape, opts \\ []) do
     num_cases = opts[:num_tests] || 5
     model_name = opts[:name] || name
     cache_dir = Path.join([@cache_dir, model_name])
@@ -24,17 +24,13 @@ defmodule OnnxTestHelper do
 
     model_path = Path.join([cache_dir, "#{model_name}.onnx"])
 
-    {input_shape, _} = Axon.get_model_signature(axon_model)
-    params = Axon.init(axon_model, %{}, compiler: EXLA)
+    params = Axon.init(axon_model, Nx.template(input_shape, {:f, 32}), %{}, compiler: EXLA)
 
     Enum.each(1..num_cases//1, fn n ->
       test_path = Path.join([cache_dir, "test_data_set_#{n}"])
       File.mkdir_p!(test_path)
 
-      inp =
-        Map.new(input_shape, fn {k, v} ->
-          {k, Nx.random_uniform(v, type: {:f, 32})}
-        end)
+      inp = %{"input" => Nx.random_uniform(input_shape, type: {:f, 32})}
 
       out = Axon.predict(axon_model, params, inp)
 
@@ -47,7 +43,10 @@ defmodule OnnxTestHelper do
       nx_to_tensor_proto(out, Path.join([test_path, "output_0.pb"]))
     end)
 
-    AxonOnnx.export(axon_model, params, path: model_path)
+    AxonOnnx.export(axon_model, %{"input" => Nx.template(input_shape, {:f, 32})}, params,
+      path: model_path
+    )
+
     # Run check script
     {_, exit_code} =
       System.cmd("python3", ["scripts/check_onnx_model.py", model_path], into: IO.stream())
