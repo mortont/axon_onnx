@@ -53,7 +53,7 @@ defmodule AxonOnnx.Deserialize do
         case value do
           {:tensor_type, %Placeholder{} = tensor} ->
             input_shape = shape!(tensor, dimensions)
-            Map.put(acc, name, Axon.input(input_shape, name))
+            Map.put(acc, name, Axon.input(name, shape: input_shape))
 
           unsupported ->
             raise ArgumentError, "unsupported input type #{inspect(unsupported)}"
