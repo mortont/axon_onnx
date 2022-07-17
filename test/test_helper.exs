@@ -80,7 +80,7 @@ defmodule OnnxTestHelper do
 
     {model, params} = AxonOnnx.import(model_path)
 
-    {inputs, _} = Axon.get_model_signature(model)
+    inputs = Axon.get_inputs(model)
 
     data_paths
     |> Enum.map(fn data_path ->

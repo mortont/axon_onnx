@@ -763,8 +763,7 @@ defmodule AxonOnnx.Deserialize do
           input!(bias_name, axon, params, used_params)
       end
 
-    inp_shape = get_shape(inp)
-    kernel_shape = get_shape(kernel)
+    kernel_shape = Nx.shape(kernel)
 
     # Kernel shape is a list of integers; If it's not present, infer it
     # from other values.
@@ -1196,7 +1195,7 @@ defmodule AxonOnnx.Deserialize do
          {axon, params, used_params}
        ) do
     shape_opts = options!(attrs)
-    input = input!(inp, axon, params)
+    input = input!(inp, axon, params, used_params)
     ends = shape_opts["end"]
     starts = shape_opts["start"] || 0
 
@@ -1565,7 +1564,6 @@ defmodule AxonOnnx.Deserialize do
     inp = input!(data, axon, params, used_params)
     squeeze_options = options!(attrs)
 
-    inp = input!(data, axon, params, used_params)
     axes = squeeze_options["axes"]
 
     fun = fn x, _opts ->
@@ -1830,7 +1828,12 @@ defmodule AxonOnnx.Deserialize do
           Map.put(axon, output_name, dropout_layer)
 
         [mask_name] ->
-          shape = get_shape(inp)
+          layer_inputs =
+            inp
+            |> Axon.get_inputs()
+            |> Map.new(fn {k, v} -> {k, Nx.broadcast(0.0, v)} end)
+
+          shape = Axon.get_output_shape(inp, layer_inputs)
           mask_layer = Axon.constant(Nx.broadcast(0, shape))
 
           axon
@@ -1848,7 +1851,6 @@ defmodule AxonOnnx.Deserialize do
     pad_options = options!(attrs)
 
     inp = input!(inp_name, axon, params, used_params)
-    ratio = input!(ratio_name, axon, params, used_params)
 
     mode = pad_options["mode"] || "constant"
     value = pad_options["value"] || 0.0
@@ -1882,8 +1884,7 @@ defmodule AxonOnnx.Deserialize do
        ) do
     pad_options = options!(attrs)
 
-    ratio = input!(ratio_name, axon, params, used_params)
-    training_mode = input!(training_mode_name, axon, params, used_params)
+    inp = input!(inp_name, axon, params, used_params)
     pads = constant!(pad_name, axon, params) |> Nx.to_flat_list()
 
     mode = pad_options["mode"] || "constant"

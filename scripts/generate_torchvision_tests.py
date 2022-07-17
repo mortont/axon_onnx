@@ -59,33 +59,33 @@ MODELS_TO_TEST = {
   'resnext101_32x8d': torchvision.models.resnext101_32x8d,
   'resnext101_64x4d': torchvision.models.resnext101_64x4d,
   'wide_resnet50_2': torchvision.models.wide_resnet50_2,
-  'wide_resnet101_2': torchvision.models.wide_resnet101_2,
+  # 'wide_resnet101_2': torchvision.models.wide_resnet101_2,
   'mnasnet0_5': torchvision.models.mnasnet0_5,
   # 'mnasnet0_75': torchvision.models.mnasnet0_75,
   'mnasnet1_0': torchvision.models.mnasnet1_0,
-  'mnasnet1_3': torchvision.models.mnasnet1_3
+  'mnasnet1_3': torchvision.models.mnasnet1_3,
   # 'swin_t': torchvision.models.swin_t,
   # 'swin_s': torchvision.models.swin_s,
   # 'swin_b': torchvision.models.swin_b,
   'vit_b_16': torchvision.models.vit_b_16,
   'vit_b_32': torchvision.models.vit_b_32,
   'vit_l_16': torchvision.models.vit_l_16,
-  'vit_l_32': torchvision.models.vit_l_32,
+  # 'vit_l_32': torchvision.models.vit_l_32,
   'vit_h_14': torchvision.models.vit_h_14,
   # Segmentation
-  'fcn_resnet50': torchvision.models.segmentation.fcn_resnet50,
-  'fcn_resnet101': torchvision.models.segmentation.fcn_resnet101,
-  'deeplabv3_resnet50': torchvision.models.segmentation.deeplabv3_resnet50,
-  'deeplabv3_resnet101': torchvision.models.segmentation.deeplabv3_resnet101,
+  # 'fcn_resnet50': torchvision.models.segmentation.fcn_resnet50,
+  # 'fcn_resnet101': torchvision.models.segmentation.fcn_resnet101,
+  # 'deeplabv3_resnet50': torchvision.models.segmentation.deeplabv3_resnet50,
+  # 'deeplabv3_resnet101': torchvision.models.segmentation.deeplabv3_resnet101,
   # Object Detection
-  'fasterrcnn_resnet50_fpn': torchvision.models.detection.fasterrcnn_resnet50_fpn,
-  'retinanet_resnet50_fpn': torchvision.models.detection.retinanet_resnet50_fpn,
-  'maskrcnn_resnet50_fpn': torchvision.models.detection.maskrcnn_resnet50_fpn,
-  'keypointrcnn_resnet50_fpn': torchvision.models.detection.keypointrcnn_resnet50_fpn,
+  # 'fasterrcnn_resnet50_fpn': torchvision.models.detection.fasterrcnn_resnet50_fpn,
+  # 'retinanet_resnet50_fpn': torchvision.models.detection.retinanet_resnet50_fpn,
+  # 'maskrcnn_resnet50_fpn': torchvision.models.detection.maskrcnn_resnet50_fpn,
+  # 'keypointrcnn_resnet50_fpn': torchvision.models.detection.keypointrcnn_resnet50_fpn,
   # Video Classification
-  'r3d_18': torchvision.models.video.r3d_18,
-  'mc3_18': torchvision.models.video.mc3_18,
-  'r2plus1d_18': torchvision.models.video.r2plus1d_18
+  # 'r3d_18': torchvision.models.video.r3d_18,
+  # 'mc3_18': torchvision.models.video.mc3_18,
+  # 'r2plus1d_18': torchvision.models.video.r2plus1d_18
 }
 
 for key, model in MODELS_TO_TEST.items():
