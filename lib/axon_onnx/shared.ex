@@ -205,8 +205,16 @@ defmodule AxonOnnx.Shared do
         do: clamp_to_range(stop, -1, elem(shape, axis) - 1),
         else: clamp_to_range(stop, 0, elem(shape, axis))
 
-    len = stop - start
-    Nx.slice_along_axis(acc, start, len, axis: axis, strides: stride)
+    if stride < 0 do
+      len = start - stop
+
+      acc
+      |> Nx.reverse(axes: [axis])
+      |> Nx.slice_along_axis(start, len, axis: axis, strides: abs(stride))
+    else
+      len = stop - start
+      Nx.slice_along_axis(acc, start, len, axis: axis, strides: stride)
+    end
   end
 
   defp clamp_to_range(val, min, max) do

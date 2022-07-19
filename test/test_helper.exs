@@ -1,4 +1,12 @@
-ExUnit.start()
+# TODO: Add torchvision back to CI, for now the models
+# are too large to test and generate all at once in an
+# action
+# TODO: Add transformers back to CI, for now the models
+# are too large and the upstream dependency is too fragile
+# to include in an action
+ExUnit.start(
+  exclude: [:torchvision, :transformers]
+)
 
 defmodule OnnxTestHelper do
   @moduledoc """
