@@ -1210,9 +1210,10 @@ defmodule DeserializeTest do
     #   check_onnx_model!("squeezenet")
     # end
 
-    test "vgg19" do
-      check_onnx_model!("vgg19", compiler: EXLA)
-    end
+    # TODO: This is too slow for ci
+    # test "vgg19" do
+    #   check_onnx_model!("vgg19", compiler: EXLA)
+    # end
 
     # test "zfnet512" do
     #   Nx.Defn.default_options(compiler: EXLA)
