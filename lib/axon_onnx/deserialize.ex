@@ -1981,7 +1981,27 @@ defmodule AxonOnnx.Deserialize do
     raise ArgumentError, "unsupported #{inspect(unsupported)}"
   end
 
-  # TODO(seanmor5): Handle segments
+  def tensor!(%Tensor{data_location: :EXTERNAL, data_type: dtype, dims: dims, external_data: data}) do
+    data_options =
+      Enum.reduce(data, %{}, fn
+        %Onnx.StringStringEntryProto{key: key, value: value}, acc -> Map.put(acc, key, value)
+      end)
+
+    location = data_options["location"]
+
+    case File.read(location) do
+      {:ok, bytes} ->
+        shape = List.to_tuple(dims)
+        to_nx_tensor([], bytes, onnx_type_to_nx_type(dtype), shape)
+
+      _error ->
+        raise ArgumentError,
+              "could not find external data at #{location}," <>
+                " you must ensure path to location is correct" <>
+                " relative to your current working directory"
+    end
+  end
+
   def tensor!(%Tensor{data_type: dtype, dims: dims} = tensor) do
     shape = List.to_tuple(dims)
 
