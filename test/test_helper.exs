@@ -172,7 +172,7 @@ defmodule OnnxTestHelper do
 
   defp assert_all_close!(x, y) do
     # Normalize outputs
-    res = Nx.all_close(x, y, atol: 1.0e-3) |> Nx.to_number()
+    res = Nx.all_close(x, y, atol: 1.0e-3, equal_nan: true) |> Nx.to_number()
 
     unless res == 1 do
       raise "expected #{inspect(x)} to be within tolerance of #{inspect(y)}"

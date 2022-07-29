@@ -91,6 +91,8 @@ defmodule AxonOnnx.Deserialize do
     {"Floor", &Nx.floor/1},
     {"HardSwish", &hardswish/1},
     {"Identity", &identity/1},
+    {"IsInf", &Nx.is_infinity/1},
+    {"IsNaN", &Nx.is_nan/1},
     {"Log", &Nx.log/1},
     {"Neg", &Nx.negate/1},
     {"Not", &Nx.logical_not/1},
@@ -105,19 +107,20 @@ defmodule AxonOnnx.Deserialize do
 
   for {op, fun} <- @nx_op_types do
     defp recur_nodes(
-           %Node{op_type: unquote(op), input: [input], output: [output_name]},
+           %Node{op_type: unquote(op), input: [input_name], output: [output_name]},
            {axon, params, used_params}
          ) do
-      input_value = input!(input, axon, params, used_params)
+      input = input!(input_name, axon, params, used_params)
+      {:name, op_name} = Function.info(unquote(fun), :name)
 
       output =
-        case input_value do
+        case input do
           %Axon{op: :constant, opts: [value: value]} ->
             new_value = apply(unquote(fun), [value])
             Axon.constant(new_value, name: output_name)
 
           %Axon{} = axon_input ->
-            Axon.nx(axon_input, unquote(fun), name: output_name)
+            Axon.nx(axon_input, unquote(fun), name: output_name, op_name: op_name)
 
           %Nx.Tensor{} = tensor_input ->
             value = apply(unquote(fun), [tensor_input])
@@ -148,10 +151,15 @@ defmodule AxonOnnx.Deserialize do
 
   for {op, act, act_opts} <- @activation_op_types do
     defp recur_nodes(
-           %Node{op_type: unquote(op), attribute: attrs, input: [input], output: [output_name]},
+           %Node{
+             op_type: unquote(op),
+             attribute: attrs,
+             input: [input_name],
+             output: [output_name]
+           },
            {axon, params, used_params}
          ) do
-      axon_input = axon!(input, axon)
+      input = input!(input_name, axon, params, used_params)
       activation_options = options!(attrs)
 
       opts =
@@ -164,7 +172,7 @@ defmodule AxonOnnx.Deserialize do
         end)
 
       axon_output =
-        case axon_input do
+        case input do
           %Axon{op: :constant, opts: [value: value]} ->
             new_value = apply(Axon.Activations, unquote(act), [value] ++ opts)
             Axon.constant(new_value, name: output_name)
@@ -172,6 +180,10 @@ defmodule AxonOnnx.Deserialize do
           %Axon{} = axon_input ->
             opts = [name: output_name] ++ opts
             apply(Axon, unquote(act), [axon_input, opts])
+
+          %Nx.Tensor{} = tensor_input ->
+            new_value = apply(Axon.Activations, unquote(act), [tensor_input] ++ opts)
+            Axon.constant(new_value, name: output_name)
         end
 
       updated_axon = Map.put(axon, output_name, axon_output)
@@ -195,12 +207,16 @@ defmodule AxonOnnx.Deserialize do
 
   for {op, reduce_fun, axis_or_axes, op_name} <- @reduction_op_types do
     defp recur_nodes(
-           %Node{op_type: unquote(op), attribute: attrs, input: [input], output: [output_name]},
+           %Node{
+             op_type: unquote(op),
+             attribute: attrs,
+             input: [input_name],
+             output: [output_name]
+           },
            {axon, params, used_params}
          ) do
       reduce_options = options!(attrs)
-
-      %Axon{} = axon_input = axon!(input, axon)
+      input = input!(input_name, axon, params, used_params)
 
       keepdims = reduce_options["keepdims"] || 1
       keep_axes = if keepdims == 1, do: true, else: false
@@ -227,9 +243,9 @@ defmodule AxonOnnx.Deserialize do
       end
 
       layer =
-        case axon_input do
+        case input do
           %Axon{op: :constant, opts: [value: tensor]} ->
-            new_value = layer_fun.(tensor, %{}, opts)
+            new_value = layer_fun.(tensor, opts)
             Axon.constant(new_value, name: output_name)
 
           %Axon{} = axon_input ->
@@ -238,6 +254,10 @@ defmodule AxonOnnx.Deserialize do
               [axon_input],
               [name: output_name, op_name: unquote(op_name)] ++ opts
             )
+
+          %Nx.Tensor{} = tensor_input ->
+            new_value = layer_fun.(tensor_input, opts)
+            Axon.constant(new_value, name: output_name)
         end
 
       updated_axon = Map.put(axon, output_name, layer)
@@ -261,8 +281,8 @@ defmodule AxonOnnx.Deserialize do
       # inp1 is a graph node and inp2 is a parameter and handle
       # accordingly
       if unquote(op) == "Add" and Map.has_key?(axon, inp1) and Map.has_key?(params, inp2) do
-        inp1 = axon!(inp1, axon)
-        inp2 = param!(inp2, params)
+        inp1 = input!(inp1, axon, params, used_params)
+        inp2 = input!(inp2, axon, params, used_params)
 
         updated_axon = Map.put(axon, output_name, Axon.bias(inp1, name: output_name))
         updated_params = Map.put(used_params, output_name, %{"bias" => inp2})
@@ -333,7 +353,6 @@ defmodule AxonOnnx.Deserialize do
 
   @binary_op_types [
     {"And", &Nx.logical_and/2, :logical_and},
-    # {"BitShift", &bitshift/2},
     {"Div", &Nx.divide/2, :divide},
     {"Equal", &Nx.equal/2, :equal},
     {"Greater", &Nx.greater/2, :greater},
@@ -356,27 +375,134 @@ defmodule AxonOnnx.Deserialize do
 
       fun = fn x, y, _opts -> apply(unquote(binary_fun), [x, y]) end
 
-      updated_axon =
+      {updated_axon, updated_params} =
         case {inp1, inp2} do
           {%Axon{op: :constant, opts: [value: v1]}, %Axon{op: :constant, opts: [value: v2]}} ->
             new_value = apply(unquote(binary_fun), [v1, v2])
-            Map.put(axon, output_name, Axon.constant(new_value, name: output_name))
+            {Map.put(axon, output_name, Axon.constant(new_value, name: output_name)), used_params}
 
           {%Axon{op: :constant, opts: [value: v1]}, %Nx.Tensor{} = v2} ->
             new_value = apply(unquote(binary_fun), [v1, v2])
-            Map.put(axon, output_name, Axon.constant(new_value, name: output_name))
+            {Map.put(axon, output_name, Axon.constant(new_value, name: output_name)), used_params}
 
           {%Nx.Tensor{} = v1, %Axon{op: :constant, opts: [value: v2]}} ->
             new_value = apply(unquote(binary_fun), [v1, v2])
-            Map.put(axon, output_name, Axon.constant(new_value, name: output_name))
+            {Map.put(axon, output_name, Axon.constant(new_value, name: output_name)), used_params}
+
+          {%Nx.Tensor{} = v1, %Nx.Tensor{} = v2} ->
+            new_value = apply(unquote(binary_fun), [v1, v2])
+            {Map.put(axon, output_name, Axon.constant(new_value, name: output_name)), used_params}
 
           {%Axon{} = inp1, %Axon{} = inp2} ->
             layer = Axon.layer(fun, [inp1, inp2], name: output_name, op_name: unquote(op_name))
-            Map.put(axon, output_name, layer)
+            {Map.put(axon, output_name, layer), used_params}
+
+          {%Axon{} = inp1, %Nx.Tensor{} = inp2} ->
+            layer =
+              trainable_binary_layer(
+                inp1,
+                inp2,
+                unquote(binary_fun),
+                output_name,
+                unquote(op_name)
+              )
+
+            updated_axon = Map.put(axon, output_name, layer)
+            updated_params = Map.put(used_params, output_name, %{"kernel" => inp1})
+            {updated_axon, updated_params}
+
+          {%Nx.Tensor{} = inp1, %Axon{} = inp2} ->
+            layer =
+              trainable_binary_layer(
+                inp2,
+                inp1,
+                unquote(binary_fun),
+                output_name,
+                unquote(op_name)
+              )
+
+            updated_axon = Map.put(axon, output_name, layer)
+            updated_params = Map.put(used_params, output_name, %{"kernel" => inp2})
+            {updated_axon, updated_params}
         end
 
-      {updated_axon, params, used_params}
+      {updated_axon, params, updated_params}
     end
+  end
+
+  defp recur_nodes(
+         %Node{
+           op_type: "BitShift",
+           attribute: attrs,
+           input: [inp1_name, inp2_name],
+           output: [output_name]
+         },
+         {axon, params, used_params}
+       ) do
+    inp1 = input!(inp1_name, axon, params, used_params)
+    inp2 = input!(inp2_name, axon, params, used_params)
+
+    bitshift_options = options!(attrs)
+
+    fun = fn x, y, _opts ->
+      case bitshift_options["direction"] do
+        "LEFT" -> Nx.left_shift(Nx.as_type(x, {:s, 64}), Nx.as_type(y, {:s, 64}))
+        "RIGHT" -> Nx.right_shift(Nx.as_type(x, {:s, 64}), Nx.as_type(y, {:s, 64}))
+      end
+    end
+
+    {updated_axon, updated_params} =
+      case {inp1, inp2} do
+        {%Axon{op: :constant, opts: [value: v1]}, %Axon{op: :constant, opts: [value: v2]}} ->
+          new_value = apply(fun, [v1, v2, []])
+          {Map.put(axon, output_name, Axon.constant(new_value, name: output_name)), used_params}
+
+        {%Axon{op: :constant, opts: [value: v1]}, %Nx.Tensor{} = v2} ->
+          new_value = apply(fun, [v1, v2, []])
+          {Map.put(axon, output_name, Axon.constant(new_value, name: output_name)), used_params}
+
+        {%Nx.Tensor{} = v1, %Axon{op: :constant, opts: [value: v2]}} ->
+          new_value = apply(fun, [v1, v2, []])
+          {Map.put(axon, output_name, Axon.constant(new_value, name: output_name)), used_params}
+
+        {%Nx.Tensor{} = v1, %Nx.Tensor{} = v2} ->
+          new_value = apply(fun, [v1, v2, []])
+          {Map.put(axon, output_name, Axon.constant(new_value, name: output_name)), used_params}
+
+        {%Axon{} = inp1, %Axon{} = inp2} ->
+          layer = Axon.layer(fun, [inp1, inp2], name: output_name, op_name: :bitshift)
+          {Map.put(axon, output_name, layer), used_params}
+
+        {%Axon{} = inp1, %Nx.Tensor{} = inp2} ->
+          layer =
+            trainable_binary_layer(
+              inp1,
+              inp2,
+              fun,
+              output_name,
+              :bitshift
+            )
+
+          updated_axon = Map.put(axon, output_name, layer)
+          updated_params = Map.put(used_params, output_name, %{"kernel" => inp1})
+          {updated_axon, updated_params}
+
+        {%Nx.Tensor{} = inp1, %Axon{} = inp2} ->
+          layer =
+            trainable_binary_layer(
+              inp2,
+              inp1,
+              fun,
+              output_name,
+              :bitshift
+            )
+
+          updated_axon = Map.put(axon, output_name, layer)
+          updated_params = Map.put(used_params, output_name, %{"kernel" => inp2})
+          {updated_axon, updated_params}
+      end
+
+    {updated_axon, params, updated_params}
   end
 
   @global_pool_types [
@@ -557,66 +683,99 @@ defmodule AxonOnnx.Deserialize do
        ) do
     gemm_options = options!(attrs)
 
-    # TODO:
-    # alpha = gemm_options["alpha"]
-    # beta = gemm_options["beta"]
+    alpha = Nx.tensor(gemm_options["alpha"] || 1.0)
+    beta = Nx.tensor(gemm_options["beta"] || 1.0)
     trans_a = gemm_options["transA"]
     trans_b = gemm_options["transB"]
 
     a = input!(a, axon, params, used_params)
     b = input!(b, axon, params, used_params)
 
+    c =
+      case maybe_c do
+        [] ->
+          nil
+
+        [c_name] ->
+          input!(c_name, axon, params, used_params)
+      end
+
     {updated_axon, updated_params} =
-      case {a, b} do
-        {%Axon{} = inp, %Nx.Tensor{} = kernel} ->
+      case {a, b, c} do
+        {%Axon{} = inp, %Nx.Tensor{} = kernel, nil} ->
           inp = if trans_a == 1, do: Axon.transpose(inp), else: inp
           kernel = if trans_b == 1, do: Nx.transpose(kernel), else: kernel
 
           units = Nx.shape(kernel) |> elem(1)
-          use_bias = maybe_c != []
 
-          layer = Axon.dense(inp, units, name: output_name, use_bias: use_bias)
+          layer =
+            inp
+            |> Axon.dense(units, name: output_name, use_bias: false)
+            |> Axon.multiply(Axon.constant(alpha, name: "gemm_alpha"))
 
           updated_axon = Map.put(axon, output_name, layer)
-
-          updated_params =
-            if use_bias do
-              [c] = maybe_c
-              bias = input!(c, axon, params, used_params)
-              Map.put(used_params, output_name, %{"kernel" => kernel, "bias" => bias})
-            else
-              Map.put(used_params, output_name, %{"kernel" => kernel})
-            end
+          updated_params = Map.put(used_params, output_name, %{"kernel" => kernel})
 
           {updated_axon, updated_params}
 
-        {%Nx.Tensor{} = kernel, %Axon{} = inp} ->
+        {%Nx.Tensor{} = kernel, %Axon{} = inp, nil} ->
           inp = if trans_a == 1, do: Axon.transpose(inp), else: inp
           kernel = if trans_b == 1, do: Nx.transpose(kernel), else: kernel
 
           units = Nx.shape(kernel) |> elem(1)
-          use_bias = maybe_c != []
 
-          layer = Axon.dense(inp, units, name: output_name, use_bias: use_bias)
+          layer =
+            inp
+            |> Axon.dense(units, name: output_name, use_bias: false)
+            |> Axon.multiply(Axon.constant(alpha, name: "gemm_alpha"))
 
           updated_axon = Map.put(axon, output_name, layer)
-
-          updated_params =
-            if use_bias do
-              [c] = maybe_c
-              bias = input!(c, axon, params, used_params)
-              Map.put(used_params, output_name, %{"kernel" => kernel, "bias" => bias})
-            else
-              Map.put(used_params, output_name, %{"kernel" => kernel})
-            end
+          updated_params = Map.put(used_params, output_name, %{"kernel" => kernel})
 
           {updated_axon, updated_params}
 
-        {%Axon{} = a, %Axon{} = b} ->
+        {%Axon{} = a, %Axon{} = b, nil} ->
           a = if trans_a == 1, do: Axon.transpose(a), else: a
           b = if trans_b == 1, do: Axon.transpose(b), else: b
 
-          layer = numpy_matmul_layer(a, b, output_name)
+          layer =
+            a
+            |> numpy_matmul_layer(b, output_name)
+            |> Axon.multiply(Axon.constant(alpha, name: "gemm_alpha"))
+
+          updated_axon = Map.put(axon, output_name, layer)
+          {updated_axon, used_params}
+
+        {%Axon{} = a, %Nx.Tensor{} = b, %Nx.Tensor{} = c} ->
+          a = if trans_a == 1, do: Axon.transpose(a), else: a
+          b = if trans_b == 1, do: Nx.transpose(b), else: b
+
+          layer = dense_with_bias(a, b, alpha, beta, output_name)
+          updated_axon = Map.put(axon, output_name, layer)
+          updated_params = Map.put(used_params, output_name, %{"kernel" => b, "bias" => c})
+
+          {updated_axon, updated_params}
+
+        {%Nx.Tensor{} = a, %Axon{} = b, %Nx.Tensor{} = c} ->
+          a = if trans_a == 1, do: Nx.transpose(a), else: a
+          b = if trans_b == 1, do: Axon.transpose(b), else: b
+
+          layer = dense_with_bias(b, a, alpha, beta, output_name)
+          updated_axon = Map.put(axon, output_name, layer)
+          updated_params = Map.put(used_params, output_name, %{"kernel" => a, "bias" => c})
+
+          {updated_axon, updated_params}
+
+        {%Axon{} = a, %Axon{} = b, %Axon{} = c} ->
+          a = if trans_a == 1, do: Axon.transpose(a), else: a
+          b = if trans_b == 1, do: Axon.transpose(b), else: b
+
+          layer =
+            a
+            |> numpy_matmul_layer(b, output_name)
+            |> Axon.multiply(Axon.constant(alpha, name: "gemm_alpha"))
+            |> Axon.add(Axon.multiply(c, Axon.constant(beta, name: "gemm_beta")))
+
           updated_axon = Map.put(axon, output_name, layer)
           {updated_axon, used_params}
       end
@@ -1314,7 +1473,7 @@ defmodule AxonOnnx.Deserialize do
           new_value =
             if permutation, do: Nx.transpose(inp, axes: permutation), else: Nx.transpose(inp)
 
-          updated_params = Map.replace(used_params, output_name, new_value)
+          updated_params = Map.put(used_params, output_name, new_value)
           {axon, updated_params}
       end
 
@@ -1977,26 +2136,31 @@ defmodule AxonOnnx.Deserialize do
     {updated_axon, params, used_params}
   end
 
-  defp recur_nodes(%Node{op_type: "NonZero", input: [inp_name], output: [output_name]}, {axon, params, used_params}) do
+  defp recur_nodes(
+         %Node{op_type: "NonZero", input: [inp_name], output: [output_name]},
+         {axon, params, used_params}
+       ) do
     input = constant!(inp_name, axon, params, used_params)
 
     rank = Nx.rank(input)
 
-    non_zero_indices = Enum.reduce(0..rank - 1, [], fn axis, indices ->
-      before_perm = Enum.to_list(0..axis - 1//1)
-      after_perm = Enum.to_list(axis + 1..rank - 1//1)
-      perm = [axis] ++ before_perm ++ after_perm
+    non_zero_indices =
+      Enum.reduce(0..(rank - 1), [], fn axis, indices ->
+        before_perm = Enum.to_list(0..(axis - 1)//1)
+        after_perm = Enum.to_list((axis + 1)..(rank - 1)//1)
+        perm = [axis] ++ before_perm ++ after_perm
 
-      tensor = Nx.transpose(input, axes: perm)
-      non_zero_indices =
-        tensor
-        |> Nx.not_equal(0)
-        |> Nx.select(Nx.iota(Nx.shape(tensor), axis: -1), -1)
-        |> Nx.to_flat_list()
-        |> Enum.filter(& &1 > -1)
+        tensor = Nx.transpose(input, axes: perm)
 
-      [non_zero_indices | indices]
-    end)
+        non_zero_indices =
+          tensor
+          |> Nx.not_equal(0)
+          |> Nx.select(Nx.iota(Nx.shape(tensor), axis: -1), -1)
+          |> Nx.to_flat_list()
+          |> Enum.filter(&(&1 > -1))
+
+        [non_zero_indices | indices]
+      end)
 
     output =
       non_zero_indices

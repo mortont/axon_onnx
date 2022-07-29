@@ -221,6 +221,26 @@ defmodule AxonOnnx.Shared do
     floor(min(max(min, val), max))
   end
 
+  def dense_with_bias(inp, kernel, alpha, beta, output_name) do
+    units = Nx.shape(kernel) |> elem(1)
+
+    if beta == Nx.tensor(1.0) do
+      inp
+      |> Axon.dense(units, name: output_name)
+      |> Axon.multiply(Axon.constant(alpha, name: "gemm_alpha"))
+    else
+      kernel_param = Axon.param("kernel", &Axon.Shape.dense_kernel(&1, units))
+      bias_param = Axon.param("bias", &Axon.Shape.dense_bias(&1, units))
+
+      fun = fn inp, kernel, bias, _opts ->
+        bias = Nx.multiply(bias, beta)
+        Axon.Layers.dense(inp, kernel, bias) |> Nx.multiply(alpha)
+      end
+
+      Axon.layer(fun, [inp, kernel_param, bias_param], name: output_name, op_name: :gemm)
+    end
+  end
+
   # Conversion helpers
 
   def constant?(%{op: :constant}), do: true

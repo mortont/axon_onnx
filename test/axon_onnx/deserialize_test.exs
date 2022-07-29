@@ -117,16 +117,16 @@ defmodule DeserializeTest do
     #   check_onnx_test_case!("node", "test_batchnorm_example_training_mode")
     # end
 
-    # test "BitShift" do
-    #   check_onnx_test_case!("node", "test_bitshift_left_uint8")
-    #   check_onnx_test_case!("node", "test_bitshift_left_uint16")
-    #   check_onnx_test_case!("node", "test_bitshift_left_uint32")
-    #   check_onnx_test_case!("node", "test_bitshift_left_uint64")
-    #   check_onnx_test_case!("node", "test_bitshift_right_uint8")
-    #   check_onnx_test_case!("node", "test_bitshift_right_uint16")
-    #   check_onnx_test_case!("node", "test_bitshift_right_uint32")
-    #   check_onnx_test_case!("node", "test_bitshift_right_uint64")
-    # end
+    test "BitShift" do
+      check_onnx_test_case!("node", "test_bitshift_left_uint8")
+      check_onnx_test_case!("node", "test_bitshift_left_uint16")
+      check_onnx_test_case!("node", "test_bitshift_left_uint32")
+      check_onnx_test_case!("node", "test_bitshift_left_uint64")
+      check_onnx_test_case!("node", "test_bitshift_right_uint8")
+      check_onnx_test_case!("node", "test_bitshift_right_uint16")
+      check_onnx_test_case!("node", "test_bitshift_right_uint32")
+      check_onnx_test_case!("node", "test_bitshift_right_uint64")
+    end
 
     test "Cast" do
       # check_onnx_test_case!("node", "test_cast_BFLOAT16_to_FLOAT")
@@ -181,7 +181,6 @@ defmodule DeserializeTest do
 
     test "Constant" do
       check_onnx_test_case!("node", "test_constant")
-      # TODO
       # check_onnx_test_case!("node", "test_constant_pad")
     end
 
@@ -299,17 +298,17 @@ defmodule DeserializeTest do
     end
 
     test "Gemm" do
-      # check_onnx_test_case!("node", "test_gemm_all_attributes")
-      # check_onnx_test_case!("node", "test_gemm_alpha")
-      # check_onnx_test_case!("node", "test_gemm_beta")
-      # check_onnx_test_case!("node", "test_gemm_default_matrix_bias")
+      check_onnx_test_case!("node", "test_gemm_all_attributes")
+      check_onnx_test_case!("node", "test_gemm_alpha")
+      check_onnx_test_case!("node", "test_gemm_beta")
+      check_onnx_test_case!("node", "test_gemm_default_matrix_bias")
       check_onnx_test_case!("node", "test_gemm_default_no_bias")
-      # check_onnx_test_case!("node", "test_gemm_default_scalar_bias")
-      # check_onnx_test_case!("node", "test_gemm_default_single_elem_vector_bias")
-      # check_onnx_test_case!("node", "test_gemm_default_vector_bias")
+      check_onnx_test_case!("node", "test_gemm_default_scalar_bias")
+      check_onnx_test_case!("node", "test_gemm_default_single_elem_vector_bias")
+      check_onnx_test_case!("node", "test_gemm_default_vector_bias")
       check_onnx_test_case!("node", "test_gemm_default_zero_bias")
-      # check_onnx_test_case!("node", "test_gemm_transposeA")
-      # check_onnx_test_case!("node", "test_gemm_transposeB")
+      check_onnx_test_case!("node", "test_gemm_transposeA")
+      check_onnx_test_case!("node", "test_gemm_transposeB")
     end
 
     test "GlobalAveragePool" do
@@ -364,6 +363,16 @@ defmodule DeserializeTest do
     #   check_onnx_test_case!("node", "test_instancenorm_epsilon")
     #   check_onnx_test_case!("node", "test_instancenorm_example")
     # end
+
+    test "IsInf" do
+      check_onnx_test_case!("node", "test_isinf")
+      # check_onnx_test_case!("node", "test_isinf_negative")
+      # check_onnx_test_case!("node", "test_isinf_positive")
+    end
+
+    test "IsNaN" do
+      check_onnx_test_case!("node", "test_isnan")
+    end
 
     test "LeakyRelu" do
       check_onnx_test_case!("node", "test_leakyrelu")
@@ -918,7 +927,7 @@ defmodule DeserializeTest do
 
     test "Linear" do
       check_onnx_test_case!("pytorch-converted", "test_Linear")
-      # check_onnx_test_case!("pytorch-converted", "test_Linear_no_bias")
+      check_onnx_test_case!("pytorch-converted", "test_Linear_no_bias")
     end
 
     test "LogSoftmax" do
@@ -1022,9 +1031,9 @@ defmodule DeserializeTest do
     #   check_onnx_test_case!("pytorch-operator", "test_operator_addconstant")
     # end
 
-    # test "addmm" do
-    #   check_onnx_test_case!("pytorch-operator", "test_operator_addmm")
-    # end
+    test "addmm" do
+      check_onnx_test_case!("pytorch-operator", "test_operator_addmm")
+    end
 
     test "basic" do
       check_onnx_test_case!("pytorch-operator", "test_operator_basic")
@@ -1586,10 +1595,9 @@ defmodule DeserializeTest do
       check_onnx_transformer!("roberta-base", batch: 2, sequence: 8)
     end
 
-    # TODO: Infinity support
-    # test "t5" do
-    #   check_onnx_transformer!("t5-base", batch: 2, encoder_sequence: 8, decoder_sequence: 8)
-    # end
+    test "t5" do
+      check_onnx_transformer!("t5-base", batch: 2, encoder_sequence: 8, decoder_sequence: 8)
+    end
 
     test "vit" do
       check_onnx_transformer!("google/vit-base-patch16-224", batch: 2, sequence: 8)
