@@ -1977,6 +1977,37 @@ defmodule AxonOnnx.Deserialize do
     {updated_axon, params, used_params}
   end
 
+  defp recur_nodes(%Node{op_type: "NonZero", input: [inp_name], output: [output_name]}, {axon, params, used_params}) do
+    input = constant!(inp_name, axon, params, used_params)
+
+    rank = Nx.rank(input)
+
+    non_zero_indices = Enum.reduce(0..rank - 1, [], fn axis, indices ->
+      before_perm = Enum.to_list(0..axis - 1//1)
+      after_perm = Enum.to_list(axis + 1..rank - 1//1)
+      perm = [axis] ++ before_perm ++ after_perm
+
+      tensor = Nx.transpose(input, axes: perm)
+      non_zero_indices =
+        tensor
+        |> Nx.not_equal(0)
+        |> Nx.select(Nx.iota(Nx.shape(tensor), axis: -1), -1)
+        |> Nx.to_flat_list()
+        |> Enum.filter(& &1 > -1)
+
+      [non_zero_indices | indices]
+    end)
+
+    output =
+      non_zero_indices
+      |> Nx.tensor()
+      |> Axon.constant(name: output_name)
+
+    updated_axon = Map.put(axon, output_name, output)
+
+    {updated_axon, params, used_params}
+  end
+
   defp recur_nodes(%Node{op_type: unsupported}, _) do
     raise ArgumentError, "unsupported #{inspect(unsupported)}"
   end

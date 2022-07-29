@@ -1573,7 +1573,6 @@ defmodule DeserializeTest do
       )
     end
 
-    # TODO: Empty tensor?
     # test "mbart" do
     #   check_onnx_transformer!("facebook/mbart-large-50")
     # end
