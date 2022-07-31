@@ -17,8 +17,10 @@ defmodule AxonOnnx.Serialize do
   @producer_name "AxonOnnx"
   @producer_version "0.1.0-dev"
 
-  def __export__(%Axon{} = axon, params, opts \\ []) do
-    %Model{graph: %Graph{name: output_name}} = onnx_model = to_onnx_model(axon, params, opts)
+  def __export__(%Axon{} = axon, inputs, params, opts \\ []) do
+    %Model{graph: %Graph{name: output_name}} =
+      onnx_model = to_onnx_model(axon, inputs, params, opts)
+
     fname = opts[:path] || output_name <> ".onnx"
 
     encoded = Model.encode!(onnx_model)
@@ -28,13 +30,13 @@ defmodule AxonOnnx.Serialize do
     File.close(file)
   end
 
-  defp to_onnx_model(axon, params, opts) do
+  defp to_onnx_model(axon, inputs, params, opts) do
     model_version = opts[:version] || 1
     doc_string = opts[:doc_string] || "An Axon Model"
 
     opset = %Opset{domain: "", version: @onnx_opset_version}
 
-    graph = to_onnx_graph(axon, params)
+    graph = to_onnx_graph(axon, inputs, params)
 
     %Model{
       ir_version: @onnx_ir_version,
@@ -48,8 +50,13 @@ defmodule AxonOnnx.Serialize do
     }
   end
 
-  defp to_onnx_graph(%Axon{id: id, op: op, name: output_name_fn} = axon, params_or_initializers) do
-    {inputs, param_names, nodes, op_counts, cache} = to_onnx(axon, [], [], [], %{}, %{})
+  defp to_onnx_graph(
+         %Axon{id: id, op: op, name: output_name_fn} = axon,
+         templates,
+         params_or_initializers
+       ) do
+    {inputs, param_names, nodes, op_counts, cache} =
+      to_onnx(axon, templates, [], [], [], %{}, %{})
 
     output_name =
       case cache do
@@ -59,6 +66,8 @@ defmodule AxonOnnx.Serialize do
         %{} ->
           output_name_fn.(op, op_counts)
       end
+
+    output_shape = Axon.get_output_shape(axon, templates)
 
     # Flatten params_or_initializers so it's no longer nested
     # TODO: This is going to be expensive, find a better way
@@ -87,7 +96,7 @@ defmodule AxonOnnx.Serialize do
         end
       )
 
-    {output, _, _} = to_value_info(axon, op_counts, cache)
+    {output, _, _} = to_value_info(axon, output_shape, op_counts, cache)
 
     %Graph{
       node: Enum.reverse(nodes),
@@ -98,8 +107,28 @@ defmodule AxonOnnx.Serialize do
     }
   end
 
-  defp to_onnx(%Axon{op: :input} = axon, inputs, param_names, nodes, op_counts, cache) do
-    {input_value, op_counts, cache} = to_value_info(axon, op_counts, cache)
+  defp to_onnx(
+         %Axon{op: :input, name: name} = axon,
+         templates,
+         inputs,
+         param_names,
+         nodes,
+         op_counts,
+         cache
+       ) do
+    # TODO: Handle defaults
+    name = name.(:input, %{})
+
+    shape =
+      case templates do
+        %Nx.Tensor{} = tensor ->
+          Nx.shape(tensor)
+
+        map ->
+          Nx.shape(map[name])
+      end
+
+    {input_value, op_counts, cache} = to_value_info(axon, shape, op_counts, cache)
     {[input_value | inputs], param_names, nodes, op_counts, cache}
   end
 
@@ -113,6 +142,7 @@ defmodule AxonOnnx.Serialize do
            parent: [%Axon{id: inp_id} = parent],
            parameters: params
          },
+         templates,
          inputs,
          param_names,
          nodes,
@@ -120,7 +150,7 @@ defmodule AxonOnnx.Serialize do
          cache
        ) do
     {inputs, param_names, nodes, op_counts, cache} =
-      to_onnx(parent, inputs, param_names, nodes, op_counts, cache)
+      to_onnx(parent, templates, inputs, param_names, nodes, op_counts, cache)
 
     inp_name = cache[inp_id]
 
@@ -162,6 +192,7 @@ defmodule AxonOnnx.Serialize do
            parameters: params,
            opts: opts
          },
+         templates,
          inputs,
          param_names,
          nodes,
@@ -169,7 +200,7 @@ defmodule AxonOnnx.Serialize do
          cache
        ) do
     {inputs, param_names, nodes, op_counts, cache} =
-      to_onnx(parent, inputs, param_names, nodes, op_counts, cache)
+      to_onnx(parent, templates, inputs, param_names, nodes, op_counts, cache)
 
     inp_name = cache[inp_id]
 
@@ -185,7 +216,9 @@ defmodule AxonOnnx.Serialize do
           {name, op_counts, cache}
       end
 
-    strides = opts[:strides]
+    input_shape = Axon.get_output_shape(parent, templates)
+    strides = opts[:strides] || 1
+    strides = list_or_duplicate(:strides, strides, Nx.rank(input_shape) - 2)
     padding = opts[:padding]
 
     strides_attr = to_attr("strides", :INTS, strides)
@@ -227,6 +260,7 @@ defmodule AxonOnnx.Serialize do
 
   defp to_onnx(
          %Axon{id: id, op: pool, name: name_fn, parent: [%Axon{id: inp_id} = parent], opts: opts},
+         templates,
          inputs,
          param_names,
          nodes,
@@ -235,7 +269,7 @@ defmodule AxonOnnx.Serialize do
        )
        when pool in @supported_pooling do
     {inputs, param_names, nodes, op_counts, cache} =
-      to_onnx(parent, inputs, param_names, nodes, op_counts, cache)
+      to_onnx(parent, templates, inputs, param_names, nodes, op_counts, cache)
 
     inp_name = cache[inp_id]
 
@@ -251,8 +285,11 @@ defmodule AxonOnnx.Serialize do
           {name, op_counts, cache}
       end
 
-    kernel_size = opts[:kernel_size]
-    strides = opts[:strides]
+    input_shape = Axon.get_output_shape(parent, templates)
+
+    kernel_size = tuple_or_duplicate(:kernel_size, opts[:kernel_size], Nx.rank(input_shape) - 2)
+    strides = opts[:strides] || Tuple.to_list(kernel_size)
+    strides = list_or_duplicate(:strides, strides, Nx.rank(input_shape) - 2)
     padding = opts[:padding]
 
     strides_attr = to_attr("strides", :INTS, strides)
@@ -309,9 +346,10 @@ defmodule AxonOnnx.Serialize do
            id: id,
            op: pool,
            name: name_fn,
-           parent: [%Axon{id: inp_id, output_shape: shape} = parent],
+           parent: [%Axon{id: inp_id} = parent],
            opts: opts
          },
+         templates,
          inputs,
          param_names,
          nodes,
@@ -320,7 +358,7 @@ defmodule AxonOnnx.Serialize do
        )
        when pool in @supported_global_pooling do
     {inputs, param_names, nodes, op_counts, cache} =
-      to_onnx(parent, inputs, param_names, nodes, op_counts, cache)
+      to_onnx(parent, templates, inputs, param_names, nodes, op_counts, cache)
 
     inp_name = cache[inp_id]
 
@@ -375,6 +413,7 @@ defmodule AxonOnnx.Serialize do
         }
 
         constant_name = name <> "_squeeze_axes"
+        shape = Axon.get_output_shape(parent, templates)
         axes = Enum.to_list(2..(Nx.rank(shape) - 1)//1)
         axes_tensor = nx_to_tensor_proto(constant_name, Nx.tensor(axes))
         value_attr = to_attr("value", :TENSOR, axes_tensor)
@@ -420,6 +459,7 @@ defmodule AxonOnnx.Serialize do
   for {op, onnx_op} <- @supported_activations do
     defp to_onnx(
            %Axon{id: id, op: unquote(op), name: name_fn, parent: [%Axon{id: inp_id} = parent]},
+           templates,
            inputs,
            param_names,
            nodes,
@@ -427,7 +467,7 @@ defmodule AxonOnnx.Serialize do
            cache
          ) do
       {inputs, param_names, nodes, op_counts, cache} =
-        to_onnx(parent, inputs, param_names, nodes, op_counts, cache)
+        to_onnx(parent, templates, inputs, param_names, nodes, op_counts, cache)
 
       input_name = cache[inp_id]
 
@@ -467,6 +507,7 @@ defmodule AxonOnnx.Serialize do
            name: name_fn,
            parent: [%Axon{id: inp_id} = parent]
          },
+         templates,
          inputs,
          param_names,
          nodes,
@@ -475,7 +516,7 @@ defmodule AxonOnnx.Serialize do
        )
        when op in @supported_dropout_layers do
     {inputs, param_names, nodes, op_counts, cache} =
-      to_onnx(parent, inputs, param_names, nodes, op_counts, cache)
+      to_onnx(parent, templates, inputs, param_names, nodes, op_counts, cache)
 
     input_name = cache[inp_id]
 
@@ -526,7 +567,7 @@ defmodule AxonOnnx.Serialize do
     end)
   end
 
-  defp to_value_info(%Axon{id: id, op: op, name: name_fn, output_shape: shape}, op_counts, cache) do
+  defp to_value_info(%Axon{id: id, op: op, name: name_fn}, shape, op_counts, cache) do
     {name, op_counts, cache} =
       case cache do
         %{^id => name} ->
@@ -581,5 +622,47 @@ defmodule AxonOnnx.Serialize do
 
     raw_data = Nx.to_binary(tensor)
     %Onnx.TensorProto{name: param_name, dims: dims, data_type: data_type, raw_data: raw_data}
+  end
+
+  defp tuple_or_duplicate(key, tuple_or_integer, rank) do
+    cond do
+      is_tuple(tuple_or_integer) ->
+        if tuple_size(tuple_or_integer) != rank do
+          raise ArgumentError,
+                "expected #{inspect(key)} to be a #{rank}-element tuple, " <>
+                  "got: #{inspect(tuple_or_integer)}"
+        end
+
+        tuple_or_integer
+
+      is_integer(tuple_or_integer) ->
+        Tuple.duplicate(tuple_or_integer, rank)
+
+      true ->
+        raise ArgumentError,
+              "expected #{inspect(key)} to be an integer or a tuple, " <>
+                "got: #{inspect(tuple_or_integer)}"
+    end
+  end
+
+  defp list_or_duplicate(key, list_or_integer, rank) do
+    cond do
+      is_list(list_or_integer) ->
+        if length(list_or_integer) != rank do
+          raise ArgumentError,
+                "expected #{inspect(key)} to be a #{rank}-element list, " <>
+                  "got: #{inspect(list_or_integer)}"
+        end
+
+        list_or_integer
+
+      is_integer(list_or_integer) ->
+        List.duplicate(list_or_integer, rank)
+
+      true ->
+        raise ArgumentError,
+              "expected #{inspect(key)} to be an integer or a list, " <>
+                "got: #{inspect(list_or_integer)}"
+    end
   end
 end
