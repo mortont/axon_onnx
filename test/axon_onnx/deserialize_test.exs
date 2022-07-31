@@ -1529,10 +1529,10 @@ defmodule DeserializeTest do
       check_onnx_transformer!("camembert-base", batch: 2, sequence: 8)
     end
 
-  #   # TODO: This does not seem right...
-  #   # test "convbert" do
-  #   #   check_onnx_transformer!("YituTech/conv-bert-small", batch: 2, sequence: 8)
-  #   # end
+    # TODO: This does not seem right...
+    # test "convbert" do
+    #   check_onnx_transformer!("YituTech/conv-bert-small", batch: 2, sequence: 8)
+    # end
 
     test "data2vectext" do
       check_onnx_transformer!("facebook/data2vec-text-base", batch: 2, sequence: 8)
@@ -1586,10 +1586,10 @@ defmodule DeserializeTest do
     #   check_onnx_transformer!("facebook/mbart-large-50")
     # end
 
-  #   # TODO: Listed as supported, but does not appear to be?
-  #   # test "plbart" do
-  #   #   check_onnx_transformer!("uclanlp/plbart-base")
-  #   # end
+    # TODO: Listed as supported, but does not appear to be?
+    # test "plbart" do
+    #   check_onnx_transformer!("uclanlp/plbart-base")
+    # end
 
     test "roberta" do
       check_onnx_transformer!("roberta-base", batch: 2, sequence: 8)

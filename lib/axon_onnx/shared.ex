@@ -191,7 +191,6 @@ defmodule AxonOnnx.Shared do
   end
 
   defp do_slice(shape, {start, stop, axis, stride}, acc) do
-    [shape, {start, stop, axis, stride}] |> IO.inspect(label: "do_slice")
     start = if start < 0, do: start + elem(shape, axis), else: start
 
     start =
