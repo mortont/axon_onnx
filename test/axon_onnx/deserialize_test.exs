@@ -683,6 +683,7 @@ defmodule DeserializeTest do
     # check_onnx_test_case!("node", "test_reshape_zero_dim")
     # end
 
+    @tag :resize
     test "Resize" do
       check_onnx_test_case!("node", "test_resize_downsample_scales_cubic")
       # check_onnx_test_case!("node", "test_resize_downsample_scales_cubic_A_n0p5_exclude_outside")

@@ -2027,19 +2027,25 @@ defmodule AxonOnnx.Deserialize do
     # op_type spec: https://github.com/onnx/onnx/blob/main/docs/Operators.md#resize
 
     [in_layer_name | rest_of_inputs] = input
-    inp = input!(in_layer_name, axon, params)
-    input_shape = get_shape(inp) |> IO.inspect(label: "input_shape")
+    inp = input!(in_layer_name, axon, params, used_params)
+
+    layer_inputs =
+      inp
+      |> Axon.get_inputs()
+      |> Map.new(fn {k, v} -> {k, Nx.broadcast(0.0, v)} end)
+    input_shape = Axon.get_output_shape(inp, layer_inputs)
+
 
     [_roi, scales, sizes] =
       case rest_of_inputs do
         # all are optional
         # only one of 'scales' and 'sizes' can be specified
         ["", scales] ->
-          scales = constant!(scales, axon, params) |> Nx.to_flat_list()
+          scales = constant!(scales, axon, params, used_params) |> Nx.to_flat_list()
           [nil, scales, nil]
 
         ["", _, sizes] ->
-          sizes = constant!(sizes, axon, params) |> Nx.to_flat_list()
+          sizes = constant!(sizes, axon, params, used_params) |> Nx.to_flat_list()
           [nil, nil, sizes]
 
         [_roi, _sc] ->
@@ -2092,6 +2098,7 @@ defmodule AxonOnnx.Deserialize do
 
     [out_layer_name] = output
     updated_axon = Map.put(axon, out_layer_name, layer)
+  end
 
   defp recur_nodes(
          %Node{
