@@ -1602,11 +1602,6 @@ defmodule AxonOnnx.Deserialize do
        ) do
     # op_type spec: https://github.com/onnx/onnx/blob/main/docs/Operators.md#resize
 
-    IO.inspect(input, label: "input")
-    IO.inspect(options!(attrs), label: "attributes")
-    IO.inspect(params, label: "params")
-    IO.inspect(output, label: "output")
-
     [in_layer_name | rest_of_inputs] = input
     inp = input!(in_layer_name, axon, params)
     input_shape = get_shape(inp) |> IO.inspect(label: "input_shape")
@@ -1616,10 +1611,12 @@ defmodule AxonOnnx.Deserialize do
         # all are optional
         # only one of 'scales' and 'sizes' can be specified
         ["", scales] ->
-          [nil, input!(scales, axon, params), nil]
+          scales = constant!(scales, axon, params) |> Nx.to_flat_list()
+          [nil, scales, nil]
 
         ["", _, sizes] ->
-          [nil, nil, input!(sizes, axon, params)]
+          sizes = constant!(sizes, axon, params) |> Nx.to_flat_list()
+          [nil, nil, sizes]
 
         [_roi, _sc] ->
           raise ArgumentError, "unsupported resize, roi is not implemented yet"
@@ -1629,26 +1626,20 @@ defmodule AxonOnnx.Deserialize do
 
     output_shape =
       case [scales, sizes] do
-        [%Axon{}, nil] ->
-          # expected by test_resize_downsample_scales_cubic
-          {8, 8}
-
-        [%Tensor{data_type: {:f, 32}} = scales, nil] ->
-          input_shape
-          |> Tuple.to_list()
-          |> Enum.zip(Nx.to_flat_list(scales))
-          # multiply
-          |> Enum.map(fn
-            {nil, _} -> nil
-            {is, sc} -> trunc(is * sc)
-          end)
-
-        [nil, %Tensor{data_type: {:i, 64}} = sizes] ->
-          # absolute output shape
-          Nx.to_flat_list(sizes)
-
         [nil, nil] ->
           raise ArgumentError, "Invalid Resize, one of 'scales' and 'sizes' MUST be specified"
+
+        [scales, nil] ->
+          input_shape
+          |> Tuple.to_list()
+          |> Enum.zip_with(scales, fn
+            nil, _  -> nil
+            is, sc -> trunc(is * sc)
+          end)
+
+        [nil, sizes] ->
+          sizes
+
       end
 
     %{"mode" => mode} = options!(attrs)
@@ -1672,8 +1663,8 @@ defmodule AxonOnnx.Deserialize do
                 "unsupported resize mode #{inspect(mode)}, Axon only supports" <>
                   "nearest, linear, and bilinear resizing"
       end
-
-    layer = Axon.resize(inp, output_shape, method: method)
+    spatial_dims = {elem(output_shape, 3), elem(output_shape, 4)}
+    layer = Axon.resize(inp, spatial_dims, method: method)
 
     [out_layer_name] = output
     updated_axon = Map.put(axon, out_layer_name, layer)
