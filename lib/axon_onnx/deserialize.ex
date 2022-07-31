@@ -2091,13 +2091,14 @@ defmodule AxonOnnx.Deserialize do
         mode ->
           raise ArgumentError,
                 "unsupported resize mode #{inspect(mode)}, Axon only supports" <>
-                  "nearest, linear, and bilinear resizing"
+                  "nearest, linear, bilinear and cubic resizing"
       end
     spatial_dims = {elem(output_shape, 3), elem(output_shape, 4)}
     layer = Axon.resize(inp, spatial_dims, method: method)
 
     [out_layer_name] = output
     updated_axon = Map.put(axon, out_layer_name, layer)
+    {updated_axon, params, used_params}
   end
 
   defp recur_nodes(
