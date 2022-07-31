@@ -1556,11 +1556,11 @@ defmodule DeserializeTest do
     #   check_onnx_transformer!("flaubert/flaubert_small_cased", batch: 2, sequence: 8)
     # end
 
-  #   # TODO: This model is 22.5GB so not the easiest to test
-  #   # in a single GH action
-  #   # test "gpt j" do
-  #   #   check_onnx_transformer!("EleutherAI/gpt-j-6B")
-  #   # end
+    # TODO: This model is 22.5GB so not the easiest to test
+    # in a single GH action
+    # test "gpt j" do
+    #   check_onnx_transformer!("EleutherAI/gpt-j-6B")
+    # end
 
     test "gpt neo" do
       check_onnx_transformer!("EleutherAI/gpt-neo-125M", batch: 2, sequence: 8)
