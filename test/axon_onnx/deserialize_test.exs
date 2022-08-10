@@ -685,10 +685,10 @@ defmodule DeserializeTest do
 
     @tag :resize
     test "Resize" do
-      check_onnx_test_case!("node", "test_resize_downsample_scales_cubic")
+      # check_onnx_test_case!("node", "test_resize_downsample_scales_cubic")
       # check_onnx_test_case!("node", "test_resize_downsample_scales_cubic_A_n0p5_exclude_outside")
       # check_onnx_test_case!("node", "test_resize_downsample_scales_cubic_align_corners")
-      # check_onnx_test_case!("node", "test_resize_downsample_scales_linear")
+      check_onnx_test_case!("node", "test_resize_downsample_scales_linear")
       # check_onnx_test_case!("node", "test_resize_downsample_scales_linear_align_corners")
       # check_onnx_test_case!("node", "test_resize_downsample_scales_nearest")
       # check_onnx_test_case!("node", "test_resize_downsample_sizes_cubic")
