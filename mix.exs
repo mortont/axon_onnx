@@ -2,7 +2,7 @@ defmodule AxonOnnx.MixProject do
   use Mix.Project
 
   @source_url "https://github.com/elixir-nx/axon_onnx"
-  @version "0.2.0-dev"
+  @version "0.2.0"
 
   def project do
     [
@@ -36,10 +36,10 @@ defmodule AxonOnnx.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:axon, "~> 0.2.0-dev", axon_opts()},
+      {:axon, "~> 0.2.0", axon_opts()},
       {:protox, "~> 1.6.10"},
-      {:nx, "~> 0.3.0-dev", nx_opts()},
-      {:exla, "~> 0.3.0-dev", [only: :test] ++ exla_opts()},
+      {:nx, "~> 0.3.0", nx_opts()},
+      {:exla, "~> 0.3.0", [only: :test] ++ exla_opts()},
       {:req, "~> 0.1.0", only: :test},
       {:jason, "~> 1.2", only: :test},
       {:ex_doc, "~> 0.23", only: :docs}
@@ -66,7 +66,7 @@ defmodule AxonOnnx.MixProject do
     if path = System.get_env("AXON_PATH") do
       [path: path]
     else
-      [github: "elixir-nx/axon"]
+      []
     end
   end
 
@@ -74,7 +74,7 @@ defmodule AxonOnnx.MixProject do
     if path = System.get_env("AXON_NX_PATH") do
       [path: path, override: true]
     else
-      [github: "elixir-nx/nx", sparse: "nx", override: true]
+      []
     end
   end
 
@@ -82,7 +82,7 @@ defmodule AxonOnnx.MixProject do
     if path = System.get_env("AXON_EXLA_PATH") do
       [path: path]
     else
-      [github: "elixir-nx/nx", sparse: "exla"]
+      []
     end
   end
 

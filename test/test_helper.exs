@@ -30,7 +30,8 @@ defmodule OnnxTestHelper do
 
     model_path = Path.join([cache_dir, "#{model_name}.onnx"])
 
-    params = Axon.init(axon_model, Nx.template(input_shape, {:f, 32}), %{}, compiler: EXLA)
+    {init_fn, predict_fn} = Axon.build(axon_model, compiler: EXLA)
+    params = init_fn.(Nx.template(input_shape, {:f, 32}), %{})
 
     Enum.each(1..num_cases//1, fn n ->
       test_path = Path.join([cache_dir, "test_data_set_#{n}"])
@@ -38,7 +39,7 @@ defmodule OnnxTestHelper do
 
       inp = %{"input" => Nx.random_uniform(input_shape, type: {:f, 32})}
 
-      out = Axon.predict(axon_model, params, inp)
+      out = predict_fn.(params, inp)
 
       inp
       |> Map.values()
