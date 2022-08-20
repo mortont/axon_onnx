@@ -222,6 +222,7 @@ defmodule AxonOnnx.Shared do
   end
 
   def dense_with_bias(inp, kernel, alpha, beta, output_name) do
+
     units = Nx.shape(kernel) |> elem(1)
 
     if beta == Nx.tensor(1.0) do
@@ -231,6 +232,8 @@ defmodule AxonOnnx.Shared do
     else
       kernel_param = Axon.param("kernel", &Axon.Shape.dense_kernel(&1, units))
       bias_param = Axon.param("bias", &Axon.Shape.dense_bias(&1, units))
+      alpha = Nx.backend_copy(alpha, Nx.Defn.Expr)
+      beta = Nx.backend_copy(beta, Nx.Defn.Expr)
 
       fun = fn inp, kernel, bias, _opts ->
         bias = Nx.multiply(bias, beta)
