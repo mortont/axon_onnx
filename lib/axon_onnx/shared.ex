@@ -222,7 +222,6 @@ defmodule AxonOnnx.Shared do
   end
 
   def dense_with_bias(inp, kernel, alpha, beta, output_name) do
-
     units = Nx.shape(kernel) |> elem(1)
 
     if beta == Nx.tensor(1.0) do
