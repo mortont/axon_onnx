@@ -1258,7 +1258,7 @@ defmodule AxonOnnx.Deserialize do
           Map.put(
             axon,
             output_name,
-            Axon.reshape(inp, new_shape, name: output_name, ignore_batch?: false)
+            Axon.reshape(inp, new_shape, name: output_name)
           )
       end
 
@@ -1462,7 +1462,7 @@ defmodule AxonOnnx.Deserialize do
         %Axon{} = inp ->
           permutation = transpose_options["perm"]
 
-          layer = Axon.transpose(inp, permutation, name: output_name, ignore_batch?: false)
+          layer = Axon.transpose(inp, permutation, name: output_name)
 
           updated_axon = Map.put(axon, output_name, layer)
           {updated_axon, used_params}
