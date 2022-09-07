@@ -1445,13 +1445,13 @@ defmodule AxonOnnx.Deserialize do
        ) do
     transpose_options = options!(attrs)
 
+    permutation = transpose_options["perm"]
+
     inp = input!(input, axon, params, used_params)
 
     {updated_axon, updated_params} =
       case inp do
         %Axon{op: :constant, opts: [value: v]} ->
-          permutation = transpose_options["perm"]
-
           new_value =
             if permutation, do: Nx.transpose(v, axes: permutation), else: Nx.transpose(v)
 
@@ -1460,16 +1460,12 @@ defmodule AxonOnnx.Deserialize do
           {updated_axon, used_params}
 
         %Axon{} = inp ->
-          permutation = transpose_options["perm"]
-
           layer = Axon.transpose(inp, permutation, name: output_name)
 
           updated_axon = Map.put(axon, output_name, layer)
           {updated_axon, used_params}
 
         %Nx.Tensor{} = inp ->
-          permutation = transpose_options["perm"]
-
           new_value =
             if permutation, do: Nx.transpose(inp, axes: permutation), else: Nx.transpose(inp)
 
