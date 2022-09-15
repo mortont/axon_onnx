@@ -2237,12 +2237,10 @@ defmodule AxonOnnx.Deserialize do
         to_nx_tensor(tensor.uint64_data, tensor.raw_data, {:u, 64}, shape)
 
       14 ->
-        # TODO(seanmor5): When complex is supported, tensor.float_data
-        raise "unsupported Nx tensor type: C64"
+        to_nx_tensor(tensor.float_data, tensor.raw_data, {:c, 64}, shape)
 
       15 ->
-        # TODO(seanmor5): When complex is supported, tensor.double_data
-        raise "unsupported Nx tensor type: C128"
+        to_nx_tensor(tensor.double_data, tensor.raw_data, {:c, 128}, shape)
 
       16 ->
         to_nx_tensor([], tensor.raw_data, {:bf, 16}, shape)

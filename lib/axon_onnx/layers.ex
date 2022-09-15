@@ -108,7 +108,7 @@ defmodule AxonOnnx.Layers do
     end
   end
 
-  defnp slice_impl(x, opts) do
+  defnp slice_impl(x, opts \\ []) do
     opts = keyword!(opts, [:starts, :ends, :axes, :steps, mode: :train])
 
     shape = Nx.shape(x)
