@@ -41,8 +41,6 @@ defmodule AxonOnnx do
   a specific file path:
 
       AxonOnnx.export(model, templates, params, path: "resnet.onnx")
-
-
   """
   def export(%Axon{} = model, templates, params, opts \\ []),
     do: AxonOnnx.Serialize.__export__(model, templates, params, opts)

@@ -114,7 +114,7 @@ defmodule AxonOnnx.Deserialize do
       input = input!(input_name, axon, params, used_params)
       {:name, op_name} = Function.info(unquote(fun), :name)
 
-      output =
+      layer =
         case input do
           %Axon{op: :constant, opts: [value: value]} ->
             new_value = apply(unquote(fun), [value])
@@ -128,8 +128,7 @@ defmodule AxonOnnx.Deserialize do
             Axon.nx(axon_input, unquote(fun), name: output_name, op_name: op_name)
         end
 
-      updated_axon = Map.put(axon, output_name, output)
-      {updated_axon, params, used_params}
+      {Map.put(axon, output_name, layer), params, used_params}
     end
   end
 
@@ -160,8 +159,9 @@ defmodule AxonOnnx.Deserialize do
            },
            {axon, params, used_params}
          ) do
-      input = input!(input_name, axon, params, used_params)
       activation_options = options!(attrs)
+
+      input = input!(input_name, axon, params, used_params)
 
       opts =
         Enum.map(unquote(act_opts), fn {k, {name, default}} ->
@@ -172,7 +172,7 @@ defmodule AxonOnnx.Deserialize do
           end
         end)
 
-      axon_output =
+      layer =
         case input do
           %Axon{op: :constant, opts: [value: value]} ->
             new_value = apply(Axon.Activations, unquote(act), [value] ++ opts)
@@ -187,8 +187,7 @@ defmodule AxonOnnx.Deserialize do
             apply(Axon, unquote(act), [axon_input, opts])
         end
 
-      updated_axon = Map.put(axon, output_name, axon_output)
-      {updated_axon, params, used_params}
+      {Map.put(axon, output_name, layer), params, used_params}
     end
   end
 
@@ -217,6 +216,7 @@ defmodule AxonOnnx.Deserialize do
            {axon, params, used_params}
          ) do
       reduce_options = options!(attrs)
+
       input = input!(input_name, axon, params, used_params)
 
       keepdims = reduce_options["keepdims"] || 1
@@ -261,9 +261,7 @@ defmodule AxonOnnx.Deserialize do
             )
         end
 
-      updated_axon = Map.put(axon, output_name, layer)
-
-      {updated_axon, params, used_params}
+      {Map.put(axon, output_name, layer), params, used_params}
     end
   end
 
@@ -1078,12 +1076,13 @@ defmodule AxonOnnx.Deserialize do
       Logger.warn("Training mode in batch norm has no effect")
     end
 
-    inp = axon!(inp, axon)
+    # TODO: Pattern match constants
+    inp = input!(inp, axon, params, used_params)
 
-    gamma = param!(gamma, params)
-    beta = param!(beta, params)
-    mean = param!(mean, params)
-    var = param!(var, params)
+    gamma = input!(gamma, axon, params, used_params)
+    beta = input!(beta, axon, params, used_params)
+    mean = input!(mean, axon, params, used_params)
+    var = input!(var, axon, params, used_params)
 
     updated_axon =
       Map.put(
@@ -1126,7 +1125,7 @@ defmodule AxonOnnx.Deserialize do
          %Node{op_type: "Split", attribute: attrs, input: [inp], output: output_names},
          {axon, params, used_params}
        ) do
-    inp = axon!(inp, axon)
+    inp = input!(inp, axon, params, used_params)
     %{"axis" => axis, "split" => split_sizes} = options!(attrs)
 
     split_layers = Axon.split(inp, split_sizes, axis: axis, name: output_names)
@@ -1534,7 +1533,7 @@ defmodule AxonOnnx.Deserialize do
        ) do
     cond_options = options!(attrs)
 
-    inp = axon!(input, axon)
+    inp = input!(input, axon, params, used_params)
 
     else_branch = cond_options["else_branch"]
     then_branch = cond_options["then_branch"]
@@ -2136,10 +2135,10 @@ defmodule AxonOnnx.Deserialize do
   end
 
   defp recur_nodes(
-         %Node{op_type: "NonZero", input: [inp_name], output: [output_name]},
+         %Node{op_type: "NonZero", input: [input_name], output: [output_name]},
          {axon, params, used_params}
        ) do
-    input = constant!(inp_name, axon, params, used_params)
+    input = constant!(input_name, axon, params, used_params)
 
     rank = Nx.rank(input)
 
@@ -2161,14 +2160,12 @@ defmodule AxonOnnx.Deserialize do
         [non_zero_indices | indices]
       end)
 
-    output =
+    layer =
       non_zero_indices
       |> Nx.tensor()
       |> Axon.constant(name: output_name)
 
-    updated_axon = Map.put(axon, output_name, output)
-
-    {updated_axon, params, used_params}
+    {Map.put(axon, output_name, layer), params, used_params}
   end
 
   defp recur_nodes(%Node{op_type: unsupported}, _) do
@@ -2266,28 +2263,6 @@ defmodule AxonOnnx.Deserialize do
     data
     |> Nx.tensor(type: type)
     |> Nx.reshape(shape)
-  end
-
-  defp axon!(name, axon) do
-    if Map.has_key?(axon, name) do
-      axon[name]
-    else
-      raise ArgumentError,
-            "unable to build model from ONNX graph, expected value #{name}" <>
-              " to be a graph input, but it was not present in built" <>
-              " graphs"
-    end
-  end
-
-  defp param!(name, params) do
-    if Map.has_key?(params, name) do
-      params[name]
-    else
-      raise ArgumentError,
-            "unable to build model from ONNX graph, expected value #{name}" <>
-              " to be a parameter input, but it was not present in" <>
-              " initializers"
-    end
   end
 
   defp input!(name, axon, params, used_params) do
