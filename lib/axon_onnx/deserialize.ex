@@ -2022,36 +2022,47 @@ defmodule AxonOnnx.Deserialize do
        ) do
     # op_type spec: https://github.com/onnx/onnx/blob/main/docs/Operators.md#resize
 
+    inp = input!(in_layer_name, axon, params, used_params)
+
     %{"mode" => mode} = options!(attrs)
     method =
       case mode do
         "linear" -> :bilinear
+        "cubic" -> :bicubic
+        "nearest" -> :nearest
         _mode -> raise ArgumentError, "only linear is implemented"
       end
 
-    scales =
+    [roi, scales, sizes] =
       case rest_of_inputs do
-        ["", scales] -> input!(scales, axon, params, used_params)
+        # ["", scales] -> input!(scales, axon, params, used_params)
+        ["", scales] -> [nil, constant!(scales, axon, params, used_params), nil]
+        [roi, scales] -> [constant!(roi, axon, params, used_params), constant!(scales, axon, params, used_params), nil]
+
+        ["", "", sizes] -> [nil, nil, constant!(sizes, axon, params, used_params)]
+        [roi, "", sizes] -> [constant!(roi, axon, params, used_params), nil, constant!(sizes, axon, params, used_params)]
         _ -> raise ArgumentError, "only scales is implemented"
       end
 
-    # resize function
-    fun = fn input, scales, _opts ->
-      # this will return a Tensor, but we need a tuple
-      #   we are in Defn env now, so Nx.to_flat_list() does not work
-      output_size = input
-        |> Nx.shape()
-        |> Tuple.to_list()
-        |> Nx.tensor()
-        |> Nx.multiply(scales)
-        |> IO.inspect()
+    layer_inputs = inp
+      |> Axon.get_inputs()
+      |> Map.new(fn {name, shape} ->
+        {name, Nx.broadcast(0.0, shape)}
+      end)
 
-      Axon.Layers.resize(input, size: output_size, method: method)
-    end
+    output_shape =
+      Axon.get_output_shape(inp, layer_inputs)
+      |> Tuple.to_list()
+      |> Nx.tensor()
+      |> Nx.multiply(scales)
+      |> Nx.to_flat_list()
+      |> Enum.map(&Kernel.trunc/1)
 
-    inp = input!(in_layer_name, axon, params, used_params)
-    layer = Axon.layer(fun, [inp, scales], name: out_layer_name, op_name: :random_uniform_like)
+    output_shape = output_shape
+      |> Enum.drop(length(output_shape) - 2)
+      |> List.to_tuple()
 
+    layer = Axon.resize(inp, output_shape, method: method)
     updated_axon = Map.put(axon, out_layer_name, layer)
     {updated_axon, params, used_params}
   end
