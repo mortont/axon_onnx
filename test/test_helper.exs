@@ -22,9 +22,9 @@ defmodule OnnxTestHelper do
   The script `check_onnx_model.py` to ensure ONNX runtime results
   are consistent with Axon results.
   """
-  def serialize_and_test_model!(%Axon{name: name} = axon_model, input_shape, opts \\ []) do
+  def serialize_and_test_model!(%Axon{} = axon_model, input_shape, opts \\ []) do
     num_cases = opts[:num_tests] || 5
-    model_name = opts[:name] || name
+    model_name = opts[:name]
     cache_dir = Path.join([@cache_dir, model_name])
     File.mkdir_p!(cache_dir)
 

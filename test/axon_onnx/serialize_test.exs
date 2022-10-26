@@ -68,37 +68,48 @@ defmodule SerializeTest do
 
   describe "serializes convolution" do
     test "conv1d with defaults" do
-      model = Axon.input("input", shape: {1, 3, 3}) |> Axon.conv(10)
+      model = Axon.input("input", shape: {1, 3, 3}) |> Axon.conv(10, channels: :first)
       serialize_and_test_model!(model, {1, 3, 3}, num_tests: 3, name: "conv1d_defaults")
     end
 
     test "conv2d with defaults" do
-      model = Axon.input("input", shape: {1, 3, 3, 3}) |> Axon.conv(10)
+      model = Axon.input("input", shape: {1, 3, 3, 3}) |> Axon.conv(10, channels: :first)
       serialize_and_test_model!(model, {1, 3, 3, 3}, num_tests: 3, name: "conv2d_defaults")
     end
 
     test "conv3d with defaults" do
-      model = Axon.input("input", shape: {1, 3, 3, 3, 3}) |> Axon.conv(10)
+      model = Axon.input("input", shape: {1, 3, 3, 3, 3}) |> Axon.conv(10, channels: :first)
       serialize_and_test_model!(model, {1, 3, 3, 3, 3}, num_tests: 3, name: "conv3d_defaults")
     end
 
     test "conv with kernel" do
-      model = Axon.input("input", shape: {1, 3, 8, 8}) |> Axon.conv(10, kernel_size: {2, 1})
+      model =
+        Axon.input("input", shape: {1, 3, 8, 8})
+        |> Axon.conv(10, kernel_size: {2, 1}, channels: :first)
+
       serialize_and_test_model!(model, {1, 3, 8, 8}, num_tests: 3, name: "conv_with_kernel")
     end
 
     test "conv with strides" do
-      model = Axon.input("input", shape: {1, 3, 6, 6}) |> Axon.conv(10, strides: [1, 2])
+      model =
+        Axon.input("input", shape: {1, 3, 6, 6})
+        |> Axon.conv(10, strides: [1, 2], channels: :first)
+
       serialize_and_test_model!(model, {1, 3, 6, 6}, num_tests: 3, name: "conv_with_strides")
     end
 
     test "conv with same padding" do
-      model = Axon.input("input", shape: {1, 3, 6, 6}) |> Axon.conv(10, padding: :same)
+      model =
+        Axon.input("input", shape: {1, 3, 6, 6})
+        |> Axon.conv(10, padding: :same, channels: :first)
+
       serialize_and_test_model!(model, {1, 3, 6, 6}, num_tests: 3, name: "conv_with_same_padding")
     end
 
     test "conv with padding config" do
-      model = Axon.input("input", shape: {1, 3, 6, 6}) |> Axon.conv(10, padding: [{1, 1}, {0, 2}])
+      model =
+        Axon.input("input", shape: {1, 3, 6, 6})
+        |> Axon.conv(10, padding: [{1, 1}, {0, 2}], channels: :first)
 
       serialize_and_test_model!(model, {1, 3, 6, 6},
         num_tests: 3,
@@ -107,15 +118,18 @@ defmodule SerializeTest do
     end
 
     test "conv with activation" do
-      model = Axon.input("input", shape: {1, 3, 7, 7}) |> Axon.conv(10, activation: :relu)
+      model =
+        Axon.input("input", shape: {1, 3, 7, 7})
+        |> Axon.conv(10, activation: :relu, channels: :first)
+
       serialize_and_test_model!(model, {1, 3, 7, 7}, num_tests: 3, name: "conv_with_activation")
     end
 
     test "multiple conv layers" do
       model =
         Axon.input("input", shape: {1, 3, 7, 7})
-        |> Axon.conv(10, kernel_size: {2, 2})
-        |> Axon.conv(5)
+        |> Axon.conv(10, kernel_size: {2, 2}, channels: :first)
+        |> Axon.conv(5, channels: :first)
 
       serialize_and_test_model!(model, {1, 3, 7, 7}, num_tests: 3, name: "multi_conv")
     end
@@ -123,29 +137,32 @@ defmodule SerializeTest do
 
   describe "serializes pooling layers" do
     test "max_pool1d with defaults" do
-      model = Axon.input("input", shape: {1, 3, 7}) |> Axon.max_pool()
+      model = Axon.input("input", shape: {1, 3, 7}) |> Axon.max_pool(channels: :first)
       serialize_and_test_model!(model, {1, 3, 7}, num_tests: 3, name: "max_pool1d_default")
     end
 
     test "max_pool2d with defaults" do
-      model = Axon.input("input", shape: {1, 3, 7, 7}) |> Axon.max_pool()
+      model = Axon.input("input", shape: {1, 3, 7, 7}) |> Axon.max_pool(channels: :first)
       serialize_and_test_model!(model, {1, 3, 7}, num_tests: 3, name: "max_pool2d_defaults")
     end
 
     test "max_pool3d with defaults" do
-      model = Axon.input("input", shape: {1, 3, 7, 7, 7}) |> Axon.max_pool()
+      model = Axon.input("input", shape: {1, 3, 7, 7, 7}) |> Axon.max_pool(channels: :first)
       serialize_and_test_model!(model, {1, 3, 7, 7, 7}, num_tests: 3, name: "max_pool3d_defaults")
     end
 
     test "max_pool with kernel size" do
-      model = Axon.input("input", shape: {1, 3, 7, 7}) |> Axon.max_pool(kernel_size: {2, 2})
+      model =
+        Axon.input("input", shape: {1, 3, 7, 7})
+        |> Axon.max_pool(kernel_size: {2, 2}, channels: :first)
+
       serialize_and_test_model!(model, {1, 3, 7, 7}, num_tests: 3, name: "max_pool_kernel")
     end
 
     test "max_pool with strides" do
       model =
         Axon.input("input", shape: {1, 3, 7, 7})
-        |> Axon.max_pool(kernel_size: {2, 2}, strides: [1, 2])
+        |> Axon.max_pool(kernel_size: {2, 2}, strides: [1, 2], channels: :first)
 
       serialize_and_test_model!(model, {1, 3, 7, 7}, num_tests: 3, name: "max_pool_strides")
     end
@@ -153,7 +170,7 @@ defmodule SerializeTest do
     test "max_pool with same padding" do
       model =
         Axon.input("input", shape: {1, 3, 7, 7})
-        |> Axon.max_pool(kernel_size: {2, 1}, padding: :same)
+        |> Axon.max_pool(kernel_size: {2, 1}, padding: :same, channels: :first)
 
       serialize_and_test_model!(model, {1, 3, 7, 7}, num_tests: 3, name: "max_pool_same_padding")
     end
@@ -161,7 +178,7 @@ defmodule SerializeTest do
     test "max_pool with padding config" do
       model =
         Axon.input("input", shape: {1, 3, 7, 7})
-        |> Axon.max_pool(kernel_size: {2, 2}, padding: [{1, 1}, {0, 1}])
+        |> Axon.max_pool(kernel_size: {2, 2}, padding: [{1, 1}, {0, 1}], channels: :first)
 
       serialize_and_test_model!(model, {1, 3, 7, 7}, num_tests: 3, name: "max_pool_padding_config")
     end
@@ -169,36 +186,39 @@ defmodule SerializeTest do
     test "max_pool with conv" do
       model =
         Axon.input("input", shape: {1, 3, 12, 12})
-        |> Axon.conv(16, kernel_size: {2, 2})
-        |> Axon.max_pool(kernel_size: {2, 2})
+        |> Axon.conv(16, kernel_size: {2, 2}, channels: :first)
+        |> Axon.max_pool(kernel_size: {2, 2}, channels: :first)
 
       serialize_and_test_model!(model, {1, 3, 12, 12}, num_tests: 3, name: "max_pool_with_conv")
     end
 
     test "avg_pool1d with defaults" do
-      model = Axon.input("input", shape: {1, 3, 7}) |> Axon.avg_pool()
+      model = Axon.input("input", shape: {1, 3, 7}) |> Axon.avg_pool(channels: :first)
       serialize_and_test_model!(model, {1, 3, 7}, num_tests: 3, name: "avg_pool1d_default")
     end
 
     test "avg_pool2d with defaults" do
-      model = Axon.input("input", shape: {1, 3, 7, 7}) |> Axon.avg_pool()
+      model = Axon.input("input", shape: {1, 3, 7, 7}) |> Axon.avg_pool(channels: :first)
       serialize_and_test_model!(model, {1, 3, 7, 7}, num_tests: 3, name: "avg_pool2d_defaults")
     end
 
     test "avg_pool3d with defaults" do
-      model = Axon.input("input", shape: {1, 3, 7, 7, 7}) |> Axon.avg_pool()
+      model = Axon.input("input", shape: {1, 3, 7, 7, 7}) |> Axon.avg_pool(channels: :first)
       serialize_and_test_model!(model, {1, 3, 7, 7, 7}, num_tests: 3, name: "avg_pool3d_defaults")
     end
 
     test "avg_pool with kernel size" do
-      model = Axon.input("input", shape: {1, 3, 7, 7}) |> Axon.avg_pool(kernel_size: {2, 2})
+      model =
+        Axon.input("input", shape: {1, 3, 7, 7})
+        |> Axon.avg_pool(kernel_size: {2, 2}, channels: :first)
+
       serialize_and_test_model!(model, {1, 3, 7, 7}, num_tests: 3, name: "avg_pool_kernel")
     end
 
     test "avg_pool with strides" do
       model =
         Axon.input("input", shape: {1, 3, 7, 7})
-        |> Axon.avg_pool(kernel_size: {2, 2}, strides: [1, 2])
+        |> Axon.avg_pool(kernel_size: {2, 2}, strides: [1, 2], channels: :first)
 
       serialize_and_test_model!(model, {1, 3, 7, 7}, num_tests: 3, name: "avg_pool_strides")
     end
@@ -206,7 +226,7 @@ defmodule SerializeTest do
     test "avg_pool with same padding" do
       model =
         Axon.input("input", shape: {1, 3, 7, 7})
-        |> Axon.avg_pool(kernel_size: {2, 1}, padding: :same)
+        |> Axon.avg_pool(kernel_size: {2, 1}, padding: :same, channels: :first)
 
       serialize_and_test_model!(model, {1, 3, 7, 7}, num_tests: 3, name: "avg_pool_same_padding")
     end
@@ -214,7 +234,7 @@ defmodule SerializeTest do
     test "avg_pool with padding config" do
       model =
         Axon.input("input", shape: {1, 3, 7, 7})
-        |> Axon.avg_pool(kernel_size: {2, 2}, padding: [{1, 1}, {0, 1}])
+        |> Axon.avg_pool(kernel_size: {2, 2}, padding: [{1, 1}, {0, 1}], channels: :first)
 
       serialize_and_test_model!(model, {1, 3, 7, 7}, num_tests: 3, name: "avg_pool_padding_config")
     end
@@ -222,36 +242,39 @@ defmodule SerializeTest do
     test "avg_pool with conv" do
       model =
         Axon.input("input", shape: {1, 3, 12, 12})
-        |> Axon.conv(16, kernel_size: {2, 2})
-        |> Axon.avg_pool(kernel_size: {2, 2})
+        |> Axon.conv(16, kernel_size: {2, 2}, channels: :first)
+        |> Axon.avg_pool(kernel_size: {2, 2}, channels: :first)
 
       serialize_and_test_model!(model, {1, 3, 12, 12}, num_tests: 3, name: "avg_pool_with_conv")
     end
 
     test "lp_pool1d with defaults" do
-      model = Axon.input("input", shape: {1, 3, 7}) |> Axon.lp_pool()
+      model = Axon.input("input", shape: {1, 3, 7}) |> Axon.lp_pool(channels: :first)
       serialize_and_test_model!(model, {1, 3, 7}, num_tests: 3, name: "lp_pool1d_default")
     end
 
     test "lp_pool2d with defaults" do
-      model = Axon.input("input", shape: {1, 3, 7, 7}) |> Axon.lp_pool()
+      model = Axon.input("input", shape: {1, 3, 7, 7}) |> Axon.lp_pool(channels: :first)
       serialize_and_test_model!(model, {1, 3, 7, 7}, num_tests: 3, name: "lp_pool2d_defaults")
     end
 
     test "lp_pool3d with defaults" do
-      model = Axon.input("input", shape: {1, 3, 7, 7, 7}) |> Axon.lp_pool()
+      model = Axon.input("input", shape: {1, 3, 7, 7, 7}) |> Axon.lp_pool(channels: :first)
       serialize_and_test_model!(model, {1, 3, 7, 7, 7}, num_tests: 3, name: "lp_pool3d_defaults")
     end
 
     test "lp_pool with kernel size" do
-      model = Axon.input("input", shape: {1, 3, 7, 7}) |> Axon.lp_pool(kernel_size: {2, 2})
+      model =
+        Axon.input("input", shape: {1, 3, 7, 7})
+        |> Axon.lp_pool(kernel_size: {2, 2}, channels: :first)
+
       serialize_and_test_model!(model, {1, 3, 7, 7}, num_tests: 3, name: "lp_pool_kernel")
     end
 
     test "lp_pool with strides" do
       model =
         Axon.input("input", shape: {1, 3, 7, 7})
-        |> Axon.lp_pool(kernel_size: {2, 2}, strides: [1, 2])
+        |> Axon.lp_pool(kernel_size: {2, 2}, strides: [1, 2], channels: :first)
 
       serialize_and_test_model!(model, {1, 3, 7, 7}, num_tests: 3, name: "lp_pool_strides")
     end
@@ -259,7 +282,7 @@ defmodule SerializeTest do
     test "lp_pool with same padding" do
       model =
         Axon.input("input", shape: {1, 3, 7, 7})
-        |> Axon.lp_pool(kernel_size: {2, 1}, padding: :same)
+        |> Axon.lp_pool(kernel_size: {2, 1}, padding: :same, channels: :first)
 
       serialize_and_test_model!(model, {1, 3, 7, 7}, num_tests: 3, name: "lp_pool_same_padding")
     end
@@ -267,14 +290,15 @@ defmodule SerializeTest do
     test "lp_pool with padding config" do
       model =
         Axon.input("input", shape: {1, 3, 7, 7})
-        |> Axon.lp_pool(kernel_size: {2, 2}, padding: [{1, 1}, {0, 1}])
+        |> Axon.lp_pool(kernel_size: {2, 2}, padding: [{1, 1}, {0, 1}], channels: :first)
 
       serialize_and_test_model!(model, {1, 3, 7, 7}, num_tests: 3, name: "lp_pool_padding_config")
     end
 
     test "lp_pool with norm" do
       model =
-        Axon.input("input", shape: {1, 3, 7, 7}) |> Axon.lp_pool(kernel_size: {2, 1}, norm: 3)
+        Axon.input("input", shape: {1, 3, 7, 7})
+        |> Axon.lp_pool(kernel_size: {2, 1}, norm: 3, channels: :first)
 
       serialize_and_test_model!(model, {1, 3, 7, 7}, num_tests: 3, name: "lp_pool_with_norm")
     end
@@ -282,8 +306,8 @@ defmodule SerializeTest do
     test "lp_pool with conv" do
       model =
         Axon.input("input", shape: {1, 3, 12, 12})
-        |> Axon.conv(16, kernel_size: {2, 2})
-        |> Axon.lp_pool(kernel_size: {2, 2})
+        |> Axon.conv(16, kernel_size: {2, 2}, channels: :first)
+        |> Axon.lp_pool(kernel_size: {2, 2}, channels: :first)
 
       serialize_and_test_model!(model, {1, 3, 12, 12}, num_tests: 3, name: "lp_pool_with_conv")
     end
@@ -291,12 +315,12 @@ defmodule SerializeTest do
 
   describe "serializes global pooling" do
     test "global_max_pool1d with defaults" do
-      model = Axon.input("input", shape: {1, 3, 7}) |> Axon.global_max_pool()
+      model = Axon.input("input", shape: {1, 3, 7}) |> Axon.global_max_pool(channels: :first)
       serialize_and_test_model!(model, {1, 3, 7}, num_tests: 3, name: "global_max_pool1d_default")
     end
 
     test "global_max_pool2d with defaults" do
-      model = Axon.input("input", shape: {1, 3, 7, 7}) |> Axon.global_max_pool()
+      model = Axon.input("input", shape: {1, 3, 7, 7}) |> Axon.global_max_pool(channels: :first)
 
       serialize_and_test_model!(model, {1, 3, 7, 7},
         num_tests: 3,
@@ -305,7 +329,8 @@ defmodule SerializeTest do
     end
 
     test "global_max_pool3d with defaults" do
-      model = Axon.input("input", shape: {1, 3, 7, 7, 7}) |> Axon.global_max_pool()
+      model =
+        Axon.input("input", shape: {1, 3, 7, 7, 7}) |> Axon.global_max_pool(channels: :first)
 
       serialize_and_test_model!(model, {1, 3, 7, 7, 7},
         num_tests: 3,
@@ -316,8 +341,8 @@ defmodule SerializeTest do
     test "global_max_pool with conv and dense" do
       model =
         Axon.input("input", shape: {1, 3, 7, 7})
-        |> Axon.conv(8, kernel_size: {2, 2})
-        |> Axon.global_max_pool()
+        |> Axon.conv(8, kernel_size: {2, 2}, channels: :first)
+        |> Axon.global_max_pool(channels: :first)
         |> Axon.dense(1, activation: :softmax)
 
       serialize_and_test_model!(model, {1, 3, 7, 7},
@@ -328,7 +353,8 @@ defmodule SerializeTest do
 
     test "global_max_pool keep_axes false" do
       model =
-        Axon.input("input", shape: {1, 3, 7, 7, 7}) |> Axon.global_max_pool(keep_axes: false)
+        Axon.input("input", shape: {1, 3, 7, 7, 7})
+        |> Axon.global_max_pool(keep_axes: false, channels: :first)
 
       serialize_and_test_model!(model, {1, 3, 7, 7, 7},
         num_tests: 3,
@@ -337,12 +363,12 @@ defmodule SerializeTest do
     end
 
     test "global_avg_pool1d with defaults" do
-      model = Axon.input("input", shape: {1, 3, 7}) |> Axon.global_avg_pool()
+      model = Axon.input("input", shape: {1, 3, 7}) |> Axon.global_avg_pool(channels: :first)
       serialize_and_test_model!(model, {1, 3, 7}, num_tests: 3, name: "global_avg_pool1d_default")
     end
 
     test "global_avg_pool2d with defaults" do
-      model = Axon.input("input", shape: {1, 3, 7, 7}) |> Axon.global_avg_pool()
+      model = Axon.input("input", shape: {1, 3, 7, 7}) |> Axon.global_avg_pool(channels: :first)
 
       serialize_and_test_model!(model, {1, 3, 7, 7},
         num_tests: 3,
@@ -351,7 +377,8 @@ defmodule SerializeTest do
     end
 
     test "global_avg_pool3d with defaults" do
-      model = Axon.input("input", shape: {1, 3, 7, 7, 7}) |> Axon.global_avg_pool()
+      model =
+        Axon.input("input", shape: {1, 3, 7, 7, 7}) |> Axon.global_avg_pool(channels: :first)
 
       serialize_and_test_model!(model, {1, 3, 7, 7, 7},
         num_tests: 3,
@@ -362,8 +389,8 @@ defmodule SerializeTest do
     test "global_avg_pool with conv and dense" do
       model =
         Axon.input("input", shape: {1, 3, 7, 7})
-        |> Axon.conv(8, kernel_size: {2, 2})
-        |> Axon.global_avg_pool()
+        |> Axon.conv(8, kernel_size: {2, 2}, channels: :first)
+        |> Axon.global_avg_pool(channels: :first)
         |> Axon.dense(1, activation: :softmax)
 
       serialize_and_test_model!(model, {1, 3, 7, 7},
@@ -374,7 +401,8 @@ defmodule SerializeTest do
 
     test "global_avg_pool keep_axes false" do
       model =
-        Axon.input("input", shape: {1, 3, 7, 7, 7}) |> Axon.global_avg_pool(keep_axes: false)
+        Axon.input("input", shape: {1, 3, 7, 7, 7})
+        |> Axon.global_avg_pool(channels: :first, keep_axes: false)
 
       serialize_and_test_model!(model, {1, 3, 7, 7, 7},
         num_tests: 3,
@@ -383,12 +411,12 @@ defmodule SerializeTest do
     end
 
     test "global_lp_pool1d with defaults" do
-      model = Axon.input("input", shape: {1, 3, 7}) |> Axon.global_lp_pool()
+      model = Axon.input("input", shape: {1, 3, 7}) |> Axon.global_lp_pool(channels: :first)
       serialize_and_test_model!(model, {1, 3, 7}, num_tests: 3, name: "global_lp_pool1d_default")
     end
 
     test "global_lp_pool2d with defaults" do
-      model = Axon.input("input", shape: {1, 3, 7, 7}) |> Axon.global_lp_pool()
+      model = Axon.input("input", shape: {1, 3, 7, 7}) |> Axon.global_lp_pool(channels: :first)
 
       serialize_and_test_model!(model, {1, 3, 7, 7},
         num_tests: 3,
@@ -397,7 +425,7 @@ defmodule SerializeTest do
     end
 
     test "global_lp_pool3d with defaults" do
-      model = Axon.input("input", shape: {1, 3, 7, 7, 7}) |> Axon.global_lp_pool()
+      model = Axon.input("input", shape: {1, 3, 7, 7, 7}) |> Axon.global_lp_pool(channels: :first)
 
       serialize_and_test_model!(model, {1, 3, 7, 7, 7},
         num_tests: 3,
@@ -406,7 +434,8 @@ defmodule SerializeTest do
     end
 
     test "global_lp_pool with norm" do
-      model = Axon.input("input", shape: {1, 3, 7, 7}) |> Axon.global_lp_pool(norm: 3)
+      model =
+        Axon.input("input", shape: {1, 3, 7, 7}) |> Axon.global_lp_pool(norm: 3, channels: :first)
 
       serialize_and_test_model!(model, {1, 3, 7, 7},
         num_tests: 3,
@@ -417,8 +446,8 @@ defmodule SerializeTest do
     test "global_lp_pool with conv and dense" do
       model =
         Axon.input("input", shape: {1, 3, 7, 7})
-        |> Axon.conv(8, kernel_size: {2, 2})
-        |> Axon.global_lp_pool()
+        |> Axon.conv(8, kernel_size: {2, 2}, channels: :first)
+        |> Axon.global_lp_pool(channels: :first)
         |> Axon.dense(1, activation: :softmax)
 
       serialize_and_test_model!(model, {1, 3, 7, 7},
@@ -428,7 +457,9 @@ defmodule SerializeTest do
     end
 
     test "global_lp_pool keep_axes false" do
-      model = Axon.input("input", shape: {1, 3, 7, 7, 7}) |> Axon.global_lp_pool(keep_axes: false)
+      model =
+        Axon.input("input", shape: {1, 3, 7, 7, 7})
+        |> Axon.global_lp_pool(channels: :first, keep_axes: false)
 
       serialize_and_test_model!(model, {1, 3, 7, 7, 7},
         num_tests: 3,
