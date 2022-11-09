@@ -21,7 +21,6 @@ defmodule AxonOnnx.Serialize do
     %Model{graph: %Graph{name: output_name}} =
       onnx_model = to_onnx_model(axon, inputs, params, opts)
 
-
     {Model.encode!(onnx_model), output_name}
   end
 
