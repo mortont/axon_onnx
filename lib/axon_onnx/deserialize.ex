@@ -16,9 +16,8 @@ defmodule AxonOnnx.Deserialize do
 
   import AxonOnnx.Shared
 
-  def __import__(file, opts \\ []) do
-    file
-    |> File.read!()
+  def __load__(binary, opts \\ []) do
+    binary
     |> Model.decode!()
     |> to_axon(opts)
   end

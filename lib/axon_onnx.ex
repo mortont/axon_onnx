@@ -31,7 +31,26 @@ defmodule AxonOnnx do
 
       {model, params} = AxonOnnx.import("model.onnx")
   """
-  def import(path, dimensions \\ []), do: AxonOnnx.Deserialize.__import__(path, dimensions)
+  def import(path, dimensions \\ []) do
+    path
+    |> File.read!()
+    |> AxonOnnx.Deserialize.__load__(dimensions)
+  end
+
+  @doc """
+  Loads an ONNX model into an Axon model from the given binary.
+
+  Some models support ONNX `dim_params` which you may specify
+  by providing dimension names as a keyword list:
+      
+      onnx = File.read!("model.onnx")
+      AxonOnnx.load(onnx, batch: 1)
+
+  The imported model will be in the form:
+
+      {model, params} = AxonOnnx.import(onnx)
+  """
+  def load(onnx, dimensions \\ []), do: AxonOnnx.Deserialize.__load__(onnx, dimensions)
 
   @doc """
   Exports an Axon model and parameters to an ONNX model
@@ -41,9 +60,23 @@ defmodule AxonOnnx do
   a specific file path:
 
       AxonOnnx.export(model, templates, params, path: "resnet.onnx")
-
-
   """
-  def export(%Axon{} = model, templates, params, opts \\ []),
-    do: AxonOnnx.Serialize.__export__(model, templates, params, opts)
+  def export(%Axon{} = model, templates, params, opts \\ []) do
+    {encoded, output_name} = AxonOnnx.Serialize.__dump__(model, templates, params, opts)
+
+    fname = opts[:path] || output_name <> ".onnx"
+
+    {:ok, file} = File.open(fname, [:write])
+    IO.binwrite(file, encoded)
+    File.close(file)
+  end
+
+  @doc """
+  Dumps an Axon model and parameters into a binary representing
+  and ONNX model.
+  """
+  def dump(%Axon{} = model, templates, params, opts \\ []) do
+    {encoded, _} = AxonOnnx.Serialize.__dump__(model, templates, params, opts)
+    encoded
+  end
 end

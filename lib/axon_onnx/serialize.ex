@@ -15,19 +15,14 @@ defmodule AxonOnnx.Serialize do
   @onnx_ir_version 3
   @onnx_opset_version 13
   @producer_name "AxonOnnx"
-  @producer_version "0.1.0-dev"
+  @producer_version "0.3.0"
 
-  def __export__(%Axon{} = axon, inputs, params, opts \\ []) do
+  def __dump__(%Axon{} = axon, inputs, params, opts) do
     %Model{graph: %Graph{name: output_name}} =
       onnx_model = to_onnx_model(axon, inputs, params, opts)
 
-    fname = opts[:path] || output_name <> ".onnx"
 
-    encoded = Model.encode!(onnx_model)
-
-    {:ok, file} = File.open(fname, [:write])
-    IO.binwrite(file, encoded)
-    File.close(file)
+    {Model.encode!(onnx_model), output_name}
   end
 
   defp to_onnx_model(axon, inputs, params, opts) do
