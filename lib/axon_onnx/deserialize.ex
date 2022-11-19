@@ -1073,6 +1073,48 @@ defmodule AxonOnnx.Deserialize do
   end
 
   defp recur_nodes(
+         %Node{
+           op_type: "InstanceNormalization",
+           attribute: attrs,
+           input: [input_name, scale_name, b_name],
+           output: [output_name]
+         },
+         {axon, params, used_params}
+       ) do
+    options = options!(attrs)
+
+    input = input!(input_name, axon, params, used_params)
+    scale = input!(scale_name, axon, params, used_params)
+    bias = input!(b_name, axon, params, used_params)
+
+    {updated_axon, updated_params} =
+      case {get_axon_node(input), get_axon_node(scale), get_axon_node(bias)} do
+        {%Axon.Node{}, %Nx.Tensor{} = scale, %Nx.Tensor{} = bias} ->
+          out = Axon.instance_norm(input, name: output_name, epsilon: options["epsilon"])
+
+          updated_params =
+            Map.put(used_params, output_name, %{
+              "gamma" => scale,
+              "beta" => bias,
+              "mean" => Nx.tensor(0.0),
+              "var" => Nx.tensor(1.0)
+            })
+
+          updated_axon = Map.put(axon, output_name, out)
+          {updated_axon, updated_params}
+
+        {%Axon.Node{}, %Axon.Node{}, %Axon.Node{}} ->
+          out =
+            instance_normalization(input, scale, bias, epsilon: options["epsilon"], name: output)
+
+          updated_axon = Map.put(axon, output_name, out)
+          {updated_axon, used_params}
+      end
+
+    {updated_axon, params, updated_params}
+  end
+
+  defp recur_nodes(
          %Node{op_type: "Concat", attribute: attrs, input: inputs, output: [output_name]},
          {axon, params, used_params}
        ) do
@@ -1211,6 +1253,7 @@ defmodule AxonOnnx.Deserialize do
       shape
       |> Nx.to_flat_list()
       |> Enum.reduce({[], false}, fn
+        0, {cur_shape, already_auto?} -> {cur_shape, already_auto?}
         -1, {cur_shape, false} -> {[:auto | cur_shape], true}
         -1, {cur_shape, true} -> {[1 | cur_shape], true}
         x, {cur_shape, already_auto?} -> {[x | cur_shape], already_auto?}

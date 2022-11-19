@@ -234,6 +234,24 @@ defmodule AxonOnnx.Shared do
     end
   end
 
+  def instance_normalization(input, scale, bias, opts \\ []) do
+    opts = Keyword.validate!(opts, [:epsilon, :name])
+
+    Axon.layer(&static_instance_norm/4, [input, scale, bias], opts)
+  end
+
+  defnp static_instance_norm(input, scale, bias, opts \\ []) do
+    opts = keyword!(opts, [:epsilon, mode: :inference])
+
+    %{output: out} =
+      Axon.Layers.instance_norm(input, scale, bias, 0.0, 1.0,
+        epsilon: opts[:epsilon],
+        mode: :train
+      )
+
+    out
+  end
+
   # Conversion helpers
 
   def constant?(%{op: :constant}), do: true
