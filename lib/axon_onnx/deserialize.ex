@@ -1039,7 +1039,7 @@ defmodule AxonOnnx.Deserialize do
     momentum = options["momenutm"] || 0.9
 
     if mode == 1 do
-      Logger.warn("Training mode in batch norm has no effect")
+      Logger.warning("Training mode in batch norm has no effect")
     end
 
     inp = axon!(inp, axon)
@@ -1105,7 +1105,10 @@ defmodule AxonOnnx.Deserialize do
 
         {%Axon.Node{}, %Axon.Node{}, %Axon.Node{}} ->
           out =
-            instance_normalization(input, scale, bias, epsilon: options["epsilon"], name: output)
+            instance_normalization(input, scale, bias,
+              epsilon: options["epsilon"],
+              name: output_name
+            )
 
           updated_axon = Map.put(axon, output_name, out)
           {updated_axon, used_params}
@@ -2434,7 +2437,7 @@ defmodule AxonOnnx.Deserialize do
           param = Keyword.get(dim_params, String.to_atom(key))
 
           unless param do
-            Logger.warn("#{key} has no specified dimension, assuming nil")
+            Logger.warning("#{key} has no specified dimension, assuming nil")
           end
 
           param

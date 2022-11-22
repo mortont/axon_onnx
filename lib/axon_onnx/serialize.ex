@@ -9,8 +9,11 @@ defmodule AxonOnnx.Serialize do
   alias Onnx.OperatorSetIdProto, as: Opset
   alias Onnx.TypeProto, as: Type
   alias Onnx.TypeProto.Tensor, as: Placeholder
+  alias Onnx.TensorProto, as: Tensor
   alias Onnx.TensorShapeProto, as: Shape
   alias Onnx.TensorShapeProto.Dimension, as: Dimension
+
+  import AxonOnnx.Shared
 
   @onnx_ir_version 3
   @onnx_opset_version 13
@@ -104,6 +107,34 @@ defmodule AxonOnnx.Serialize do
   end
 
   defp to_onnx(
+         %Axon.Node{id: id, op: :constant, name: name, opts: [value: v]},
+         _nodes_map,
+         _templates,
+         inputs,
+         param_names,
+         nodes,
+         op_counts,
+         cache
+       ) do
+    name = name.(:constant, op_counts)
+    op_counts = Map.update(op_counts, :constant, 1, fn x -> x + 1 end)
+    cache = Map.put(cache, id, name)
+
+    value_tensor = to_tensor_proto(v)
+    value_attr = to_attr("value", :TENSOR, value_tensor)
+
+    node = %Node{
+      input: [],
+      output: [name],
+      name: name,
+      op_type: "Constant",
+      attribute: [value_attr]
+    }
+
+    {inputs, param_names, [node | nodes], op_counts, cache}
+  end
+
+  defp to_onnx(
          %Axon.Node{op: :input, name: name} = axon,
          _nodes_map,
          templates,
@@ -114,7 +145,7 @@ defmodule AxonOnnx.Serialize do
          cache
        ) do
     # TODO: Handle defaults
-    name = name.(:input, %{})
+    name = name.(:input, op_counts)
 
     shape =
       case templates do
@@ -648,6 +679,14 @@ defmodule AxonOnnx.Serialize do
 
   defp to_placeholder(shape) do
     %Placeholder{shape: to_tensor_shape_proto(shape), elem_type: 1}
+  end
+
+  defp to_tensor_proto(tensor) do
+    dims = Tuple.to_list(Nx.shape(tensor))
+    type = nx_type_to_onnx_type(Nx.type(tensor))
+    data = Nx.to_binary(tensor)
+
+    %Tensor{dims: dims, data_type: type, raw_data: data}
   end
 
   defp to_tensor_shape_proto(shape) do

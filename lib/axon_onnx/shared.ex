@@ -278,6 +278,21 @@ defmodule AxonOnnx.Shared do
   def onnx_type_to_nx_type(15), do: {:c, 128}
   def onnx_type_to_nx_type(16), do: {:bf, 16}
 
+  def nx_type_to_onnx_type({:f, 32}), do: 1
+  def nx_type_to_onnx_type({:u, 8}), do: 2
+  def nx_type_to_onnx_type({:s, 8}), do: 3
+  def nx_type_to_onnx_type({:u, 16}), do: 4
+  def nx_type_to_onnx_type({:s, 16}), do: 5
+  def nx_type_to_onnx_type({:s, 32}), do: 6
+  def nx_type_to_onnx_type({:s, 64}), do: 7
+  def nx_type_to_onnx_type({:f, 16}), do: 10
+  def nx_type_to_onnx_type({:f, 64}), do: 11
+  def nx_type_to_onnx_type({:u, 32}), do: 12
+  def nx_type_to_onnx_type({:u, 64}), do: 13
+  def nx_type_to_onnx_type({:c, 64}), do: 14
+  def nx_type_to_onnx_type({:c, 128}), do: 15
+  def nx_type_to_onnx_type({:bf, 16}), do: 16
+
   def get_axon_node(nil), do: nil
   def get_axon_node(%Nx.Tensor{} = tensor), do: tensor
   def get_axon_node(%Axon{output: id, nodes: nodes}), do: nodes[id]

@@ -7,6 +7,15 @@ defmodule SerializeTest do
       model = Axon.input("input", shape: {1, 32})
       serialize_and_test_model!(model, {1, 32}, num_tests: 3, name: "basic_in_out")
     end
+
+    test "constant only" do
+      model = Axon.constant(Nx.tensor([1.0, 2.0, 3.0]))
+
+      assert {%Axon{}, %{}} =
+               model |> AxonOnnx.dump(%{}, %{}) |> IO.iodata_to_binary() |> AxonOnnx.load()
+
+      assert Axon.predict(model, %{}, %{}) == Nx.tensor([1.0, 2.0, 3.0])
+    end
   end
 
   describe "serializes dense layers" do
@@ -180,7 +189,10 @@ defmodule SerializeTest do
         Axon.input("input", shape: {1, 3, 7, 7})
         |> Axon.max_pool(kernel_size: {2, 2}, padding: [{1, 1}, {0, 1}], channels: :first)
 
-      serialize_and_test_model!(model, {1, 3, 7, 7}, num_tests: 3, name: "max_pool_padding_config")
+      serialize_and_test_model!(model, {1, 3, 7, 7},
+        num_tests: 3,
+        name: "max_pool_padding_config"
+      )
     end
 
     test "max_pool with conv" do
@@ -236,7 +248,10 @@ defmodule SerializeTest do
         Axon.input("input", shape: {1, 3, 7, 7})
         |> Axon.avg_pool(kernel_size: {2, 2}, padding: [{1, 1}, {0, 1}], channels: :first)
 
-      serialize_and_test_model!(model, {1, 3, 7, 7}, num_tests: 3, name: "avg_pool_padding_config")
+      serialize_and_test_model!(model, {1, 3, 7, 7},
+        num_tests: 3,
+        name: "avg_pool_padding_config"
+      )
     end
 
     test "avg_pool with conv" do

@@ -42,7 +42,7 @@ defmodule AxonOnnx do
 
   Some models support ONNX `dim_params` which you may specify
   by providing dimension names as a keyword list:
-      
+
       onnx = File.read!("model.onnx")
       AxonOnnx.load(onnx, batch: 1)
 
