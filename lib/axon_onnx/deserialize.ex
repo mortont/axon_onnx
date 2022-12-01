@@ -1125,8 +1125,8 @@ defmodule AxonOnnx.Deserialize do
     %{"axis" => axis} = options!(attrs)
 
     updated_axon =
-      if Enum.all?(inputs, &constant?/1) do
-        vals = Enum.map(inputs, &get_value/1)
+      if Enum.all?(inputs, &constant?(get_axon_node(&1))) do
+        vals = Enum.map(inputs, &get_value(get_axon_node(&1)))
         new_value = Nx.concatenate(vals, axis: axis)
         Map.put(axon, output_name, Axon.constant(new_value, name: output_name))
       else
