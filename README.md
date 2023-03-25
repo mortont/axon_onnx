@@ -24,4 +24,4 @@ If you want to regenerate this code, you can invoke the following command:
 mix generate_protobuf
 ```
 
-Note that you'll need to install `protoc` (>= 3.0). It must available in `$PATH`. You can download it [here](https://github.com/google/protobuf) or you can install it with your favorite package manager (`brew install protobuf`, `apt install protobuf-compiler`, etc.).
+Note that you'll need to install `protoc` (>= 3.0). It must be available in `$PATH`. You can download it [here](https://github.com/google/protobuf) or you can install it with your favorite package manager (`brew install protobuf`, `apt install protobuf-compiler`, etc.).

@@ -69,7 +69,7 @@ defmodule AxonOnnx.Shared do
   defn(mean(x, y), do: Nx.divide(Nx.add(x, y), 2))
   # Layer helpers
 
-  def trainable_binary_layer(%Axon{} = input, %Nx.Tensor{} = param, op, name, op_name) do
+  def trainable_binary_layer(input, %Nx.Tensor{} = param, op, name, op_name) do
     param_shape = Nx.shape(param)
 
     kernel = Axon.param("kernel", fn _ -> param_shape end)
@@ -85,11 +85,7 @@ defmodule AxonOnnx.Shared do
     Axon.layer(fun, [input, kernel], name: name, op_name: op_name)
   end
 
-  def numpy_matmul_layer(
-        %Axon{} = a,
-        %Axon{} = b,
-        output_name
-      ) do
+  def numpy_matmul_layer(a, b, output_name) do
     Axon.layer(&numpy_matmul/3, [a, b], name: output_name, op_name: :numpy_matmul)
   end
 
@@ -128,12 +124,7 @@ defmodule AxonOnnx.Shared do
     Nx.dot(a, c1_dims, b1_dims, b, c2_dims, b2_dims)
   end
 
-  def gather_layer(
-        %Axon{} = x,
-        %Axon{} = ind,
-        axis,
-        output_name
-      ) do
+  def gather_layer(x, ind, axis, output_name) do
     fun = fn x, indices, _opts ->
       Nx.take(x, Nx.as_type(indices, {:s, 64}), axis: axis)
     end
@@ -154,14 +145,14 @@ defmodule AxonOnnx.Shared do
       |> Enum.reduce(x, &do_slice(shape, &1, &2))
     end
 
-    case inp do
-      %Axon{op: :constant, opts: [value: v]} ->
+    case get_axon_node(inp) do
+      %Axon.Node{op: :constant, opts: [value: v]} ->
         new_value = fun.(v)
         layer = Axon.constant(new_value, name: output_name)
         updated_axon = Map.put(axon, output_name, layer)
         {updated_axon, used_params}
 
-      %Axon{} = inp ->
+      %Axon.Node{} ->
         layer = Axon.nx(inp, fun, name: output_name)
         updated_axon = Map.put(axon, output_name, layer)
         {updated_axon, used_params}
@@ -243,6 +234,24 @@ defmodule AxonOnnx.Shared do
     end
   end
 
+  def instance_normalization(input, scale, bias, opts \\ []) do
+    opts = Keyword.validate!(opts, [:epsilon, :name])
+
+    Axon.layer(&static_instance_norm/4, [input, scale, bias], opts)
+  end
+
+  defnp static_instance_norm(input, scale, bias, opts \\ []) do
+    opts = keyword!(opts, [:epsilon, mode: :inference])
+
+    %{output: out} =
+      Axon.Layers.instance_norm(input, scale, bias, 0.0, 1.0,
+        epsilon: opts[:epsilon],
+        mode: :train
+      )
+
+    out
+  end
+
   # Conversion helpers
 
   def constant?(%{op: :constant}), do: true
@@ -268,4 +277,23 @@ defmodule AxonOnnx.Shared do
   def onnx_type_to_nx_type(14), do: {:c, 64}
   def onnx_type_to_nx_type(15), do: {:c, 128}
   def onnx_type_to_nx_type(16), do: {:bf, 16}
+
+  def nx_type_to_onnx_type({:f, 32}), do: 1
+  def nx_type_to_onnx_type({:u, 8}), do: 2
+  def nx_type_to_onnx_type({:s, 8}), do: 3
+  def nx_type_to_onnx_type({:u, 16}), do: 4
+  def nx_type_to_onnx_type({:s, 16}), do: 5
+  def nx_type_to_onnx_type({:s, 32}), do: 6
+  def nx_type_to_onnx_type({:s, 64}), do: 7
+  def nx_type_to_onnx_type({:f, 16}), do: 10
+  def nx_type_to_onnx_type({:f, 64}), do: 11
+  def nx_type_to_onnx_type({:u, 32}), do: 12
+  def nx_type_to_onnx_type({:u, 64}), do: 13
+  def nx_type_to_onnx_type({:c, 64}), do: 14
+  def nx_type_to_onnx_type({:c, 128}), do: 15
+  def nx_type_to_onnx_type({:bf, 16}), do: 16
+
+  def get_axon_node(nil), do: nil
+  def get_axon_node(%Nx.Tensor{} = tensor), do: tensor
+  def get_axon_node(%Axon{output: id, nodes: nodes}), do: nodes[id]
 end
