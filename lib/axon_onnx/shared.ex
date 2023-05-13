@@ -69,10 +69,10 @@ defmodule AxonOnnx.Shared do
   defn(mean(x, y), do: Nx.divide(Nx.add(x, y), 2))
   # Layer helpers
 
-  def trainable_binary_layer(%Axon{} = input, %Nx.Tensor{} = param, op, name) do
+  def trainable_binary_layer(input, %Nx.Tensor{} = param, op, name, op_name) do
     param_shape = Nx.shape(param)
 
-    kernel = Axon.param("kernel", param_shape)
+    kernel = Axon.param("kernel", fn _ -> param_shape end)
 
     fun = fn x, kernel, _opts ->
       if is_atom(op) do
@@ -82,68 +82,77 @@ defmodule AxonOnnx.Shared do
       end
     end
 
-    Axon.layer(fun, [input, kernel], name: name)
+    Axon.layer(fun, [input, kernel], name: name, op_name: op_name)
   end
 
-  def numpy_matmul_layer(
-        %Axon{output_shape: a_shape} = a,
-        %Axon{output_shape: b_shape} = b,
-        output_name
-      ) do
-    {c1_dims, b1_dims, c2_dims, b2_dims} =
-      case {a_shape, b_shape} do
+  def numpy_matmul_layer(a, b, output_name) do
+    Axon.layer(&numpy_matmul/3, [a, b], name: output_name, op_name: :numpy_matmul)
+  end
+
+  defnp numpy_matmul(a, b, _opts) do
+    {out_a_shape, c1_dims, b1_dims, out_b_shape, c2_dims, b2_dims} =
+      transform({Nx.shape(a), Nx.shape(b)}, fn
         {{}, {}} ->
-          {[], [], [], []}
+          {{}, [], [], {}, [], []}
 
-        {{_}, {_}} ->
-          {[0], [], [0], []}
+        {{_} = a, {_} = b} ->
+          {a, [0], [], b, [0], []}
 
-        {{_, _}, {_, _}} ->
-          {[1], [], [0], []}
+        {{_, _} = a, {_, _} = b} ->
+          {a, [1], [], b, [0], []}
 
         {a_shape, b_shape} ->
+          # TODO: This should broadcast both sides, not just one
           batch_dims = Enum.to_list(0..(Nx.rank(a_shape) - 3))
-          {[Nx.rank(a_shape) - 1], batch_dims, [Nx.rank(b_shape) - 2], batch_dims}
-      end
 
-    fun = fn x, y, _opts -> Nx.dot(x, c1_dims, b1_dims, y, c2_dims, b2_dims) end
+          b_shape =
+            if Elixir.Kernel.==(Nx.rank(b_shape), Nx.rank(a_shape)) do
+              b_shape
+            else
+              Enum.reduce(Enum.reverse(batch_dims), b_shape, fn dim, shape ->
+                Tuple.insert_at(shape, 0, elem(a_shape, dim))
+              end)
+            end
 
-    Axon.layer(fun, [a, b], name: output_name)
+          {a_shape, [Nx.rank(a_shape) - 1], batch_dims, b_shape, [Nx.rank(b_shape) - 2],
+           batch_dims}
+      end)
+
+    a = Nx.broadcast(a, out_a_shape)
+    b = Nx.broadcast(b, out_b_shape)
+
+    Nx.dot(a, c1_dims, b1_dims, b, c2_dims, b2_dims)
   end
 
-  def gather_layer(
-        %Axon{} = x,
-        %Axon{} = ind,
-        axis,
-        output_name
-      ) do
+  def gather_layer(x, ind, axis, output_name) do
     fun = fn x, indices, _opts ->
       Nx.take(x, Nx.as_type(indices, {:s, 64}), axis: axis)
     end
 
-    Axon.layer(fun, [x, ind], name: output_name)
+    Axon.layer(fun, [x, ind], name: output_name, op_name: :gather)
   end
 
   def slice_layer(inp, starts, ends, axes, steps, output_name, axon, used_params) do
-    shape = get_shape(inp)
-    rank = Nx.rank(shape)
-
-    axes = axes |> Enum.map(fn x -> if x < 0, do: x + rank, else: x end)
-
     fun = fn x ->
+      shape = Nx.shape(x)
+      rank = Nx.rank(shape)
+      axes = if axes, do: axes, else: Nx.axes(x)
+      axes = axes |> Enum.map(fn x -> if x < 0, do: x + rank, else: x end)
+      steps = if steps, do: steps, else: List.duplicate(1, rank)
+
       [starts, ends, axes, steps]
       |> Enum.zip()
       |> Enum.reduce(x, &do_slice(shape, &1, &2))
     end
 
-    case inp do
-      %Axon{op: :constant, opts: [value: v]} ->
+    case get_axon_node(inp) do
+      %Axon.Node{op: :constant, opts: [value: v]} ->
         new_value = fun.(v)
         layer = Axon.constant(new_value, name: output_name)
         updated_axon = Map.put(axon, output_name, layer)
         {updated_axon, used_params}
 
-      %Axon{} = inp ->
+      %Axon.Node{} ->
         layer = Axon.nx(inp, fun, name: output_name)
         updated_axon = Map.put(axon, output_name, layer)
         {updated_axon, used_params}
@@ -161,10 +170,10 @@ defmodule AxonOnnx.Shared do
       |> Enum.reduce(kernel, &do_slice(shape, &1, &2))
     end
 
-    kernel = Axon.param("kernel", shape)
+    kernel = Axon.param("kernel", fn _ -> shape end)
     # empty layer
     inp = Axon.container({})
-    layer = Axon.layer(fun, [inp, kernel], name: output_name)
+    layer = Axon.layer(fun, [inp, kernel], name: output_name, op_name: :param_slice)
 
     updated_axon = Map.put(axon, output_name, layer)
     updated_params = Map.put(used_params, output_name, %{"kernel" => param})
@@ -187,12 +196,60 @@ defmodule AxonOnnx.Shared do
         do: clamp_to_range(stop, -1, elem(shape, axis) - 1),
         else: clamp_to_range(stop, 0, elem(shape, axis))
 
-    len = stop - start
-    Nx.slice_along_axis(acc, start, len, axis: axis, strides: stride)
+    if stride < 0 do
+      len = start - stop
+
+      acc
+      |> Nx.reverse(axes: [axis])
+      |> Nx.slice_along_axis(start, len, axis: axis, strides: abs(stride))
+    else
+      len = stop - start
+      Nx.slice_along_axis(acc, start, len, axis: axis, strides: stride)
+    end
   end
 
   defp clamp_to_range(val, min, max) do
-    min(max(min, val), max)
+    floor(min(max(min, val), max))
+  end
+
+  def dense_with_bias(inp, kernel, alpha, beta, output_name) do
+    units = Nx.shape(kernel) |> elem(1)
+
+    if beta == Nx.tensor(1.0) do
+      inp
+      |> Axon.dense(units, name: output_name)
+      |> Axon.multiply(Axon.constant(alpha, name: "gemm_alpha"))
+    else
+      kernel_param = Axon.param("kernel", &Axon.Shape.dense_kernel(&1, units))
+      bias_param = Axon.param("bias", &Axon.Shape.dense_bias(&1, units))
+      alpha = Nx.backend_copy(alpha, Nx.Defn.Expr)
+      beta = Nx.backend_copy(beta, Nx.Defn.Expr)
+
+      fun = fn inp, kernel, bias, _opts ->
+        bias = Nx.multiply(bias, beta)
+        Axon.Layers.dense(inp, kernel, bias) |> Nx.multiply(alpha)
+      end
+
+      Axon.layer(fun, [inp, kernel_param, bias_param], name: output_name, op_name: :gemm)
+    end
+  end
+
+  def instance_normalization(input, scale, bias, opts \\ []) do
+    opts = Keyword.validate!(opts, [:epsilon, :name])
+
+    Axon.layer(&static_instance_norm/4, [input, scale, bias], opts)
+  end
+
+  defnp static_instance_norm(input, scale, bias, opts \\ []) do
+    opts = keyword!(opts, [:epsilon, mode: :inference])
+
+    %{output: out} =
+      Axon.Layers.instance_norm(input, scale, bias, 0.0, 1.0,
+        epsilon: opts[:epsilon],
+        mode: :train
+      )
+
+    out
   end
 
   # Conversion helpers
@@ -203,9 +260,6 @@ defmodule AxonOnnx.Shared do
 
   def get_value(%{op: :constant, opts: [value: v]}), do: v
   def get_value(%Nx.Tensor{} = v), do: v
-
-  def get_shape(%Nx.Tensor{} = t), do: Nx.shape(t)
-  def get_shape(%Axon{output_shape: shape}), do: shape
 
   def onnx_type_to_nx_type(1), do: {:f, 32}
   def onnx_type_to_nx_type(2), do: {:u, 8}
@@ -223,4 +277,23 @@ defmodule AxonOnnx.Shared do
   def onnx_type_to_nx_type(14), do: {:c, 64}
   def onnx_type_to_nx_type(15), do: {:c, 128}
   def onnx_type_to_nx_type(16), do: {:bf, 16}
+
+  def nx_type_to_onnx_type({:f, 32}), do: 1
+  def nx_type_to_onnx_type({:u, 8}), do: 2
+  def nx_type_to_onnx_type({:s, 8}), do: 3
+  def nx_type_to_onnx_type({:u, 16}), do: 4
+  def nx_type_to_onnx_type({:s, 16}), do: 5
+  def nx_type_to_onnx_type({:s, 32}), do: 6
+  def nx_type_to_onnx_type({:s, 64}), do: 7
+  def nx_type_to_onnx_type({:f, 16}), do: 10
+  def nx_type_to_onnx_type({:f, 64}), do: 11
+  def nx_type_to_onnx_type({:u, 32}), do: 12
+  def nx_type_to_onnx_type({:u, 64}), do: 13
+  def nx_type_to_onnx_type({:c, 64}), do: 14
+  def nx_type_to_onnx_type({:c, 128}), do: 15
+  def nx_type_to_onnx_type({:bf, 16}), do: 16
+
+  def get_axon_node(nil), do: nil
+  def get_axon_node(%Nx.Tensor{} = tensor), do: tensor
+  def get_axon_node(%Axon{output: id, nodes: nodes}), do: nodes[id]
 end
