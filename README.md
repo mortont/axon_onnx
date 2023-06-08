@@ -2,6 +2,8 @@
 
 Easily convert models between ONNX and Axon.
 
+When loading models, this project only supports a subset of the ONNX specification. See [Ortex](https://github.com/elixir-nx/ortex) which provides full-blown compatibility for running ONNX models via ONNX Runtime bindings.
+
 ## Installation
 
 AxonONNX is currently in development. You can use it as a `git` dependency:
@@ -9,7 +11,7 @@ AxonONNX is currently in development. You can use it as a `git` dependency:
 ```elixir
 def deps do
   [
-    {:axon_onnx, github: "elixir-nx/axon_onnx"}
+    {:axon_onnx, "~> 0.4"}
   ]
 end
 ```
@@ -30,8 +32,6 @@ Note that you'll need to install `protoc` (>= 3.0). It must available in `$PATH`
 (`brew install protobuf`, `apt install protobuf-compiler`, etc.).
 
 ## Development & Test
-
-AxonONNX requires an Elixir runtime.
 
 The `onnx` python package is required to run the unit tests: `pip3 install onnx`. The test cases
 will be generated automatically upon first `mix test`.
