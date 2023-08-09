@@ -6,7 +6,7 @@ When loading models, this project only supports a subset of the ONNX specificati
 
 ## Installation
 
-AxonONNX is currently in development. You can use it as a `git` dependency:
+Add to your mix.exs:
 
 ```elixir
 def deps do
