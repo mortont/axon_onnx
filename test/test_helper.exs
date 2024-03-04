@@ -37,7 +37,12 @@ defmodule OnnxTestHelper do
       test_path = Path.join([cache_dir, "test_data_set_#{n}"])
       File.mkdir_p!(test_path)
 
-      inp = %{"input" => Nx.random_uniform(input_shape, type: {:f, 32})}
+      inp = %{
+        "input" =>
+          Nx.Random.key(42)
+          |> Nx.Random.uniform(shape: input_shape)
+          |> then(fn {tensor, _key} -> tensor end)
+      }
 
       out = predict_fn.(params, inp)
 
