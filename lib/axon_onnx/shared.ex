@@ -55,7 +55,7 @@ defmodule AxonOnnx.Shared do
   defn lrn(x, opts \\ []) do
     opts = keyword!(opts, [:size, alpha: 1.0e-4, beta: 0.75, bias: 1.0])
     size = opts[:size]
-    axes = transform(size, &Enum.to_list(0..(&1 - 1)))
+    axes = get_axes(size)
     alpha = opts[:alpha]
     beta = opts[:beta]
     bias = opts[:bias]
@@ -65,6 +65,8 @@ defmodule AxonOnnx.Shared do
     denom = Nx.pow(Nx.add(bias, Nx.divide(alpha, Nx.multiply(size, sum_squares))), beta)
     Nx.divide(x, denom)
   end
+
+  Nx.Defn.deftransformp(get_axes(size), do: Enum.to_list(0..(size - 1)))
 
   defn(mean(x, y), do: Nx.divide(Nx.add(x, y), 2))
   # Layer helpers
@@ -91,7 +93,17 @@ defmodule AxonOnnx.Shared do
 
   defnp numpy_matmul(a, b, _opts) do
     {out_a_shape, c1_dims, b1_dims, out_b_shape, c2_dims, b2_dims} =
-      transform({Nx.shape(a), Nx.shape(b)}, fn
+      transform_shapes({Nx.shape(a), Nx.shape(b)})
+
+    a = Nx.broadcast(a, out_a_shape)
+    b = Nx.broadcast(b, out_b_shape)
+
+    Nx.dot(a, c1_dims, b1_dims, b, c2_dims, b2_dims)
+  end
+
+  Nx.Defn.deftransformp(transform_shapes({_s1, _s2} = shapes),
+    do:
+      case(shapes) do
         {{}, {}} ->
           {{}, [], [], {}, [], []}
 
@@ -116,13 +128,8 @@ defmodule AxonOnnx.Shared do
 
           {a_shape, [Nx.rank(a_shape) - 1], batch_dims, b_shape, [Nx.rank(b_shape) - 2],
            batch_dims}
-      end)
-
-    a = Nx.broadcast(a, out_a_shape)
-    b = Nx.broadcast(b, out_b_shape)
-
-    Nx.dot(a, c1_dims, b1_dims, b, c2_dims, b2_dims)
-  end
+      end
+  )
 
   def gather_layer(x, ind, axis, output_name) do
     fun = fn x, indices, _opts ->
