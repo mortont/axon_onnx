@@ -16,6 +16,8 @@ defmodule AxonOnnx.Deserialize do
 
   import AxonOnnx.Shared
 
+  @random_key 42
+
   def __load__(binary, opts \\ []) do
     binary
     |> Model.decode!()
@@ -1975,7 +1977,10 @@ defmodule AxonOnnx.Deserialize do
     shape = random_options["shape"]
     nx_type = onnx_type_to_nx_type(dtype)
 
-    tensor = Nx.random_normal(List.to_tuple(shape), mean, scale, type: nx_type)
+    {tensor, _key} =
+      Nx.Random.key(@random_key)
+      |> Nx.Random.normal(mean, scale, type: nx_type, shape: List.to_tuple(shape))
+
     layer = Axon.constant(tensor, name: output_name)
     updated_axon = Map.put(axon, output_name, layer)
 
@@ -2006,20 +2011,31 @@ defmodule AxonOnnx.Deserialize do
       case get_axon_node(inp) do
         %Axon.Node{op: :constant, opts: [value: v]} ->
           shape = Nx.shape(v)
-          tensor = Nx.random_normal(shape, mean, scale, type: nx_type)
+
+          {tensor, _key} =
+            Nx.Random.key(@random_key)
+            |> Nx.Random.normal(mean, scale, type: nx_type, shape: shape)
+
           Axon.constant(tensor, name: output_name)
 
         %Axon.Node{} ->
           fun = fn x, _opts ->
             shape = Nx.shape(x)
-            Nx.random_normal(shape, mean, scale, type: nx_type)
+
+            Nx.Random.key(@random_key)
+            |> Nx.Random.normal(mean, scale, type: nx_type, shape: shape)
+            |> then(fn {tensor, _key} -> tensor end)
           end
 
           Axon.layer(fun, [inp], name: output_name, op_name: :random_uniform_like)
 
         %Nx.Tensor{} = t ->
           shape = Nx.shape(t)
-          tensor = Nx.random_normal(shape, mean, scale, type: nx_type)
+
+          {tensor, _key} =
+            Nx.Random.key(@random_key)
+            |> Nx.Random.normal(mean, scale, type: nx_type, shape: shape)
+
           Axon.constant(tensor, name: output_name)
       end
 
