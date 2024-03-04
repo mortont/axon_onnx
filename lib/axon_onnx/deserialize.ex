@@ -361,7 +361,7 @@ defmodule AxonOnnx.Deserialize do
     {"LessOrEqual", &Nx.less_equal/2, :less_or_equal},
     {"Mod", &Nx.remainder/2, :mod},
     {"Or", &Nx.logical_or/2, :logical_or},
-    {"Pow", &Nx.power/2, :power},
+    {"Pow", &Nx.pow/2, :power},
     {"Xor", &Nx.logical_xor/2, :logical_xor}
   ]
 

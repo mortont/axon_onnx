@@ -41,7 +41,7 @@ defmodule AxonOnnx.Shared do
   defn sumsquare(x, opts \\ []) do
     opts = keyword!(opts, [:axes, keep_axes: false])
 
-    x |> Nx.power(2) |> Nx.sum(opts)
+    x |> Nx.pow(2) |> Nx.sum(opts)
   end
 
   defn l1_norm(x, opts \\ []) do
@@ -49,7 +49,7 @@ defmodule AxonOnnx.Shared do
   end
 
   defn l2_norm(x, opts \\ []) do
-    x |> Nx.power(2) |> Nx.sum(opts)
+    x |> Nx.pow(2) |> Nx.sum(opts)
   end
 
   defn lrn(x, opts \\ []) do
@@ -60,9 +60,9 @@ defmodule AxonOnnx.Shared do
     beta = opts[:beta]
     bias = opts[:bias]
 
-    squares = Nx.power(x, 2)
+    squares = Nx.pow(x, 2)
     sum_squares = Nx.sum(squares, axes: axes, keep_axes: true)
-    denom = Nx.power(Nx.add(bias, Nx.divide(alpha, Nx.multiply(size, sum_squares))), beta)
+    denom = Nx.pow(Nx.add(bias, Nx.divide(alpha, Nx.multiply(size, sum_squares))), beta)
     Nx.divide(x, denom)
   end
 
