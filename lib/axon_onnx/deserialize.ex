@@ -16,8 +16,6 @@ defmodule AxonOnnx.Deserialize do
 
   import AxonOnnx.Shared
 
-  @random_key 42
-
   def __load__(binary, opts \\ []) do
     binary
     |> Model.decode!()
@@ -1905,13 +1903,12 @@ defmodule AxonOnnx.Deserialize do
     dtype = random_options["dtype"] || 1
     high = random_options["high"] || 1.0
     low = random_options["low"] || 0.0
-    # TODO: Seed
-    # seed = random_options["seed"]
+    seed = random_options["seed"]
     shape = random_options["shape"]
     nx_type = onnx_type_to_nx_type(dtype)
 
     {tensor, _key} =
-      Nx.Random.key(@random_key)
+      Nx.Random.key(seed)
       |> Nx.Random.uniform(low, high, type: nx_type, shape: List.to_tuple(shape))
 
     layer = Axon.constant(tensor, name: output_name)
@@ -1936,8 +1933,7 @@ defmodule AxonOnnx.Deserialize do
     dtype = random_options["dtype"] || 1
     high = random_options["high"] || 1.0
     low = random_options["low"] || 0.0
-    # TODO: Seed
-    # seed = random_options["seed"]
+    seed = random_options["seed"]
     nx_type = onnx_type_to_nx_type(dtype)
 
     layer =
@@ -1946,7 +1942,7 @@ defmodule AxonOnnx.Deserialize do
           shape = Nx.shape(v)
 
           {tensor, _key} =
-            Nx.Random.key(@random_key)
+            Nx.Random.key(seed)
             |> Nx.Random.uniform(low, high, type: nx_type, shape: shape)
 
           Axon.constant(tensor, name: output_name)
@@ -1955,7 +1951,7 @@ defmodule AxonOnnx.Deserialize do
           fun = fn x, _opts ->
             shape = Nx.shape(x)
 
-            Nx.Random.key(@random_key)
+            Nx.Random.key(seed)
             |> Nx.Random.uniform(low, high, type: nx_type, shape: shape)
             |> then(fn {tensor, _key} -> tensor end)
           end
@@ -1966,7 +1962,7 @@ defmodule AxonOnnx.Deserialize do
           shape = Nx.shape(t)
 
           {tensor, _key} =
-            Nx.Random.key(@random_key)
+            Nx.Random.key(seed)
             |> Nx.Random.uniform(low, high, type: nx_type, shape: shape)
 
           Axon.constant(tensor, name: output_name)
@@ -1986,13 +1982,12 @@ defmodule AxonOnnx.Deserialize do
     dtype = random_options["dtype"] || 1
     mean = random_options["mean"] || 0.0
     scale = random_options["scale"] || 1.0
-    # TODO: Seed
-    # seed = random_options["seed"]
+    seed = random_options["seed"]
     shape = random_options["shape"]
     nx_type = onnx_type_to_nx_type(dtype)
 
     {tensor, _key} =
-      Nx.Random.key(@random_key)
+      Nx.Random.key(seed)
       |> Nx.Random.normal(mean, scale, type: nx_type, shape: List.to_tuple(shape))
 
     layer = Axon.constant(tensor, name: output_name)
@@ -2017,8 +2012,7 @@ defmodule AxonOnnx.Deserialize do
     dtype = random_options["dtype"] || 1
     mean = random_options["mean"] || 0.0
     scale = random_options["scale"] || 1.0
-    # TODO: Seed
-    # seed = random_options["seed"]
+    seed = random_options["seed"]
     nx_type = onnx_type_to_nx_type(dtype)
 
     layer =
@@ -2027,7 +2021,7 @@ defmodule AxonOnnx.Deserialize do
           shape = Nx.shape(v)
 
           {tensor, _key} =
-            Nx.Random.key(@random_key)
+            Nx.Random.key(seed)
             |> Nx.Random.normal(mean, scale, type: nx_type, shape: shape)
 
           Axon.constant(tensor, name: output_name)
@@ -2036,7 +2030,7 @@ defmodule AxonOnnx.Deserialize do
           fun = fn x, _opts ->
             shape = Nx.shape(x)
 
-            Nx.Random.key(@random_key)
+            Nx.Random.key(seed)
             |> Nx.Random.normal(mean, scale, type: nx_type, shape: shape)
             |> then(fn {tensor, _key} -> tensor end)
           end
@@ -2047,7 +2041,7 @@ defmodule AxonOnnx.Deserialize do
           shape = Nx.shape(t)
 
           {tensor, _key} =
-            Nx.Random.key(@random_key)
+            Nx.Random.key(seed)
             |> Nx.Random.normal(mean, scale, type: nx_type, shape: shape)
 
           Axon.constant(tensor, name: output_name)
