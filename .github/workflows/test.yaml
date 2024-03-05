@@ -12,8 +12,8 @@ jobs:
       - name: Install Erlang & Elixir
         uses: erlef/setup-beam@v1
         with:
-          otp-version: '24.0'
-          elixir-version: '1.13.0'
+          otp-version: '25.0'
+          elixir-version: '1.14.5'
       - name: Install Python
         uses: actions/setup-python@v2
         with:
