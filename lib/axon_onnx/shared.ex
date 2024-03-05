@@ -41,7 +41,7 @@ defmodule AxonOnnx.Shared do
   defn sumsquare(x, opts \\ []) do
     opts = keyword!(opts, [:axes, keep_axes: false])
 
-    x |> Nx.power(2) |> Nx.sum(opts)
+    x |> Nx.pow(2) |> Nx.sum(opts)
   end
 
   defn l1_norm(x, opts \\ []) do
@@ -49,21 +49,25 @@ defmodule AxonOnnx.Shared do
   end
 
   defn l2_norm(x, opts \\ []) do
-    x |> Nx.power(2) |> Nx.sum(opts)
+    x |> Nx.pow(2) |> Nx.sum(opts)
   end
 
   defn lrn(x, opts \\ []) do
     opts = keyword!(opts, [:size, alpha: 1.0e-4, beta: 0.75, bias: 1.0])
     size = opts[:size]
-    axes = transform(size, &Enum.to_list(0..(&1 - 1)))
+    axes = get_axes(size)
     alpha = opts[:alpha]
     beta = opts[:beta]
     bias = opts[:bias]
 
-    squares = Nx.power(x, 2)
+    squares = Nx.pow(x, 2)
     sum_squares = Nx.sum(squares, axes: axes, keep_axes: true)
-    denom = Nx.power(Nx.add(bias, Nx.divide(alpha, Nx.multiply(size, sum_squares))), beta)
+    denom = Nx.pow(Nx.add(bias, Nx.divide(alpha, Nx.multiply(size, sum_squares))), beta)
     Nx.divide(x, denom)
+  end
+
+  deftransformp get_axes(size) do
+    Enum.to_list(0..(size - 1))
   end
 
   defn(mean(x, y), do: Nx.divide(Nx.add(x, y), 2))
@@ -91,37 +95,40 @@ defmodule AxonOnnx.Shared do
 
   defnp numpy_matmul(a, b, _opts) do
     {out_a_shape, c1_dims, b1_dims, out_b_shape, c2_dims, b2_dims} =
-      transform({Nx.shape(a), Nx.shape(b)}, fn
-        {{}, {}} ->
-          {{}, [], [], {}, [], []}
-
-        {{_} = a, {_} = b} ->
-          {a, [0], [], b, [0], []}
-
-        {{_, _} = a, {_, _} = b} ->
-          {a, [1], [], b, [0], []}
-
-        {a_shape, b_shape} ->
-          # TODO: This should broadcast both sides, not just one
-          batch_dims = Enum.to_list(0..(Nx.rank(a_shape) - 3))
-
-          b_shape =
-            if Elixir.Kernel.==(Nx.rank(b_shape), Nx.rank(a_shape)) do
-              b_shape
-            else
-              Enum.reduce(Enum.reverse(batch_dims), b_shape, fn dim, shape ->
-                Tuple.insert_at(shape, 0, elem(a_shape, dim))
-              end)
-            end
-
-          {a_shape, [Nx.rank(a_shape) - 1], batch_dims, b_shape, [Nx.rank(b_shape) - 2],
-           batch_dims}
-      end)
+      transform_shapes({Nx.shape(a), Nx.shape(b)})
 
     a = Nx.broadcast(a, out_a_shape)
     b = Nx.broadcast(b, out_b_shape)
 
     Nx.dot(a, c1_dims, b1_dims, b, c2_dims, b2_dims)
+  end
+
+  deftransformp transform_shapes({_s1, _s2} = shapes) do
+    case(shapes) do
+      {{}, {}} ->
+        {{}, [], [], {}, [], []}
+
+      {{_} = a, {_} = b} ->
+        {a, [0], [], b, [0], []}
+
+      {{_, _} = a, {_, _} = b} ->
+        {a, [1], [], b, [0], []}
+
+      {a_shape, b_shape} ->
+        # TODO: This should broadcast both sides, not just one
+        batch_dims = Enum.to_list(0..(Nx.rank(a_shape) - 3))
+
+        b_shape =
+          if Elixir.Kernel.==(Nx.rank(b_shape), Nx.rank(a_shape)) do
+            b_shape
+          else
+            Enum.reduce(Enum.reverse(batch_dims), b_shape, fn dim, shape ->
+              Tuple.insert_at(shape, 0, elem(a_shape, dim))
+            end)
+          end
+
+        {a_shape, [Nx.rank(a_shape) - 1], batch_dims, b_shape, [Nx.rank(b_shape) - 2], batch_dims}
+    end
   end
 
   def gather_layer(x, ind, axis, output_name) do

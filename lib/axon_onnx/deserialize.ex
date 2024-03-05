@@ -361,7 +361,7 @@ defmodule AxonOnnx.Deserialize do
     {"LessOrEqual", &Nx.less_equal/2, :less_or_equal},
     {"Mod", &Nx.remainder/2, :mod},
     {"Or", &Nx.logical_or/2, :logical_or},
-    {"Pow", &Nx.power/2, :power},
+    {"Pow", &Nx.pow/2, :power},
     {"Xor", &Nx.logical_xor/2, :logical_xor}
   ]
 
@@ -1903,12 +1903,14 @@ defmodule AxonOnnx.Deserialize do
     dtype = random_options["dtype"] || 1
     high = random_options["high"] || 1.0
     low = random_options["low"] || 0.0
-    # TODO: Seed
-    # seed = random_options["seed"]
+    seed = random_options["seed"]
     shape = random_options["shape"]
     nx_type = onnx_type_to_nx_type(dtype)
 
-    tensor = Nx.random_uniform(List.to_tuple(shape), low, high, type: nx_type)
+    {tensor, _key} =
+      Nx.Random.key(seed)
+      |> Nx.Random.uniform(low, high, type: nx_type, shape: List.to_tuple(shape))
+
     layer = Axon.constant(tensor, name: output_name)
     updated_axon = Map.put(axon, output_name, layer)
 
@@ -1931,28 +1933,38 @@ defmodule AxonOnnx.Deserialize do
     dtype = random_options["dtype"] || 1
     high = random_options["high"] || 1.0
     low = random_options["low"] || 0.0
-    # TODO: Seed
-    # seed = random_options["seed"]
+    seed = random_options["seed"]
     nx_type = onnx_type_to_nx_type(dtype)
 
     layer =
       case get_axon_node(inp) do
         %Axon.Node{op: :constant, opts: [value: v]} ->
           shape = Nx.shape(v)
-          tensor = Nx.random_uniform(shape, low, high, type: nx_type)
+
+          {tensor, _key} =
+            Nx.Random.key(seed)
+            |> Nx.Random.uniform(low, high, type: nx_type, shape: shape)
+
           Axon.constant(tensor, name: output_name)
 
         %Axon.Node{} ->
           fun = fn x, _opts ->
             shape = Nx.shape(x)
-            Nx.random_uniform(shape, low, high, type: nx_type)
+
+            Nx.Random.key(seed)
+            |> Nx.Random.uniform(low, high, type: nx_type, shape: shape)
+            |> then(fn {tensor, _key} -> tensor end)
           end
 
           Axon.layer(fun, [inp], name: output_name, op_name: :random_uniform_like)
 
         %Nx.Tensor{} = t ->
           shape = Nx.shape(t)
-          tensor = Nx.random_uniform(shape, low, high, type: nx_type)
+
+          {tensor, _key} =
+            Nx.Random.key(seed)
+            |> Nx.Random.uniform(low, high, type: nx_type, shape: shape)
+
           Axon.constant(tensor, name: output_name)
       end
 
@@ -1970,12 +1982,14 @@ defmodule AxonOnnx.Deserialize do
     dtype = random_options["dtype"] || 1
     mean = random_options["mean"] || 0.0
     scale = random_options["scale"] || 1.0
-    # TODO: Seed
-    # seed = random_options["seed"]
+    seed = random_options["seed"]
     shape = random_options["shape"]
     nx_type = onnx_type_to_nx_type(dtype)
 
-    tensor = Nx.random_normal(List.to_tuple(shape), mean, scale, type: nx_type)
+    {tensor, _key} =
+      Nx.Random.key(seed)
+      |> Nx.Random.normal(mean, scale, type: nx_type, shape: List.to_tuple(shape))
+
     layer = Axon.constant(tensor, name: output_name)
     updated_axon = Map.put(axon, output_name, layer)
 
@@ -1998,28 +2012,38 @@ defmodule AxonOnnx.Deserialize do
     dtype = random_options["dtype"] || 1
     mean = random_options["mean"] || 0.0
     scale = random_options["scale"] || 1.0
-    # TODO: Seed
-    # seed = random_options["seed"]
+    seed = random_options["seed"]
     nx_type = onnx_type_to_nx_type(dtype)
 
     layer =
       case get_axon_node(inp) do
         %Axon.Node{op: :constant, opts: [value: v]} ->
           shape = Nx.shape(v)
-          tensor = Nx.random_normal(shape, mean, scale, type: nx_type)
+
+          {tensor, _key} =
+            Nx.Random.key(seed)
+            |> Nx.Random.normal(mean, scale, type: nx_type, shape: shape)
+
           Axon.constant(tensor, name: output_name)
 
         %Axon.Node{} ->
           fun = fn x, _opts ->
             shape = Nx.shape(x)
-            Nx.random_normal(shape, mean, scale, type: nx_type)
+
+            Nx.Random.key(seed)
+            |> Nx.Random.normal(mean, scale, type: nx_type, shape: shape)
+            |> then(fn {tensor, _key} -> tensor end)
           end
 
           Axon.layer(fun, [inp], name: output_name, op_name: :random_uniform_like)
 
         %Nx.Tensor{} = t ->
           shape = Nx.shape(t)
-          tensor = Nx.random_normal(shape, mean, scale, type: nx_type)
+
+          {tensor, _key} =
+            Nx.Random.key(seed)
+            |> Nx.Random.normal(mean, scale, type: nx_type, shape: shape)
+
           Axon.constant(tensor, name: output_name)
       end
 

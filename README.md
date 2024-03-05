@@ -33,7 +33,7 @@ Note that you'll need to install `protoc` (>= 3.0). It must available in `$PATH`
 
 ## Development & Test
 
-The `onnx` python package is required to run the unit tests: `pip3 install onnx`. The test cases
+The `onnx` and `onnxruntime` python packages are required to run the unit tests: `pip3 install onnx && pip3 install onnxruntime`. The test cases
 will be generated automatically upon first `mix test`.
 
 ## License
