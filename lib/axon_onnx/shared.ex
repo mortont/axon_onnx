@@ -66,7 +66,9 @@ defmodule AxonOnnx.Shared do
     Nx.divide(x, denom)
   end
 
-  Nx.Defn.deftransformp(get_axes(size), do: Enum.to_list(0..(size - 1)))
+  deftransformp get_axes(size) do
+    Enum.to_list(0..(size - 1))
+  end
 
   defn(mean(x, y), do: Nx.divide(Nx.add(x, y), 2))
   # Layer helpers
@@ -101,35 +103,33 @@ defmodule AxonOnnx.Shared do
     Nx.dot(a, c1_dims, b1_dims, b, c2_dims, b2_dims)
   end
 
-  Nx.Defn.deftransformp(transform_shapes({_s1, _s2} = shapes),
-    do:
-      case(shapes) do
-        {{}, {}} ->
-          {{}, [], [], {}, [], []}
+  deftransformp transform_shapes({_s1, _s2} = shapes) do
+    case(shapes) do
+      {{}, {}} ->
+        {{}, [], [], {}, [], []}
 
-        {{_} = a, {_} = b} ->
-          {a, [0], [], b, [0], []}
+      {{_} = a, {_} = b} ->
+        {a, [0], [], b, [0], []}
 
-        {{_, _} = a, {_, _} = b} ->
-          {a, [1], [], b, [0], []}
+      {{_, _} = a, {_, _} = b} ->
+        {a, [1], [], b, [0], []}
 
-        {a_shape, b_shape} ->
-          # TODO: This should broadcast both sides, not just one
-          batch_dims = Enum.to_list(0..(Nx.rank(a_shape) - 3))
+      {a_shape, b_shape} ->
+        # TODO: This should broadcast both sides, not just one
+        batch_dims = Enum.to_list(0..(Nx.rank(a_shape) - 3))
 
-          b_shape =
-            if Elixir.Kernel.==(Nx.rank(b_shape), Nx.rank(a_shape)) do
-              b_shape
-            else
-              Enum.reduce(Enum.reverse(batch_dims), b_shape, fn dim, shape ->
-                Tuple.insert_at(shape, 0, elem(a_shape, dim))
-              end)
-            end
+        b_shape =
+          if Elixir.Kernel.==(Nx.rank(b_shape), Nx.rank(a_shape)) do
+            b_shape
+          else
+            Enum.reduce(Enum.reverse(batch_dims), b_shape, fn dim, shape ->
+              Tuple.insert_at(shape, 0, elem(a_shape, dim))
+            end)
+          end
 
-          {a_shape, [Nx.rank(a_shape) - 1], batch_dims, b_shape, [Nx.rank(b_shape) - 2],
-           batch_dims}
-      end
-  )
+        {a_shape, [Nx.rank(a_shape) - 1], batch_dims, b_shape, [Nx.rank(b_shape) - 2], batch_dims}
+    end
+  end
 
   def gather_layer(x, ind, axis, output_name) do
     fun = fn x, indices, _opts ->
