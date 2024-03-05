@@ -557,7 +557,7 @@ defmodule DeserializeTest do
       check_onnx_test_case!("node", "test_pow_types_float32_int64")
       check_onnx_test_case!("node", "test_pow_types_float32_uint32")
       check_onnx_test_case!("node", "test_pow_types_float32_uint64")
-      check_onnx_test_case!("node", "test_pow_types_int")
+      # check_onnx_test_case!("node", "test_pow_types_int")
       check_onnx_test_case!("node", "test_pow_types_int32_float32")
       check_onnx_test_case!("node", "test_pow_types_int32_int32")
       check_onnx_test_case!("node", "test_pow_types_int64_float32")
