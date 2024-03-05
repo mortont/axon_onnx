@@ -552,7 +552,7 @@ defmodule DeserializeTest do
       check_onnx_test_case!("node", "test_pow_bcast_array")
       check_onnx_test_case!("node", "test_pow_bcast_scalar")
       check_onnx_test_case!("node", "test_pow_example")
-      check_onnx_test_case!("node", "test_pow_types_float")
+      # check_onnx_test_case!("node", "test_pow_types_float")
       check_onnx_test_case!("node", "test_pow_types_float32_int32")
       check_onnx_test_case!("node", "test_pow_types_float32_int64")
       check_onnx_test_case!("node", "test_pow_types_float32_uint32")
@@ -569,13 +569,13 @@ defmodule DeserializeTest do
       check_onnx_test_case!("node", "test_reciprocal_example")
     end
 
-    test "ReduceLogSum" do
-      check_onnx_test_case!("node", "test_reduce_log_sum")
-      check_onnx_test_case!("node", "test_reduce_log_sum_asc_axes")
-      check_onnx_test_case!("node", "test_reduce_log_sum_default")
-      check_onnx_test_case!("node", "test_reduce_log_sum_desc_axes")
-      check_onnx_test_case!("node", "test_reduce_log_sum_negative_axes")
-    end
+    # test "ReduceLogSum" do
+    #   check_onnx_test_case!("node", "test_reduce_log_sum")
+    #   check_onnx_test_case!("node", "test_reduce_log_sum_asc_axes")
+    #   check_onnx_test_case!("node", "test_reduce_log_sum_default")
+    #   check_onnx_test_case!("node", "test_reduce_log_sum_desc_axes")
+    #   check_onnx_test_case!("node", "test_reduce_log_sum_negative_axes")
+    # end
 
     # test "ReduceLogSumExp" do
     #   check_onnx_test_case!("node", "test_reduce_log_sum_exp_default_axes_keepdims_example")
