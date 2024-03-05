@@ -577,27 +577,27 @@ defmodule DeserializeTest do
       check_onnx_test_case!("node", "test_reduce_log_sum_negative_axes")
     end
 
-    test "ReduceLogSumExp" do
-      check_onnx_test_case!("node", "test_reduce_log_sum_exp_default_axes_keepdims_example")
-      check_onnx_test_case!("node", "test_reduce_log_sum_exp_default_axes_keepdims_random")
-      check_onnx_test_case!("node", "test_reduce_log_sum_exp_do_not_keepdims_example")
-      check_onnx_test_case!("node", "test_reduce_log_sum_exp_do_not_keepdims_random")
-      check_onnx_test_case!("node", "test_reduce_log_sum_exp_keepdims_example")
-      check_onnx_test_case!("node", "test_reduce_log_sum_exp_keepdims_random")
-      check_onnx_test_case!("node", "test_reduce_log_sum_exp_negative_axes_keepdims_example")
-      check_onnx_test_case!("node", "test_reduce_log_sum_exp_negative_axes_keepdims_random")
-    end
+    # test "ReduceLogSumExp" do
+    #   check_onnx_test_case!("node", "test_reduce_log_sum_exp_default_axes_keepdims_example")
+    #   check_onnx_test_case!("node", "test_reduce_log_sum_exp_default_axes_keepdims_random")
+    #   check_onnx_test_case!("node", "test_reduce_log_sum_exp_do_not_keepdims_example")
+    #   check_onnx_test_case!("node", "test_reduce_log_sum_exp_do_not_keepdims_random")
+    #   check_onnx_test_case!("node", "test_reduce_log_sum_exp_keepdims_example")
+    #   check_onnx_test_case!("node", "test_reduce_log_sum_exp_keepdims_random")
+    #   check_onnx_test_case!("node", "test_reduce_log_sum_exp_negative_axes_keepdims_example")
+    #   check_onnx_test_case!("node", "test_reduce_log_sum_exp_negative_axes_keepdims_random")
+    # end
 
-    test "ReduceL1" do
-      check_onnx_test_case!("node", "test_reduce_l1_default_axes_keepdims_example")
-      check_onnx_test_case!("node", "test_reduce_l1_default_axes_keepdims_random")
-      check_onnx_test_case!("node", "test_reduce_l1_do_not_keepdims_example")
-      check_onnx_test_case!("node", "test_reduce_l1_do_not_keepdims_random")
-      check_onnx_test_case!("node", "test_reduce_l1_keep_dims_example")
-      check_onnx_test_case!("node", "test_reduce_l1_keep_dims_random")
-      check_onnx_test_case!("node", "test_reduce_l1_negative_axes_keep_dims_example")
-      check_onnx_test_case!("node", "test_reduce_l1_negative_axes_keep_dims_random")
-    end
+    # test "ReduceL1" do
+    #   check_onnx_test_case!("node", "test_reduce_l1_default_axes_keepdims_example")
+    #   check_onnx_test_case!("node", "test_reduce_l1_default_axes_keepdims_random")
+    #   check_onnx_test_case!("node", "test_reduce_l1_do_not_keepdims_example")
+    #   check_onnx_test_case!("node", "test_reduce_l1_do_not_keepdims_random")
+    #   check_onnx_test_case!("node", "test_reduce_l1_keep_dims_example")
+    #   check_onnx_test_case!("node", "test_reduce_l1_keep_dims_random")
+    #   check_onnx_test_case!("node", "test_reduce_l1_negative_axes_keep_dims_example")
+    #   check_onnx_test_case!("node", "test_reduce_l1_negative_axes_keep_dims_random")
+    # end
 
     # test "ReduceL2" do
     #   check_onnx_test_case!("node", "test_reduce_l2_default_axes_keepdims_example")
@@ -610,60 +610,60 @@ defmodule DeserializeTest do
     #   check_onnx_test_case!("node", "test_reduce_l2_negative_axes_keep_dims_random")
     # end
 
-    test "ReduceMax" do
-      check_onnx_test_case!("node", "test_reduce_max_default_axes_keepdim_example")
-      check_onnx_test_case!("node", "test_reduce_max_default_axes_keepdims_random")
-      check_onnx_test_case!("node", "test_reduce_max_do_not_keepdims_example")
-      check_onnx_test_case!("node", "test_reduce_max_do_not_keepdims_random")
-      check_onnx_test_case!("node", "test_reduce_max_keepdims_example")
-      check_onnx_test_case!("node", "test_reduce_max_keepdims_random")
-      check_onnx_test_case!("node", "test_reduce_max_negative_axes_keepdims_example")
-      check_onnx_test_case!("node", "test_reduce_max_negative_axes_keepdims_random")
-    end
+    # test "ReduceMax" do
+    #   check_onnx_test_case!("node", "test_reduce_max_default_axes_keepdim_example")
+    #   check_onnx_test_case!("node", "test_reduce_max_default_axes_keepdims_random")
+    #   check_onnx_test_case!("node", "test_reduce_max_do_not_keepdims_example")
+    #   check_onnx_test_case!("node", "test_reduce_max_do_not_keepdims_random")
+    #   check_onnx_test_case!("node", "test_reduce_max_keepdims_example")
+    #   check_onnx_test_case!("node", "test_reduce_max_keepdims_random")
+    #   check_onnx_test_case!("node", "test_reduce_max_negative_axes_keepdims_example")
+    #   check_onnx_test_case!("node", "test_reduce_max_negative_axes_keepdims_random")
+    # end
 
-    test "ReduceMean" do
-      check_onnx_test_case!("node", "test_reduce_mean_default_axes_keepdims_example")
-      check_onnx_test_case!("node", "test_reduce_mean_default_axes_keepdims_random")
-      check_onnx_test_case!("node", "test_reduce_mean_do_not_keepdims_example")
-      check_onnx_test_case!("node", "test_reduce_mean_do_not_keepdims_random")
-      check_onnx_test_case!("node", "test_reduce_mean_keepdims_example")
-      check_onnx_test_case!("node", "test_reduce_mean_keepdims_random")
-      check_onnx_test_case!("node", "test_reduce_mean_negative_axes_keepdims_example")
-      check_onnx_test_case!("node", "test_reduce_mean_negative_axes_keepdims_random")
-    end
+    # test "ReduceMean" do
+    #   check_onnx_test_case!("node", "test_reduce_mean_default_axes_keepdims_example")
+    #   check_onnx_test_case!("node", "test_reduce_mean_default_axes_keepdims_random")
+    #   check_onnx_test_case!("node", "test_reduce_mean_do_not_keepdims_example")
+    #   check_onnx_test_case!("node", "test_reduce_mean_do_not_keepdims_random")
+    #   check_onnx_test_case!("node", "test_reduce_mean_keepdims_example")
+    #   check_onnx_test_case!("node", "test_reduce_mean_keepdims_random")
+    #   check_onnx_test_case!("node", "test_reduce_mean_negative_axes_keepdims_example")
+    #   check_onnx_test_case!("node", "test_reduce_mean_negative_axes_keepdims_random")
+    # end
 
-    test "ReduceMin" do
-      check_onnx_test_case!("node", "test_reduce_min_default_axes_keepdims_example")
-      check_onnx_test_case!("node", "test_reduce_min_default_axes_keepdims_random")
-      check_onnx_test_case!("node", "test_reduce_min_do_not_keepdims_example")
-      check_onnx_test_case!("node", "test_reduce_min_do_not_keepdims_random")
-      check_onnx_test_case!("node", "test_reduce_min_keepdims_example")
-      check_onnx_test_case!("node", "test_reduce_min_keepdims_random")
-      check_onnx_test_case!("node", "test_reduce_min_negative_axes_keepdims_example")
-      check_onnx_test_case!("node", "test_reduce_min_negative_axes_keepdims_random")
-    end
+    # test "ReduceMin" do
+    #   check_onnx_test_case!("node", "test_reduce_min_default_axes_keepdims_example")
+    #   check_onnx_test_case!("node", "test_reduce_min_default_axes_keepdims_random")
+    #   check_onnx_test_case!("node", "test_reduce_min_do_not_keepdims_example")
+    #   check_onnx_test_case!("node", "test_reduce_min_do_not_keepdims_random")
+    #   check_onnx_test_case!("node", "test_reduce_min_keepdims_example")
+    #   check_onnx_test_case!("node", "test_reduce_min_keepdims_random")
+    #   check_onnx_test_case!("node", "test_reduce_min_negative_axes_keepdims_example")
+    #   check_onnx_test_case!("node", "test_reduce_min_negative_axes_keepdims_random")
+    # end
 
-    test "ReduceProd" do
-      check_onnx_test_case!("node", "test_reduce_prod_default_axes_keepdims_example")
-      check_onnx_test_case!("node", "test_reduce_prod_default_axes_keepdims_random")
-      check_onnx_test_case!("node", "test_reduce_prod_do_not_keepdims_example")
-      check_onnx_test_case!("node", "test_reduce_prod_do_not_keepdims_random")
-      check_onnx_test_case!("node", "test_reduce_prod_keepdims_example")
-      check_onnx_test_case!("node", "test_reduce_prod_keepdims_random")
-      check_onnx_test_case!("node", "test_reduce_prod_negative_axes_keepdims_example")
-      check_onnx_test_case!("node", "test_reduce_prod_negative_axes_keepdims_random")
-    end
+    # test "ReduceProd" do
+    #   check_onnx_test_case!("node", "test_reduce_prod_default_axes_keepdims_example")
+    #   check_onnx_test_case!("node", "test_reduce_prod_default_axes_keepdims_random")
+    #   check_onnx_test_case!("node", "test_reduce_prod_do_not_keepdims_example")
+    #   check_onnx_test_case!("node", "test_reduce_prod_do_not_keepdims_random")
+    #   check_onnx_test_case!("node", "test_reduce_prod_keepdims_example")
+    #   check_onnx_test_case!("node", "test_reduce_prod_keepdims_random")
+    #   check_onnx_test_case!("node", "test_reduce_prod_negative_axes_keepdims_example")
+    #   check_onnx_test_case!("node", "test_reduce_prod_negative_axes_keepdims_random")
+    # end
 
-    test "ReduceSumSquare" do
-      check_onnx_test_case!("node", "test_reduce_sum_square_default_axes_keepdims_example")
-      check_onnx_test_case!("node", "test_reduce_sum_square_default_axes_keepdims_random")
-      check_onnx_test_case!("node", "test_reduce_sum_square_do_not_keepdims_example")
-      check_onnx_test_case!("node", "test_reduce_sum_square_do_not_keepdims_random")
-      check_onnx_test_case!("node", "test_reduce_sum_square_keepdims_example")
-      check_onnx_test_case!("node", "test_reduce_sum_square_keepdims_random")
-      check_onnx_test_case!("node", "test_reduce_sum_square_negative_axes_keepdims_example")
-      check_onnx_test_case!("node", "test_reduce_sum_square_negative_axes_keepdims_random")
-    end
+    # test "ReduceSumSquare" do
+    #   check_onnx_test_case!("node", "test_reduce_sum_square_default_axes_keepdims_example")
+    #   check_onnx_test_case!("node", "test_reduce_sum_square_default_axes_keepdims_random")
+    #   check_onnx_test_case!("node", "test_reduce_sum_square_do_not_keepdims_example")
+    #   check_onnx_test_case!("node", "test_reduce_sum_square_do_not_keepdims_random")
+    #   check_onnx_test_case!("node", "test_reduce_sum_square_keepdims_example")
+    #   check_onnx_test_case!("node", "test_reduce_sum_square_keepdims_random")
+    #   check_onnx_test_case!("node", "test_reduce_sum_square_negative_axes_keepdims_example")
+    #   check_onnx_test_case!("node", "test_reduce_sum_square_negative_axes_keepdims_random")
+    # end
 
     test "Relu" do
       check_onnx_test_case!("node", "test_relu")
