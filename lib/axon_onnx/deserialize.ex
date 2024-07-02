@@ -1844,6 +1844,41 @@ defmodule AxonOnnx.Deserialize do
   end
 
   defp recur_nodes(
+         %Node{
+           op_type: "PRelu",
+           attribute: attrs,
+           input: [input_name, alpha_input_name],
+           output: [output_name]
+         } = node,
+         {axon, params, used_params}
+       ) do
+    input = input!(input_name, axon, params, used_params)
+    alpha = input!(alpha_input_name, axon, params, used_params)
+    activation_options = options!(attrs)
+
+    opts = [alpha: alpha]
+    act = :leaky_relu
+
+    axon_output =
+      case get_axon_node(input) do
+        %Axon.Node{op: :constant, opts: [value: value]} ->
+          new_value = apply(Axon.Activations, act, [value] ++ opts)
+          Axon.constant(new_value, name: output_name)
+
+        %Axon.Node{} ->
+          opts = [name: output_name] ++ opts
+          apply(Axon, act, [input, opts])
+
+        %Nx.Tensor{} = tensor_input ->
+          new_value = apply(Axon.Activations, act, [tensor_input] ++ opts)
+          Axon.constant(new_value, name: output_name)
+      end
+
+    updated_axon = Map.put(axon, output_name, axon_output)
+    {updated_axon, params, used_params}
+  end
+
+  defp recur_nodes(
          %Node{op_type: "Split", input: [input, split], attribute: attrs, output: outputs},
          {axon, params, used_params}
        ) do
