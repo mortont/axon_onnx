@@ -11,7 +11,7 @@ defmodule Onnx.AttributeProto.AttributeType do
       end
     )
 
-    @spec encode(atom()) :: integer() | atom()
+    @spec encode(atom() | String.t()) :: integer() | atom()
     [
       (
         def encode(:UNDEFINED) do
