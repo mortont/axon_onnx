@@ -386,7 +386,7 @@ defmodule Onnx.AttributeProto do
             {1, _, bytes} ->
               {len, bytes} = Protox.Varint.decode(bytes)
               {delimited, rest} = Protox.Decode.parse_delimited(bytes, len)
-              {[name: delimited], rest}
+              {[name: Protox.Decode.validate_string!(delimited)], rest}
 
             {2, _, bytes} ->
               {value, rest} = Protox.Decode.parse_float(bytes)
@@ -447,7 +447,7 @@ defmodule Onnx.AttributeProto do
             {13, _, bytes} ->
               {len, bytes} = Protox.Varint.decode(bytes)
               {delimited, rest} = Protox.Decode.parse_delimited(bytes, len)
-              {[doc_string: delimited], rest}
+              {[doc_string: Protox.Decode.validate_string!(delimited)], rest}
 
             {14, _, bytes} ->
               {len, bytes} = Protox.Varint.decode(bytes)
@@ -466,7 +466,7 @@ defmodule Onnx.AttributeProto do
             {21, _, bytes} ->
               {len, bytes} = Protox.Varint.decode(bytes)
               {delimited, rest} = Protox.Decode.parse_delimited(bytes, len)
-              {[ref_attr_name: delimited], rest}
+              {[ref_attr_name: Protox.Decode.validate_string!(delimited)], rest}
 
             {22, _, bytes} ->
               {len, bytes} = Protox.Varint.decode(bytes)
@@ -1370,4 +1370,46 @@ defmodule Onnx.AttributeProto do
       {:error, :no_such_field}
     end
   ]
+
+  (
+    @spec file_options() :: struct()
+    def file_options() do
+      file_options = %{
+        __struct__: Protox.Google.Protobuf.FileOptions,
+        __uf__: [],
+        cc_enable_arenas: nil,
+        cc_generic_services: nil,
+        csharp_namespace: nil,
+        deprecated: nil,
+        go_package: nil,
+        java_generate_equals_and_hash: nil,
+        java_generic_services: nil,
+        java_multiple_files: nil,
+        java_outer_classname: nil,
+        java_package: nil,
+        java_string_check_utf8: nil,
+        objc_class_prefix: nil,
+        optimize_for: :LITE_RUNTIME,
+        php_class_prefix: nil,
+        php_generic_services: nil,
+        php_metadata_namespace: nil,
+        php_namespace: nil,
+        py_generic_services: nil,
+        ruby_package: nil,
+        swift_prefix: nil,
+        uninterpreted_option: []
+      }
+
+      case function_exported?(Google.Protobuf.FileOptions, :decode!, 1) do
+        true ->
+          bytes =
+            file_options |> Protox.Google.Protobuf.FileOptions.encode!() |> :binary.list_to_bin()
+
+          apply(Google.Protobuf.FileOptions, :decode!, [bytes])
+
+        false ->
+          file_options
+      end
+    end
+  )
 end

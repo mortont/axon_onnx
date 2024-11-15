@@ -11,7 +11,7 @@ defmodule Onnx.Version do
       end
     )
 
-    @spec encode(atom()) :: integer() | atom()
+    @spec encode(atom() | String.t()) :: integer() | atom()
     [
       (
         def encode(:_START_VERSION) do

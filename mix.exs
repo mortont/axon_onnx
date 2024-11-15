@@ -37,7 +37,7 @@ defmodule AxonOnnx.MixProject do
   defp deps do
     [
       {:axon, "~> 0.5", axon_opts()},
-      {:protox, "~> 1.6.10"},
+      {:protox, "~> 1.7"},
       {:nx, "~> 0.5", nx_opts()},
       {:exla, "~> 0.5", [only: :test] ++ exla_opts()},
       {:req, "~> 0.1.0", only: :test},
